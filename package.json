@@ -1,0 +1,37 @@
+{
+  "name": "restaurante",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "tsx src/index.ts",
+    "dev:ui": "vite --config ui/vite.config.ts",
+    "build": "tsc -p tsconfig.json --noEmit && vite build --config ui/vite.config.ts",
+    "start": "node --import tsx src/index.ts",
+    "licenses": "node scripts/check-licenses.mjs"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^4.7.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2",
+    "vite": "^7.3.6",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.1",
+    "argon2": "^0.45.1",
+    "better-sqlite3": "^13.0.3",
+    "hono": "^4.13.3"
+  }
+}

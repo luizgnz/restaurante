@@ -1,0 +1,53 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { dataDir, salonDbPath } from "./paths.ts";
+import { loadConfig } from "./config.ts";
+import { openSalonDb } from "./db/open.ts";
+import { migrate } from "./db/migrate.ts";
+import { createApp } from "./http/app.ts";
+import { escucharHttp, urlLocal } from "./http/listen.ts";
+import { montarUi, abrirEnNavegador } from "./http/ui.ts";
+import { asegurarCuentaAdmin, crearEmpleado } from "./modules/empleados/empleados.ts";
+import { cerrarSesion } from "./modules/empleados/sesion.ts";
+import { seedCartaDemo, asegurarPlanoDemo } from "./modules/productos/seed.ts";
+import { ConsolePrinter } from "./print/console.ts";
+
+async function seedSiVacio(db: ReturnType<typeof openSalonDb>): Promise<void> {
+  const n = db.prepare("SELECT count(*) AS c FROM empleados").get() as { c: number };
+  if (n.c > 0) return;
+  seedCartaDemo(db);
+  await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });
+  await crearEmpleado(db, {
+    nombre: "Jefa",
+    pin: "2222",
+    derecho: "avanzado",
+    usuario: "admin",
+    password: "admin",
+  });
+}
+
+const dir = dataDir();
+const cfg = loadConfig(dir);
+const db = openSalonDb(salonDbPath());
+migrate(db);
+await seedSiVacio(db);
+await asegurarCuentaAdmin(db);
+asegurarPlanoDemo(db);
+cerrarSesion(db);
+
+const app = createApp({ db, config: cfg, printer: new ConsolePrinter(), dataDir: dir });
+const uiDist = path.join(path.dirname(fileURLToPath(import.meta.url)), "../ui/dist");
+const uiOk = montarUi(app, uiDist);
+if (!uiOk) {
+  console.error("No está la UI compilada (ui/dist). Ejecuta npm run build.");
+}
+try {
+  const { mensaje, puerto } = await escucharHttp({ fetch: app.fetch, puerto: cfg.puerto, hostname: "0.0.0.0" });
+  const url = urlLocal(puerto);
+  console.log(mensaje);
+  console.log("Login administrador: usuario admin / contraseña admin");
+  if (uiOk) abrirEnNavegador(url);
+} catch (err) {
+  console.error(err instanceof Error ? err.message : err);
+  process.exit(1);
+}
