@@ -238,18 +238,6 @@ export function ModalEditarOrden({
                     <Trash2 size={18} aria-hidden="true" />
                   </button>
                 </div>
-                <label>
-                  Nota del producto
-                  <input
-                    value={linea.nota}
-                    disabled={modo === "anular"}
-                    onChange={(event) =>
-                      setLineas((actuales) =>
-                        actuales.map((item) => (item.idUi === linea.idUi ? { ...item, nota: event.target.value } : item)),
-                      )
-                    }
-                  />
-                </label>
               </div>
             ))}
           </div>

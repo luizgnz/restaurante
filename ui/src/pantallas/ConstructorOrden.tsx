@@ -1,4 +1,4 @@
-import { Plus, Send, Trash2 } from "lucide-react";
+import { Send, Trash2 } from "lucide-react";
 import { useState } from "react";
 import type { BorradorOrden } from "../lib/borradores.ts";
 
@@ -50,6 +50,20 @@ export function lineasPersistibles(lineas: LineaConstructorUi[]): BorradorOrden[
     .map(({ productoId, cantidad, nota }) => ({ productoId, cantidad, nota }));
 }
 
+/**
+ * Revela el control de un producto sin sumar unidades. Descarta los revelados
+ * anteriores que quedaron en cero: solo siguen activos los que tienen unidades
+ * y el último que se tocó.
+ */
+export function revelarProducto(
+  lineas: LineaConstructorUi[],
+  productoId: number,
+  generarId: () => string = uuid,
+): LineaConstructorUi[] {
+  if (lineas.some((linea) => linea.productoId === productoId)) return lineas;
+  return [...lineas.filter((linea) => linea.cantidad > 0), { idUi: generarId(), productoId, cantidad: 0, nota: "" }];
+}
+
 export function ConstructorOrden({
   mesaFija,
   cuentaId,
@@ -74,15 +88,26 @@ export function ConstructorOrden({
     cambiar({ lineas: lineasPersistibles(lineas) });
   }
 
-  function agregarLinea(productoId: number) {
+  function mostrarProducto(productoId: number) {
+    cambiarLineas(revelarProducto(lineasUi, productoId));
+  }
+
+  function sumarProducto(productoId: number) {
+    const linea = lineasUi.find((item) => item.productoId === productoId);
+    if (linea) {
+      cambiarLineas(actualizarLineaConstructor(lineasUi, linea.idUi, { cantidad: linea.cantidad + 1 }));
+      return;
+    }
     cambiarLineas([...lineasUi, { idUi: uuid(), productoId, cantidad: 1, nota: "" }]);
   }
 
-  function cambiarCantidad(idUi: string, cantidad: number) {
+  function restarProducto(productoId: number) {
+    const linea = lineasUi.find((item) => item.productoId === productoId);
+    if (!linea) return;
     cambiarLineas(
-      cantidad > 0
-        ? actualizarLineaConstructor(lineasUi, idUi, { cantidad })
-        : lineasUi.filter((linea) => linea.idUi !== idUi),
+      linea.cantidad > 1
+        ? actualizarLineaConstructor(lineasUi, linea.idUi, { cantidad: linea.cantidad - 1 })
+        : lineasUi.filter((item) => item.idUi !== linea.idUi),
     );
   }
 
@@ -123,77 +148,33 @@ export function ConstructorOrden({
       </header>
 
       <div className="constructor-orden__cuerpo">
-        <div className="carta">
-          {productos.map((producto) => {
-            return (
-              <button
-                type="button"
-                key={producto.id}
-                className="carta__item"
-                style={producto.color ? { borderColor: producto.color } : undefined}
-                onClick={() => agregarLinea(producto.id)}
-              >
-                {producto.foto_data ? <img src={producto.foto_data} alt="" className="carta__foto" /> : null}
-                <strong>{producto.nombre}</strong>
-                {producto.codigo ? <span>{producto.codigo}</span> : null}
-                <span>${producto.precio_centavos}</span>
-                <span className="constructor-orden__agregar">
-                  <Plus size={18} aria-hidden="true" /> Agregar línea
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
         <aside className="tarjeta constructor-orden__resumen">
           <h2>Orden nueva</h2>
-          {lineasUi.map((linea) => {
-            const producto = productos.find((item) => item.id === linea.productoId);
-            return (
-              <div className="constructor-linea" key={linea.idUi}>
-                <div className="constructor-linea__titulo">
-                  <strong>{producto?.nombre ?? `Producto ${linea.productoId}`}</strong>
-                  <button
-                    type="button"
-                    className="icono-secundario"
-                    title="Quitar producto"
-                    onClick={() => cambiarCantidad(linea.idUi, 0)}
-                  >
-                    <Trash2 size={18} aria-hidden="true" />
-                  </button>
+          {lineasUi
+            .filter((linea) => linea.cantidad > 0)
+            .map((linea) => {
+              const producto = productos.find((item) => item.id === linea.productoId);
+              return (
+                <div className="constructor-linea" key={linea.idUi}>
+                  <div className="constructor-linea__titulo">
+                    <strong>
+                      {linea.cantidad} × {producto?.nombre ?? `Producto ${linea.productoId}`}
+                    </strong>
+                    <button
+                      type="button"
+                      className="icono-secundario"
+                      title="Quitar producto"
+                      onClick={() => cambiarLineas(lineasUi.filter((item) => item.idUi !== linea.idUi))}
+                    >
+                      <Trash2 size={18} aria-hidden="true" />
+                    </button>
+                  </div>
                 </div>
-                <div className="modal-cantidad">
-                  <button
-                    type="button"
-                    className="tactil"
-                    aria-label="Quitar una unidad"
-                    onClick={() => cambiarCantidad(linea.idUi, linea.cantidad - 1)}
-                  >
-                    −
-                  </button>
-                  <strong>{linea.cantidad}</strong>
-                  <button
-                    type="button"
-                    className="tactil"
-                    aria-label="Agregar una unidad"
-                    onClick={() => cambiarCantidad(linea.idUi, linea.cantidad + 1)}
-                  >
-                    +
-                  </button>
-                </div>
-                <label>
-                  Nota del producto
-                  <input
-                    value={linea.nota}
-                    onChange={(event) =>
-                      cambiarLineas(actualizarLineaConstructor(lineasUi, linea.idUi, { nota: event.target.value }))
-                    }
-                  />
-                </label>
-              </div>
-            );
-          })}
-          {lineasUi.length === 0 ? <p className="login-odoo__ayuda">Agrega productos para enviar.</p> : null}
+              );
+            })}
+          {lineasPersistibles(lineasUi).length === 0 ? (
+            <p className="login-odoo__ayuda">Toca un producto del menú para agregarlo.</p>
+          ) : null}
           <label>
             Indicaciones del cliente
             <textarea
@@ -217,6 +198,52 @@ export function ConstructorOrden({
             </button>
           </div>
         </aside>
+
+        <div className="carta constructor-orden__carta">
+          {productos.map((producto) => {
+            const linea = lineasUi.find((item) => item.productoId === producto.id);
+            return (
+              <div
+                key={producto.id}
+                role="button"
+                tabIndex={0}
+                className={`carta__item${linea ? " is-on" : ""}`}
+                style={producto.color ? { borderColor: producto.color } : undefined}
+                onClick={() => mostrarProducto(producto.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    mostrarProducto(producto.id);
+                  }
+                }}
+              >
+                {producto.foto_data ? <img src={producto.foto_data} alt="" className="carta__foto" /> : null}
+                <strong>{producto.nombre}</strong>
+                {producto.codigo ? <span>{producto.codigo}</span> : null}
+                <span>${producto.precio_centavos}</span>
+                {linea ? (
+                  <span className="carta__cantidad" onClick={(event) => event.stopPropagation()}>
+                    <button
+                      type="button"
+                      aria-label={`Quitar una unidad de ${producto.nombre}`}
+                      onClick={() => restarProducto(producto.id)}
+                    >
+                      −
+                    </button>
+                    <strong>{linea.cantidad}</strong>
+                    <button
+                      type="button"
+                      aria-label={`Agregar una unidad de ${producto.nombre}`}
+                      onClick={() => sumarProducto(producto.id)}
+                    >
+                      +
+                    </button>
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

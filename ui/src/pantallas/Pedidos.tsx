@@ -48,17 +48,12 @@ export function Pedidos({ cuentas, onAbrir }: Props) {
               </span>
             </button>
             {cuenta.ordenes.map((orden) => (
-              <div key={orden.id}>
-                <p className="pedido-indicaciones">Orden #{orden.numero}</p>
-                {orden.lineas.map((linea) => (
-                  <div className="pedido-linea" key={linea.lineaClave}>
-                    <span>
-                      {linea.cantidad} × {linea.nombre}
-                      {linea.nota ? ` (${linea.nota})` : ""}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <p className="pedido-indicaciones" key={orden.id}>
+                Orden #{orden.numero}:{" "}
+                {orden.lineas
+                  .map((linea) => `${linea.cantidad} × ${linea.nombre}${linea.nota ? ` (${linea.nota})` : ""}`)
+                  .join(", ")}
+              </p>
             ))}
             {cuenta.ordenes.length === 0 ? <p className="login-odoo__ayuda">Sin órdenes aún</p> : null}
           </article>

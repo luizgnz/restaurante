@@ -150,6 +150,7 @@ function configPublica(config: AppConfig) {
     pin_al_anular: config.pin_al_anular,
     auditoria_anulaciones: config.auditoria_anulaciones,
     justificacion_anulacion: config.justificacion_anulacion,
+    precuenta_obligatoria_antes_de_caja: config.precuenta_obligatoria_antes_de_caja,
   };
 }
 
@@ -313,6 +314,7 @@ export function createApp(deps: AppDeps): Hono {
       confirmar_comanda?: boolean;
       auditoria_anulaciones?: boolean;
       justificacion_anulacion?: boolean;
+      precuenta_obligatoria_antes_de_caja?: boolean;
     }>();
     if (typeof body.tablet_cocina === "boolean") config.tablet_cocina = body.tablet_cocina;
     if (typeof body.barra_ultimos_pedidos === "boolean") config.barra_ultimos_pedidos = body.barra_ultimos_pedidos;
@@ -334,6 +336,9 @@ export function createApp(deps: AppDeps): Hono {
     if (typeof body.confirmar_comanda === "boolean") config.confirmar_comanda = body.confirmar_comanda;
     if (typeof body.auditoria_anulaciones === "boolean") config.auditoria_anulaciones = body.auditoria_anulaciones;
     if (typeof body.justificacion_anulacion === "boolean") config.justificacion_anulacion = body.justificacion_anulacion;
+    if (typeof body.precuenta_obligatoria_antes_de_caja === "boolean") {
+      config.precuenta_obligatoria_antes_de_caja = body.precuenta_obligatoria_antes_de_caja;
+    }
     Object.assign(config, normalizarConfig(config));
     if (dataDir) saveConfig(dataDir, config);
     return c.json(configPublica(config));

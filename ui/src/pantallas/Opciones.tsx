@@ -8,6 +8,7 @@ export type OpcionesValores = {
   confirmar_comanda: boolean;
   auditoria_anulaciones: boolean;
   justificacion_anulacion: boolean;
+  precuenta_obligatoria_antes_de_caja: boolean;
 };
 
 type Props = {
@@ -112,6 +113,14 @@ export function Opciones({ valores, onCambiar }: Props) {
             onChange={(e) => onCambiar({ confirmar_comanda: e.target.checked })}
           />
           Confirmar comanda antes de enviar
+        </label>
+        <label className="switch-tablet">
+          <input
+            type="checkbox"
+            checked={valores.precuenta_obligatoria_antes_de_caja}
+            onChange={(e) => onCambiar({ precuenta_obligatoria_antes_de_caja: e.target.checked })}
+          />
+          Pedir precuenta antes de cerrar la cuenta
         </label>
         <label className="switch-tablet">
           <input

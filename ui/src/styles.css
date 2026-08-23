@@ -200,6 +200,91 @@ button.icono {
 .confirmar-descarte {
   z-index: 41;
 }
+.ticket-papel {
+  background: #f4efe4;
+  color: #222;
+  align-items: stretch;
+  width: min(400px, 92vw);
+  border-radius: 6px;
+}
+.ticket-papel__local {
+  margin: 0;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+.ticket-papel__tipo {
+  margin: 2px 0 0;
+  text-align: center;
+  letter-spacing: 0.25em;
+  font-size: 1.05rem;
+}
+.ticket-papel__referencia {
+  margin: 4px 0 8px;
+  text-align: center;
+  opacity: 0.75;
+  font-size: 0.9rem;
+}
+.ticket-papel__lineas {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+  border-top: 1px dashed #999;
+  border-bottom: 1px dashed #999;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ticket-papel__lineas li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ticket-papel__nota {
+  opacity: 0.75;
+  font-size: 0.9rem;
+}
+.ticket-papel__indicaciones {
+  margin: 8px 0 0;
+  padding: 6px 8px;
+  border: 1px dashed #999;
+  border-radius: 6px;
+  font-style: italic;
+}
+.ticket-papel__total {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0 0;
+  font-size: 1.1rem;
+}
+.ticket-papel button {
+  margin-top: 10px;
+}
+.ordenes-cuenta-modal {
+  align-items: stretch;
+  width: min(520px, 94vw);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.ordenes-cuenta-modal__orden {
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.ordenes-cuenta-modal__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ordenes-cuenta-modal__acciones {
+  display: inline-flex;
+  gap: 6px;
+}
+.ordenes-cuenta-modal__productos {
+  margin: 6px 0 0;
+  opacity: 0.85;
+}
 .modal-cantidad {
   display: flex;
   align-items: center;
@@ -248,7 +333,37 @@ button.icono {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  gap: 4px;
   border: 3px solid transparent;
+  min-height: 48px;
+  font-size: 1rem;
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  background: #3a3a3a;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.carta__item.is-on {
+  background: #714b67;
+}
+.carta__cantidad {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+.carta__cantidad button {
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 1.2rem;
+}
+.carta__cantidad strong {
+  min-width: 32px;
+  text-align: center;
+  font-size: 1.1rem;
 }
 .form-odoo__acciones {
   display: flex;
@@ -711,6 +826,12 @@ main {
   padding: 10px 0;
   border-bottom: 1px solid #333;
 }
+.constructor-linea__abrir {
+  flex: 1;
+  text-align: left;
+  background: transparent;
+  padding: 4px 0;
+}
 .constructor-orden__agregar,
 .constructor-orden__acciones button,
 .cuenta-mesa__cabecera button {
@@ -792,7 +913,12 @@ main {
     gap: 16px;
   }
   .constructor-orden__cuerpo {
-    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-columns: 360px minmax(0, 1fr);
+  }
+  .constructor-orden__carta {
+    max-height: calc(100vh - 190px);
+    overflow-y: auto;
+    align-content: start;
   }
   .cuenta-mesa__ordenes {
     grid-template-columns: repeat(2, minmax(0, 1fr));

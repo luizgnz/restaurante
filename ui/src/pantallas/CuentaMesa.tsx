@@ -33,21 +33,23 @@ export type CuentaDetalleUi = {
 
 type Props = {
   cuenta: CuentaDetalleUi;
+  puedeCerrar: boolean;
   onNuevaOrden: () => void;
   onEditarOrden: (orden: OrdenCuentaUi) => void;
   onAnularOrden: (orden: OrdenCuentaUi) => void;
   onPrecuenta: () => void;
-  onEnviarCaja: () => void;
+  onCerrarCuenta: () => void;
   onNotaPrivada: (nota: string) => Promise<void>;
 };
 
 export function CuentaMesa({
   cuenta,
+  puedeCerrar,
   onNuevaOrden,
   onEditarOrden,
   onAnularOrden,
   onPrecuenta,
-  onEnviarCaja,
+  onCerrarCuenta,
   onNotaPrivada,
 }: Props) {
   const aceptaConsumo = cuenta.estado === "abierta" || cuenta.estado === "precuenta_emitida";
@@ -144,9 +146,11 @@ export function CuentaMesa({
             <button type="button" onClick={onPrecuenta}>
               Precuenta
             </button>
-            <button type="button" className="primario" onClick={onEnviarCaja}>
-              Enviar a caja
-            </button>
+            {puedeCerrar ? (
+              <button type="button" className="primario" onClick={onCerrarCuenta}>
+                Cerrar cuenta
+              </button>
+            ) : null}
           </>
         ) : null}
       </footer>

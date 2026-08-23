@@ -30,6 +30,22 @@ describe("opciones API", () => {
     db.close();
   });
 
+  it("precuenta obligatoria antes de caja se guarda y se expone", async () => {
+    const db = openTestDb();
+    const config = defaultConfig();
+    const app = createApp({ db, config, printer: new MemoryPrinter() });
+    expect(((await (await app.request("/api/config")).json()) as { precuenta_obligatoria_antes_de_caja: boolean })
+      .precuenta_obligatoria_antes_de_caja).toBe(true);
+    const res = await app.request("/api/config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ precuenta_obligatoria_antes_de_caja: false }),
+    });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { precuenta_obligatoria_antes_de_caja: boolean }).precuenta_obligatoria_antes_de_caja).toBe(false);
+    db.close();
+  });
+
   it("preview de comanda no incluye nota privada; anular sin PIN falla", async () => {
     const db = openTestDb();
     const ids = seedCartaDemo(db);

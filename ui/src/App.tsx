@@ -4,6 +4,8 @@ import { pedidosAtrasados, ultimosPedidos } from "../../src/modules/salon/barras
 import { esperaMinutos, nivelEspera } from "../../src/modules/tiempo.ts";
 import { Barra, type Destino } from "./pantallas/Barra.tsx";
 import { Backend } from "./pantallas/Backend.tsx";
+import { ComandaEnPantalla, type ComandaUi } from "./pantallas/ComandaEnPantalla.tsx";
+import { ConfirmarCierreCuenta } from "./pantallas/ConfirmarCierreCuenta.tsx";
 import { ConstructorOrden, type ProductoCarta } from "./pantallas/ConstructorOrden.tsx";
 import { type Categoria } from "./pantallas/CrearProducto.tsx";
 import { CuentaMesa, type CuentaDetalleUi, type OrdenCuentaUi } from "./pantallas/CuentaMesa.tsx";
@@ -11,9 +13,11 @@ import { EditarMapa } from "./pantallas/EditarMapa.tsx";
 import { Login } from "./pantallas/Login.tsx";
 import { ModalCrearProducto } from "./pantallas/ModalCrearProducto.tsx";
 import { ModalEditarOrden } from "./pantallas/ModalEditarOrden.tsx";
+import { ModalOrdenesCuenta } from "./pantallas/ModalOrdenesCuenta.tsx";
 import { Opciones, type OpcionesValores } from "./pantallas/Opciones.tsx";
 import { Pedidos, type CuentaEnCursoUi } from "./pantallas/Pedidos.tsx";
 import { PinPad } from "./pantallas/PinPad.tsx";
+import { PrecuentaEnPantalla, type PrecuentaUi } from "./pantallas/PrecuentaEnPantalla.tsx";
 import { Plano, type Mesa, type PedidoBarra, type Piso } from "./pantallas/Plano.tsx";
 import { VistaPreviaComanda } from "./pantallas/VistaPreviaComanda.tsx";
 import {
@@ -57,8 +61,11 @@ export function App() {
   const [contextoOrden, setContextoOrden] = useState<ContextoOrden | null>(null);
   const [borradorOrden, setBorradorOrden] = useState<BorradorOrden | null>(null);
   const [edicionOrden, setEdicionOrden] = useState<EdicionOrden | null>(null);
+  const [modalCuentaId, setModalCuentaId] = useState<number | null>(null);
   const [pinPendiente, setPinPendiente] = useState<PinPendiente | null>(null);
   const [previewOrden, setPreviewOrden] = useState<BorradorOrden | null>(null);
+  const [comandaReciente, setComandaReciente] = useState<ComandaUi | null>(null);
+  const [precuentaReciente, setPrecuentaReciente] = useState<PrecuentaUi | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [barraUltimos, setBarraUltimos] = useState(true);
   const [barraAtrasados, setBarraAtrasados] = useState(true);
@@ -71,6 +78,8 @@ export function App() {
   const [confirmarComanda, setConfirmarComanda] = useState(false);
   const [auditoriaAnulaciones, setAuditoriaAnulaciones] = useState(false);
   const [justificacionAnulacion, setJustificacionAnulacion] = useState(false);
+  const [precuentaObligatoria, setPrecuentaObligatoria] = useState(true);
+  const [confirmarCierre, setConfirmarCierre] = useState(false);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [crearProductoAbierto, setCrearProductoAbierto] = useState(false);
   const [errorCrearProducto, setErrorCrearProducto] = useState("");
@@ -134,6 +143,9 @@ export function App() {
     if (typeof data.confirmar_comanda === "boolean") setConfirmarComanda(data.confirmar_comanda);
     if (typeof data.auditoria_anulaciones === "boolean") setAuditoriaAnulaciones(data.auditoria_anulaciones);
     if (typeof data.justificacion_anulacion === "boolean") setJustificacionAnulacion(data.justificacion_anulacion);
+    if (typeof data.precuenta_obligatoria_antes_de_caja === "boolean") {
+      setPrecuentaObligatoria(data.precuenta_obligatoria_antes_de_caja);
+    }
   }
 
   async function guardarBarras(patch: { barra_ultimos_pedidos?: boolean; barra_atrasados?: boolean }) {
@@ -253,7 +265,7 @@ export function App() {
         contextoOrden.tipo === "cuenta"
           ? `/api/cuentas/${contextoOrden.cuentaId}/ordenes`
           : "/api/ordenes";
-      const respuesta = await api<{ cuentaId: number }>(ruta, {
+      const respuesta = await api<{ cuentaId: number; ordenNumero: number }>(ruta, {
         method: "POST",
         body: JSON.stringify({
           mesaId: borrador.mesaId,
@@ -268,6 +280,19 @@ export function App() {
         cuentaId: respuesta.cuentaId,
         cargarCuenta,
         eliminarBorrador: () => eliminarBorrador(window.localStorage, clave),
+      });
+      setComandaReciente({
+        mesaNumero: mesas.find((mesa) => mesa.id === borrador.mesaId)?.numero ?? null,
+        ordenNumero: respuesta.ordenNumero,
+        mesero: sesion?.administrador?.nombre ?? "",
+        indicaciones: borrador.indicaciones.trim() ? borrador.indicaciones : null,
+        lineas: borrador.lineas
+          .filter((linea) => linea.cantidad > 0)
+          .map((linea) => ({
+            nombre: productos.find((producto) => producto.id === linea.productoId)?.nombre ?? `Producto ${linea.productoId}`,
+            cantidad: linea.cantidad,
+            nota: linea.nota.trim() ? linea.nota : null,
+          })),
       });
       setContextoOrden(null);
       setBorradorOrden(null);
@@ -321,8 +346,29 @@ export function App() {
     envioEnCurso.current = true;
     setEnviando(true);
     try {
-      await api(`/api/cuentas/${id}/${tipo}`, { method: "POST", body: JSON.stringify({ pin }) });
-      await cargarCuenta(id);
+      const respuesta = await api<{ numero: number }>(`/api/cuentas/${id}/${tipo}`, {
+        method: "POST",
+        body: JSON.stringify({ pin }),
+      });
+      const detalle = await cargarCuenta(id);
+      if (tipo === "precuenta") {
+        setPrecuentaReciente({
+          mesaNumero: detalle.mesa.numero,
+          numero: respuesta.numero,
+          mesero: sesion?.administrador?.nombre ?? "",
+          lineas: detalle.ordenes.flatMap((orden) =>
+            orden.lineas
+              .filter((linea) => linea.cantidad > 0)
+              .map((linea) => ({
+                nombre: linea.nombre,
+                cantidad: linea.cantidad,
+                precioCentavos: linea.precioCentavos,
+                nota: linea.nota,
+              })),
+          ),
+          totalCentavos: detalle.totalCentavos,
+        });
+      }
       await Promise.all([cargarPlano(), cargarCuentasEnCurso()]);
       setPinPendiente(null);
       setVista(vistaTrasAccionCuenta(tipo));
@@ -414,6 +460,39 @@ export function App() {
             texto={textoPreviewOrden(previewOrden)}
             onVolver={() => setPreviewOrden(null)}
             onContinuar={() => conError(continuarPreviewOrden)}
+          />
+        ) : null}
+        {comandaReciente ? (
+          <ComandaEnPantalla
+            restaurante={nombreLocal}
+            comanda={comandaReciente}
+            onCerrar={() => setComandaReciente(null)}
+          />
+        ) : null}
+        {precuentaReciente ? (
+          <PrecuentaEnPantalla
+            restaurante={nombreLocal}
+            precuenta={precuentaReciente}
+            onCerrar={() => setPrecuentaReciente(null)}
+          />
+        ) : null}
+        {confirmarCierre && cuentaActual ? (
+          <ConfirmarCierreCuenta
+            mesaNumero={cuentaActual.mesa.numero}
+            totalCentavos={cuentaActual.totalCentavos}
+            onCancelar={() => setConfirmarCierre(false)}
+            onConfirmar={() => {
+              setConfirmarCierre(false);
+              empezarAccionCuenta("enviar-caja");
+            }}
+          />
+        ) : null}
+        {modalCuentaId != null && cuentaActual?.id === modalCuentaId ? (
+          <ModalOrdenesCuenta
+            cuenta={cuentaActual}
+            onEditarOrden={(orden) => setEdicionOrden({ orden, modo: "editar" })}
+            onAnularOrden={(orden) => setEdicionOrden({ orden, modo: "anular" })}
+            onCerrar={() => setModalCuentaId(null)}
           />
         ) : null}
         {edicionOrden && cuentaActual ? (
@@ -512,11 +591,12 @@ export function App() {
         {vista === "pedido" && !contextoOrden && cuentaActual ? (
           <CuentaMesa
             cuenta={cuentaActual}
+            puedeCerrar={!precuentaObligatoria || cuentaActual.estado === "precuenta_emitida"}
             onNuevaOrden={() => abrirConstructor(contextoNuevaOrdenDeCuenta(cuentaActual))}
             onEditarOrden={(orden) => setEdicionOrden({ orden, modo: "editar" })}
             onAnularOrden={(orden) => setEdicionOrden({ orden, modo: "anular" })}
             onPrecuenta={() => empezarAccionCuenta("precuenta")}
-            onEnviarCaja={() => empezarAccionCuenta("enviar-caja")}
+            onCerrarCuenta={() => setConfirmarCierre(true)}
             onNotaPrivada={async (notaPrivada) => {
               await api(`/api/cuentas/${cuentaActual.id}/nota-privada`, {
                 method: "POST",
@@ -532,9 +612,7 @@ export function App() {
             onAbrir={(cuentaId) =>
               conError(async () => {
                 await cargarCuenta(cuentaId);
-                setContextoOrden(null);
-                setBorradorOrden(null);
-                setVista("pedido");
+                setModalCuentaId(cuentaId);
               })
             }
           />
@@ -616,6 +694,7 @@ export function App() {
               confirmar_comanda: confirmarComanda,
               auditoria_anulaciones: auditoriaAnulaciones,
               justificacion_anulacion: justificacionAnulacion,
+              precuenta_obligatoria_antes_de_caja: precuentaObligatoria,
             }}
             onCambiar={(patch) => conError(() => guardarOpciones(patch))}
           />
