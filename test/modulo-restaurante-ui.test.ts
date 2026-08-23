@@ -18,6 +18,8 @@ describe("pantallas módulo restaurante", () => {
     expect(html).not.toContain("Nuevo producto");
     expect(html).not.toContain("<h1");
     expect(html).toContain("Precio de venta");
+    // Todo producto queda asociado a una categoría.
+    expect(html).not.toContain("Sin categoría");
     expect(html).toContain("Categoría POS");
     expect(html).toContain("Disponible en el PdV");
     expect(html).toContain("Rastrear en el inventario");
@@ -78,11 +80,13 @@ describe("pantallas módulo restaurante", () => {
     const html = renderToStaticMarkup(
       createElement(Backend, {
         onCrearProducto: () => undefined,
+        onCategorias: () => undefined,
         onEditarMapa: () => undefined,
         onMesas: () => undefined,
       }),
     );
     expect(html).toContain("Crear producto");
+    expect(html).toContain("Categorías");
     expect(html).toContain("Editar mapa");
     expect(html).toContain("Backend");
   });

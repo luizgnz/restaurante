@@ -289,8 +289,8 @@ Si se crea una orden o corrección después de una precuenta:
 
 Quién puede hacer el handoff lo decide `enviar_a_caja_requiere_avanzado`:
 
-- Encendida (default): el PIN necesita derecho avanzado (acción `caja`).
-- Apagada: el PIN necesita el mismo derecho que emite la precuenta (acción `precuenta`, básico o avanzado). El derecho `minimo` no alcanza en ningún caso.
+- Apagada (default): cualquier mesero cierra la cuenta; el PIN necesita el mismo derecho que emite la precuenta (acción `precuenta`, básico o avanzado). El derecho `minimo` no alcanza en ningún caso.
+- Encendida: el PIN necesita derecho avanzado (acción `caja`).
 - Sin PIN se usa el administrador de la sesión abierta, que siempre es avanzado; ese camino no cambia con la configuración.
 
 El handoff a caja cierra la cuenta y libera la mesa principal y todas las mesas bloqueadas por unión.

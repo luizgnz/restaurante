@@ -15,6 +15,7 @@ const valores = {
   auditoria_anulaciones: false,
   justificacion_anulacion: false,
   precuenta_obligatoria_antes_de_caja: true,
+  enviar_a_caja_requiere_avanzado: true,
 };
 
 describe("opciones", () => {
@@ -29,6 +30,7 @@ describe("opciones", () => {
     expect(html).toContain("Solicitar contraseña");
     expect(html).toContain("Confirmar comanda");
     expect(html).toContain("Pedir precuenta antes de cerrar la cuenta");
+    expect(html).toContain("Pedir permiso avanzado para cerrar la cuenta");
     expect(html).toContain("disabled");
     expect(html).not.toContain("Tablet en cocina");
   });

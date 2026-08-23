@@ -108,14 +108,13 @@ export function CrearProducto({ categorias, error, onGuardar, onCancelar, onDirt
       </label>
       <label>
         Categoría POS
-        <select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
-          <option value="">Sin categoría</option>
-          {categorias.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nombre}
-            </option>
-          ))}
-        </select>
+          <select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
+            {categorias.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
       </label>
       <label>
         Tipo

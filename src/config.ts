@@ -51,7 +51,7 @@ export function defaultConfig(): AppConfig {
     pin_al_emitir_precuenta: true,
     pin_al_enviar_caja: true,
     tablet_cocina: false,
-    enviar_a_caja_requiere_avanzado: true,
+    enviar_a_caja_requiere_avanzado: false,
     precuenta_obligatoria_antes_de_caja: true,
     liberar_mesa_cuando: "al_enviar_a_caja",
     bloqueo_inactividad_seg: 60,

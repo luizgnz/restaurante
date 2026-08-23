@@ -4,6 +4,7 @@ import { pedidosAtrasados, ultimosPedidos } from "../../src/modules/salon/barras
 import { esperaMinutos, nivelEspera } from "../../src/modules/tiempo.ts";
 import { Barra, type Destino } from "./pantallas/Barra.tsx";
 import { Backend } from "./pantallas/Backend.tsx";
+import { Categorias } from "./pantallas/Categorias.tsx";
 import { ComandaEnPantalla, type ComandaUi } from "./pantallas/ComandaEnPantalla.tsx";
 import { ConfirmarCierreCuenta } from "./pantallas/ConfirmarCierreCuenta.tsx";
 import { ConstructorOrden, type ProductoCarta } from "./pantallas/ConstructorOrden.tsx";
@@ -79,6 +80,7 @@ export function App() {
   const [auditoriaAnulaciones, setAuditoriaAnulaciones] = useState(false);
   const [justificacionAnulacion, setJustificacionAnulacion] = useState(false);
   const [precuentaObligatoria, setPrecuentaObligatoria] = useState(true);
+  const [cierreRequiereAvanzado, setCierreRequiereAvanzado] = useState(false);
   const [confirmarCierre, setConfirmarCierre] = useState(false);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [crearProductoAbierto, setCrearProductoAbierto] = useState(false);
@@ -146,6 +148,9 @@ export function App() {
     if (typeof data.precuenta_obligatoria_antes_de_caja === "boolean") {
       setPrecuentaObligatoria(data.precuenta_obligatoria_antes_de_caja);
     }
+    if (typeof data.enviar_a_caja_requiere_avanzado === "boolean") {
+      setCierreRequiereAvanzado(data.enviar_a_caja_requiere_avanzado);
+    }
   }
 
   async function guardarBarras(patch: { barra_ultimos_pedidos?: boolean; barra_atrasados?: boolean }) {
@@ -211,6 +216,7 @@ export function App() {
   async function ir(v: Destino) {
     if (v === "pedidos") cargarCuentasEnCurso().catch((e) => setError(String(e)));
     if (v === "plano" || v === "editar-mapa") cargarPlano().catch((e) => setError(String(e)));
+    if (v === "categorias") cargarCategorias().catch((e) => setError(String(e)));
     setVista(v);
   }
 
@@ -678,8 +684,19 @@ export function App() {
         {vista === "backend" ? (
           <Backend
             onCrearProducto={abrirCrearProducto}
+            onCategorias={() => ir("categorias")}
             onEditarMapa={() => ir("editar-mapa")}
             onMesas={() => ir("plano")}
+          />
+        ) : null}
+        {vista === "categorias" ? (
+          <Categorias
+            categorias={categorias}
+            onCrear={async (nombre) => {
+              await api("/api/categorias", { method: "POST", body: JSON.stringify({ nombre }) });
+              await cargarCategorias();
+            }}
+            onVolver={() => ir("backend")}
           />
         ) : null}
         {vista === "opciones" ? (
@@ -695,6 +712,7 @@ export function App() {
               auditoria_anulaciones: auditoriaAnulaciones,
               justificacion_anulacion: justificacionAnulacion,
               precuenta_obligatoria_antes_de_caja: precuentaObligatoria,
+              enviar_a_caja_requiere_avanzado: cierreRequiereAvanzado,
             }}
             onCambiar={(patch) => conError(() => guardarOpciones(patch))}
           />

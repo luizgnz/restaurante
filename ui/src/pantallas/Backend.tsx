@@ -1,10 +1,11 @@
 type Props = {
   onCrearProducto: () => void;
+  onCategorias: () => void;
   onEditarMapa: () => void;
   onMesas: () => void;
 };
 
-export function Backend({ onCrearProducto, onEditarMapa, onMesas }: Props) {
+export function Backend({ onCrearProducto, onCategorias, onEditarMapa, onMesas }: Props) {
   return (
     <section className="backend-odoo">
       <h1>Backend</h1>
@@ -12,6 +13,9 @@ export function Backend({ onCrearProducto, onEditarMapa, onMesas }: Props) {
       <div className="backend-odoo__atajos">
         <button type="button" className="tactil primario" onClick={onCrearProducto}>
           Crear producto
+        </button>
+        <button type="button" className="tactil primario" onClick={onCategorias}>
+          Categorías
         </button>
         <button type="button" className="tactil primario" onClick={onEditarMapa}>
           Editar mapa

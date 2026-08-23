@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { defaultConfig } from "../src/config.ts";
 import { createApp } from "../src/http/app.ts";
-import { crearProducto } from "../src/modules/productos/productos.ts";
+import { crearCategoria, crearProducto, listarCategorias } from "../src/modules/productos/productos.ts";
 import { guardarPlano } from "../src/modules/salon/salon.ts";
 import { seedCartaDemo } from "../src/modules/productos/seed.ts";
 import { MemoryPrinter } from "../src/print/memory.ts";
@@ -11,7 +11,7 @@ describe("módulo restaurante", () => {
   it("crea un producto de carta y queda en /api/carta", async () => {
     const db = openTestDb();
     seedCartaDemo(db);
-    const cat = db.prepare("SELECT id FROM categorias_pos WHERE nombre = 'Principales'").get() as { id: number };
+    const cat = db.prepare("SELECT id FROM categorias_pos WHERE nombre = 'Comida'").get() as { id: number };
     const creado = crearProducto(db, {
       nombre: "Completo",
       precio_centavos: 4500,
@@ -97,6 +97,46 @@ describe("módulo restaurante", () => {
         ],
       }),
     ).toThrow(/La mesa 1 ya existe/);
+    db.close();
+  });
+
+  it("crea categorías nuevas y rechaza duplicadas sin distinguir mayúsculas", () => {
+    const db = openTestDb();
+    seedCartaDemo(db);
+
+    const creada = crearCategoria(db, { nombre: "Desayunos" });
+    expect(creada.id).toBeGreaterThan(0);
+    expect(listarCategorias(db).map((c) => c.nombre)).toContain("Desayunos");
+
+    expect(() => crearCategoria(db, { nombre: "desayunos" })).toThrow(/ya existe/);
+    expect(() => crearCategoria(db, { nombre: "   " })).toThrow(/nombre/);
+    db.close();
+  });
+
+  it("POST /api/categorias crea y GET las lista; duplicada responde 400", async () => {
+    const db = openTestDb();
+    seedCartaDemo(db);
+    const app = createApp({ db, config: defaultConfig(), printer: new MemoryPrinter() });
+
+    const res = await app.request("/api/categorias", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ nombre: "Desayunos" }),
+    });
+    expect(res.status).toBe(201);
+    const creado = (await res.json()) as { id: number; nombre: string };
+    expect(creado.nombre).toBe("Desayunos");
+
+    const lista = (await (await app.request("/api/categorias")).json()) as { categorias: { nombre: string }[] };
+    expect(lista.categorias.map((c) => c.nombre)).toEqual(expect.arrayContaining(["Comida", "Bebida", "Desayunos"]));
+
+    const duplicada = await app.request("/api/categorias", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ nombre: "comida" }),
+    });
+    expect(duplicada.status).toBe(400);
+    expect(((await duplicada.json()) as { codigo: string }).codigo).toBe("categoria_duplicada");
     db.close();
   });
 });

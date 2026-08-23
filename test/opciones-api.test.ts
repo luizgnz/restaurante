@@ -46,6 +46,20 @@ describe("opciones API", () => {
     db.close();
   });
 
+  it("cerrar cuenta con permiso básico se puede habilitar", async () => {
+    const db = openTestDb();
+    const config = defaultConfig();
+    const app = createApp({ db, config, printer: new MemoryPrinter() });
+    const res = await app.request("/api/config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enviar_a_caja_requiere_avanzado: false }),
+    });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { enviar_a_caja_requiere_avanzado: boolean }).enviar_a_caja_requiere_avanzado).toBe(false);
+    db.close();
+  });
+
   it("preview de comanda no incluye nota privada; anular sin PIN falla", async () => {
     const db = openTestDb();
     const ids = seedCartaDemo(db);
@@ -156,7 +170,7 @@ describe("opciones y API de órdenes", () => {
   });
 
   it("enviar_a_caja_requiere_avanzado decide qué PIN cierra el servicio", async () => {
-    const exigente = await entornoApi();
+    const exigente = await entornoApi({ ...defaultConfig(), enviar_a_caja_requiere_avanzado: true });
     const orden = await crearOrden(exigente);
     await post(exigente.app, `/api/cuentas/${orden.cuentaId}/precuenta`, { pin: "1234" });
     const negado = await post(exigente.app, `/api/cuentas/${orden.cuentaId}/enviar-caja`, { pin: "1234" });

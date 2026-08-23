@@ -26,7 +26,7 @@ import {
   vistaPreviaComanda,
 } from "../modules/pedidos/pedidos.ts";
 import { emitirPrecuenta, reimprimirPrecuenta } from "../modules/precuenta/precuenta.ts";
-import { armableDeProducto, crearProducto, listarCategorias, listarProductos, ProductoError } from "../modules/productos/productos.ts";
+import { armableDeProducto, crearCategoria, crearProducto, listarCategorias, listarProductos, ProductoError } from "../modules/productos/productos.ts";
 import { cuentaActivaPorMesa } from "../modules/cuentas/cuentas.ts";
 import {
   abrirMesa,
@@ -151,6 +151,7 @@ function configPublica(config: AppConfig) {
     auditoria_anulaciones: config.auditoria_anulaciones,
     justificacion_anulacion: config.justificacion_anulacion,
     precuenta_obligatoria_antes_de_caja: config.precuenta_obligatoria_antes_de_caja,
+    enviar_a_caja_requiere_avanzado: config.enviar_a_caja_requiere_avanzado,
   };
 }
 
@@ -265,6 +266,13 @@ export function createApp(deps: AppDeps): Hono {
 
   app.get("/api/categorias", (c) => c.json({ categorias: listarCategorias(db) }));
 
+  app.post("/api/categorias", async (c) => {
+    const body = await leerJson<{ nombre: unknown }>(c);
+    const nombre = typeof body.nombre === "string" ? body.nombre : "";
+    const creada = crearCategoria(db, { nombre });
+    return c.json(creada, 201);
+  });
+
   app.get("/api/productos", (c) => c.json({ productos: listarProductos(db) }));
 
   app.post("/api/productos", async (c) => {
@@ -315,6 +323,7 @@ export function createApp(deps: AppDeps): Hono {
       auditoria_anulaciones?: boolean;
       justificacion_anulacion?: boolean;
       precuenta_obligatoria_antes_de_caja?: boolean;
+      enviar_a_caja_requiere_avanzado?: boolean;
     }>();
     if (typeof body.tablet_cocina === "boolean") config.tablet_cocina = body.tablet_cocina;
     if (typeof body.barra_ultimos_pedidos === "boolean") config.barra_ultimos_pedidos = body.barra_ultimos_pedidos;
@@ -338,6 +347,9 @@ export function createApp(deps: AppDeps): Hono {
     if (typeof body.justificacion_anulacion === "boolean") config.justificacion_anulacion = body.justificacion_anulacion;
     if (typeof body.precuenta_obligatoria_antes_de_caja === "boolean") {
       config.precuenta_obligatoria_antes_de_caja = body.precuenta_obligatoria_antes_de_caja;
+    }
+    if (typeof body.enviar_a_caja_requiere_avanzado === "boolean") {
+      config.enviar_a_caja_requiere_avanzado = body.enviar_a_caja_requiere_avanzado;
     }
     Object.assign(config, normalizarConfig(config));
     if (dataDir) saveConfig(dataDir, config);

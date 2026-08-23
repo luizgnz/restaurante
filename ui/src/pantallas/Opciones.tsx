@@ -9,6 +9,7 @@ export type OpcionesValores = {
   auditoria_anulaciones: boolean;
   justificacion_anulacion: boolean;
   precuenta_obligatoria_antes_de_caja: boolean;
+  enviar_a_caja_requiere_avanzado: boolean;
 };
 
 type Props = {
@@ -121,6 +122,14 @@ export function Opciones({ valores, onCambiar }: Props) {
             onChange={(e) => onCambiar({ precuenta_obligatoria_antes_de_caja: e.target.checked })}
           />
           Pedir precuenta antes de cerrar la cuenta
+        </label>
+        <label className="switch-tablet">
+          <input
+            type="checkbox"
+            checked={valores.enviar_a_caja_requiere_avanzado}
+            onChange={(e) => onCambiar({ enviar_a_caja_requiere_avanzado: e.target.checked })}
+          />
+          Pedir permiso avanzado para cerrar la cuenta
         </label>
         <label className="switch-tablet">
           <input

@@ -77,6 +77,18 @@ export function listarCategorias(db: Database.Database): { id: number; nombre: s
   }[];
 }
 
+export function crearCategoria(db: Database.Database, input: { nombre: string }): { id: number; nombre: string } {
+  const nombre = input.nombre.trim();
+  if (!nombre) throw new ProductoError("nombre_requerido", "La categoría necesita un nombre");
+  if (nombre.length > 40) throw new ProductoError("nombre_invalido", "Nombre de categoría demasiado largo");
+  const duplicada = db.prepare("SELECT id FROM categorias_pos WHERE lower(nombre) = lower(?)").get(nombre);
+  if (duplicada) throw new ProductoError("categoria_duplicada", "Esa categoría ya existe");
+  const id = Number(
+    db.prepare("INSERT INTO categorias_pos (nombre, estacion) VALUES (?, 'cocina')").run(nombre).lastInsertRowid,
+  );
+  return { id, nombre };
+}
+
 export function listarProductos(db: Database.Database): {
   id: number;
   nombre: string;

@@ -34,10 +34,10 @@ function setStock(db: Database.Database, productoId: number, onHand: number): vo
 
 export function seedCartaDemo(db: Database.Database): SeedIds {
   const comida = Number(
-    db.prepare("INSERT INTO categorias_pos (nombre, estacion) VALUES (?, ?)").run("Principales", "cocina").lastInsertRowid,
+    db.prepare("INSERT INTO categorias_pos (nombre, estacion) VALUES (?, ?)").run("Comida", "cocina").lastInsertRowid,
   );
   const bebidas = Number(
-    db.prepare("INSERT INTO categorias_pos (nombre, estacion) VALUES (?, ?)").run("Bebidas", "cocina").lastInsertRowid,
+    db.prepare("INSERT INTO categorias_pos (nombre, estacion) VALUES (?, ?)").run("Bebida", "cocina").lastInsertRowid,
   );
 
   const pan = insertProducto(db, "Pan", 0, null, "almacenable_unitario", 0);
@@ -119,8 +119,8 @@ export function asegurarProductosDemo(db: Database.Database): void {
     if (row) return row.id;
     return Number(db.prepare("INSERT INTO categorias_pos (nombre, estacion) VALUES (?, ?)").run(nombre, estacion).lastInsertRowid);
   }
-  const principales = categoria("Principales", "cocina");
-  const bebidas = categoria("Bebidas", "cocina");
+  const principales = categoria("Comida", "cocina");
+  const bebidas = categoria("Bebida", "cocina");
   const postres = categoria("Postres", "cocina");
   const carta = [
     { nombre: "Hamburguesa", precio: 8900, categoria: principales, letra: "H", color: "#8b4513" },
