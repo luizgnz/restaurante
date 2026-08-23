@@ -6,6 +6,10 @@ export type PoliticaInventario =
   | "reserva_al_enviar_firme_al_precuenta"
   | "reserva_al_enviar_firme_al_enviar_caja";
 
+export type TipografiaPos = "sans" | "serif" | "redondeada";
+export type TamanoUi = "compacto" | "normal" | "grande";
+export type PinMomento = "crear_orden" | "enviar";
+
 export type AppConfig = {
   puerto: number;
   extra_nube: boolean;
@@ -21,6 +25,18 @@ export type AppConfig = {
   precuenta_obligatoria_antes_de_caja: boolean;
   liberar_mesa_cuando: "al_enviar_a_caja" | "manual";
   bloqueo_inactividad_seg: number;
+  barra_ultimos_pedidos: boolean;
+  barra_atrasados: boolean;
+  nombre_local: string;
+  logo_data: string | null;
+  tipografia: TipografiaPos;
+  tamano_ui: TamanoUi;
+  pin_habilitado: boolean;
+  pin_momento: PinMomento;
+  confirmar_comanda: boolean;
+  pin_al_anular: boolean;
+  auditoria_anulaciones: boolean;
+  justificacion_anulacion: boolean;
 };
 
 export function defaultConfig(): AppConfig {
@@ -39,7 +55,30 @@ export function defaultConfig(): AppConfig {
     precuenta_obligatoria_antes_de_caja: true,
     liberar_mesa_cuando: "al_enviar_a_caja",
     bloqueo_inactividad_seg: 60,
+    barra_ultimos_pedidos: true,
+    barra_atrasados: true,
+    nombre_local: "Restaurante",
+    logo_data: null,
+    tipografia: "sans",
+    tamano_ui: "normal",
+    pin_habilitado: true,
+    pin_momento: "enviar",
+    confirmar_comanda: false,
+    pin_al_anular: true,
+    auditoria_anulaciones: false,
+    justificacion_anulacion: false,
   };
+}
+
+export function normalizarConfig(cfg: AppConfig): AppConfig {
+  return {
+    ...sincronizarPinEnviar(cfg),
+    justificacion_anulacion: cfg.auditoria_anulaciones && cfg.justificacion_anulacion,
+  };
+}
+
+export function sincronizarPinEnviar(cfg: AppConfig): AppConfig {
+  return { ...cfg, pin_al_enviar: cfg.pin_habilitado && cfg.pin_momento === "enviar" };
 }
 
 export function configPath(dir: string): string {
@@ -59,5 +98,5 @@ export function loadConfig(dir: string): AppConfig {
     return cfg;
   }
   const raw = JSON.parse(readFileSync(file, "utf8")) as Partial<AppConfig>;
-  return { ...defaultConfig(), ...raw };
+  return normalizarConfig({ ...defaultConfig(), ...raw });
 }

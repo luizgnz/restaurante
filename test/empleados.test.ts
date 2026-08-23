@@ -39,6 +39,10 @@ describe("empleados", () => {
     expect(j.nombre).toBe("Jefa");
     await expect(exigirPin(db, "1111", "abrir_sesion")).rejects.toMatchObject({ codigo: "sin_derecho" });
     expect((await exigirPin(db, "2222", "abrir_sesion")).nombre).toBe("Jefa");
+    await expect(exigirPin(db, "1111", "anular")).rejects.toMatchObject({ codigo: "sin_derecho" });
+    await expect(exigirPin(db, "1111", "crear_pedido")).rejects.toMatchObject({ codigo: "sin_derecho" });
+    expect((await exigirPin(db, "1234", "anular")).nombre).toBe("Ana");
+    expect((await exigirPin(db, "1234", "crear_pedido")).nombre).toBe("Ana");
     db.close();
   });
 });

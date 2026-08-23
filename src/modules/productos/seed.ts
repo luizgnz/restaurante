@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { ordenarMesas } from "../salon/orden.ts";
 
 export type SeedIds = {
   pan: number;
@@ -64,22 +65,23 @@ export function seedCartaDemo(db: Database.Database): SeedIds {
 
   const piso = Number(db.prepare("INSERT INTO pisos (nombre) VALUES (?)").run("Salón").lastInsertRowid);
   const mesa7 = asegurarPlanoDemo(db, piso);
+  asegurarProductosDemo(db);
 
   return { pan, carne, queso, lechuga, hamburguesa, jugo, agua, mesa7 };
 }
 
-const LAYOUT: { numero: number; asientos: number; x: number; y: number; forma: "square" | "round"; ancho: number; alto: number }[] = [
-  { numero: 1, asientos: 2, x: 8, y: 12, forma: "round", ancho: 84, alto: 84 },
-  { numero: 2, asientos: 4, x: 26, y: 12, forma: "square", ancho: 92, alto: 92 },
-  { numero: 3, asientos: 4, x: 46, y: 12, forma: "square", ancho: 92, alto: 92 },
-  { numero: 4, asientos: 2, x: 66, y: 12, forma: "round", ancho: 84, alto: 84 },
-  { numero: 5, asientos: 6, x: 8, y: 42, forma: "square", ancho: 120, alto: 88 },
-  { numero: 6, asientos: 4, x: 32, y: 42, forma: "square", ancho: 92, alto: 92 },
-  { numero: 7, asientos: 4, x: 52, y: 42, forma: "round", ancho: 96, alto: 96 },
-  { numero: 8, asientos: 4, x: 72, y: 42, forma: "square", ancho: 92, alto: 92 },
-  { numero: 9, asientos: 2, x: 8, y: 72, forma: "round", ancho: 84, alto: 84 },
-  { numero: 10, asientos: 8, x: 36, y: 72, forma: "square", ancho: 150, alto: 88 },
-];
+const LAYOUT = ordenarMesas([
+  { numero: 1, asientos: 2 },
+  { numero: 2, asientos: 4 },
+  { numero: 3, asientos: 4 },
+  { numero: 4, asientos: 2 },
+  { numero: 5, asientos: 6 },
+  { numero: 6, asientos: 4 },
+  { numero: 7, asientos: 4 },
+  { numero: 8, asientos: 4 },
+  { numero: 9, asientos: 2 },
+  { numero: 10, asientos: 8 },
+]);
 
 export function asegurarPlanoDemo(db: Database.Database, pisoId?: number): number {
   const piso =
@@ -96,12 +98,52 @@ export function asegurarPlanoDemo(db: Database.Database, pisoId?: number): numbe
   for (const t of LAYOUT) {
     const existing = db.prepare("SELECT id FROM mesas WHERE numero = ?").get(t.numero) as { id: number } | undefined;
     if (existing) {
-      update.run(t.asientos, t.x, t.y, t.forma, t.ancho, t.alto, t.numero);
+      update.run(t.asientos, t.pos_x, t.pos_y, t.forma, t.ancho, t.alto, t.numero);
       if (t.numero === 7) mesa7 = existing.id;
     } else {
-      const id = Number(insert.run(piso, t.numero, t.asientos, t.x, t.y, t.forma, t.ancho, t.alto).lastInsertRowid);
+      const id = Number(insert.run(piso, t.numero, t.asientos, t.pos_x, t.pos_y, t.forma, t.ancho, t.alto).lastInsertRowid);
       if (t.numero === 7) mesa7 = id;
     }
   }
   return mesa7;
+}
+
+function fotoSvg(color: string, letra: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="128" height="128" rx="20" fill="${color}"/><text x="64" y="78" text-anchor="middle" font-size="48" fill="#ffffff" font-family="sans-serif">${letra}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+export function asegurarProductosDemo(db: Database.Database): void {
+  function categoria(nombre: string, estacion: string): number {
+    const row = db.prepare("SELECT id FROM categorias_pos WHERE nombre = ?").get(nombre) as { id: number } | undefined;
+    if (row) return row.id;
+    return Number(db.prepare("INSERT INTO categorias_pos (nombre, estacion) VALUES (?, ?)").run(nombre, estacion).lastInsertRowid);
+  }
+  const principales = categoria("Principales", "cocina");
+  const bebidas = categoria("Bebidas", "cocina");
+  const postres = categoria("Postres", "cocina");
+  const carta = [
+    { nombre: "Hamburguesa", precio: 8900, categoria: principales, letra: "H", color: "#8b4513" },
+    { nombre: "Completo", precio: 4500, categoria: principales, letra: "C", color: "#c45c26" },
+    { nombre: "Empanada", precio: 1800, categoria: principales, letra: "E", color: "#d4a017" },
+    { nombre: "Papas fritas", precio: 2500, categoria: principales, letra: "P", color: "#e0a106" },
+    { nombre: "Ensalada César", precio: 5200, categoria: principales, letra: "S", color: "#3d7a3d" },
+    { nombre: "Pizza margarita", precio: 8900, categoria: principales, letra: "Z", color: "#b33c3c" },
+    { nombre: "Sopa del día", precio: 3200, categoria: principales, letra: "O", color: "#b56b2a" },
+    { nombre: "Jugo", precio: 2500, categoria: bebidas, letra: "J", color: "#e07a2f" },
+    { nombre: "Agua con gas", precio: 1500, categoria: bebidas, letra: "A", color: "#3d8ea8" },
+    { nombre: "Café", precio: 1800, categoria: bebidas, letra: "F", color: "#4a2c1a" },
+    { nombre: "Cerveza", precio: 2800, categoria: bebidas, letra: "V", color: "#c9a227" },
+    { nombre: "Flan", precio: 2200, categoria: postres, letra: "L", color: "#c48a3a" },
+  ];
+  const insert = db.prepare(
+    "INSERT INTO productos (nombre, precio_centavos, categoria_id, tipo_consumo, disponible_en_pos, activo, color, foto_data, rastrear_inventario) VALUES (?, ?, ?, 'no_almacenable', 1, 1, ?, ?, 0)",
+  );
+  const update = db.prepare("UPDATE productos SET foto_data = ?, color = ?, disponible_en_pos = 1, activo = 1 WHERE id = ?");
+  for (const p of carta) {
+    const foto = fotoSvg(p.color, p.letra);
+    const existing = db.prepare("SELECT id FROM productos WHERE nombre = ?").get(p.nombre) as { id: number } | undefined;
+    if (existing) update.run(foto, p.color, existing.id);
+    else insert.run(p.nombre, p.precio, p.categoria, p.color, foto);
+  }
 }

@@ -1,21 +1,48 @@
-export type PrintJobKind = "comanda" | "precuenta" | "anulacion";
+export type PrintJobKind = "comanda" | "precuenta" | "anulacion" | "correccion";
 
 export type PrinterPort = {
   print(bytes: Uint8Array): Promise<void>;
 };
 
-export type TicketLinea = { nombre: string; cantidad: number; precio_centavos?: number };
+export type TicketLinea = { nombre: string; cantidad: number; precio_centavos?: number; nota?: string | null };
 
 export type TicketComanda = {
   mesaNumero: number | null;
+  ordenNumero?: number | null;
   mesero: string;
+  indicaciones?: string | null;
   lineas: TicketLinea[];
+};
+
+export type TicketDiferencia = {
+  nombre: string;
+  delta: number;
+  cantidadAnterior: number;
+  cantidadNueva: number;
+  notaAnterior?: string | null;
+  notaNueva?: string | null;
+};
+
+export type TicketCorreccion = {
+  mesaNumero: number | null;
+  ordenNumero: number;
+  mesero: string;
+  esAnulacion: boolean;
+  indicaciones?: string | null;
+  /** True cuando esta corrección cambió (o borró) las indicaciones. */
+  indicacionesCambiadas?: boolean;
+  lineas: TicketDiferencia[];
 };
 
 export type TicketPrecuenta = {
   mesaNumero: number | null;
   mesero: string;
-  cubiertos: number;
+  /**
+   * Los cubiertos son del pedido legacy. Una cuenta no los guarda, así que el
+   * modelo nuevo los deja sin definir y el ticket omite la línea en vez de
+   * imprimir un cero que nadie contó.
+   */
+  cubiertos?: number;
   lineas: TicketLinea[];
   totalCentavos: number;
   reimpresion?: boolean;

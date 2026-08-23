@@ -8,6 +8,8 @@ describe("seed carta", () => {
     const db = openTestDb();
     const ids = seedCartaDemo(db);
     expect(armableDeProducto(db, ids.hamburguesa)).toBeGreaterThanOrEqual(5);
+    const conFoto = db.prepare("SELECT count(*) AS c FROM productos WHERE disponible_en_pos = 1 AND foto_data IS NOT NULL").get() as { c: number };
+    expect(conFoto.c).toBeGreaterThanOrEqual(10);
     db.close();
   });
 });

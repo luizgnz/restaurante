@@ -1,11 +1,11 @@
 import type Database from "better-sqlite3";
-import { renderAnulacion, renderComanda, renderPrecuenta } from "./escpos.ts";
-import type { PrintJobKind, PrinterPort, TicketComanda, TicketPrecuenta } from "./types.ts";
+import { renderAnulacion, renderComanda, renderCorreccion, renderPrecuenta } from "./escpos.ts";
+import type { PrintJobKind, PrinterPort, TicketComanda, TicketCorreccion, TicketPrecuenta } from "./types.ts";
 
 export function encolarJob(
   db: Database.Database,
   kind: PrintJobKind,
-  payload: TicketComanda | TicketPrecuenta,
+  payload: TicketComanda | TicketPrecuenta | TicketCorreccion,
 ): number {
   const info = db
     .prepare(
@@ -16,9 +16,10 @@ export function encolarJob(
 }
 
 function bytesDeJob(kind: string, payload: string): Uint8Array {
-  const data = JSON.parse(payload) as TicketComanda & TicketPrecuenta;
+  const data = JSON.parse(payload) as TicketComanda & TicketPrecuenta & TicketCorreccion;
   if (kind === "comanda") return renderComanda(data);
   if (kind === "precuenta") return renderPrecuenta(data);
+  if (kind === "correccion") return renderCorreccion(data);
   return renderAnulacion(data);
 }
 

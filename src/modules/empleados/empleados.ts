@@ -2,7 +2,7 @@ import type Database from "better-sqlite3";
 import { hashPin, verifyPin } from "./pin.ts";
 
 export type Derecho = "minimo" | "basico" | "avanzado";
-export type AccionPin = "enviar" | "precuenta" | "caja" | "abrir_sesion";
+export type AccionPin = "enviar" | "precuenta" | "caja" | "abrir_sesion" | "crear_pedido" | "anular";
 
 export type Empleado = {
   id: number;

@@ -3,6 +3,7 @@ export type LineaPedido = {
   nombre: string;
   cantidad: number;
   estado: string;
+  nota?: string | null;
   sePuedeEditar: boolean;
 };
 
@@ -11,64 +12,54 @@ export type PedidoEnCurso = {
   mesa: number | null;
   mesero: string;
   hace: string;
+  espera_min?: number;
+  abierto_en?: string;
+  estado?: string;
+  indicaciones?: string | null;
   lineas: LineaPedido[];
 };
 
-type Props = {
-  tabletCocina: boolean;
-  pedidos: PedidoEnCurso[];
-  onAbrir: (id: number) => void;
-  onQuitar: (lineaId: number) => void;
-  onEnProceso: (lineaId: number) => void;
-  onCantidad?: (lineaId: number, cantidad: number) => void;
-  onTablet: (on: boolean) => void;
+const ESTADO: Record<string, string> = {
+  borrador: "Sin completar",
+  parcialmente_enviado: "Sin completar",
+  enviado: "En cocina",
+  precuenta_emitida: "Precuenta emitida",
 };
 
-export function Pedidos({ tabletCocina, pedidos, onAbrir, onQuitar, onEnProceso, onCantidad, onTablet }: Props) {
+type Props = {
+  pedidos: PedidoEnCurso[];
+  onAbrir: (id: number) => void;
+  onEnProceso: (lineaId: number) => void;
+  mostrarEnProceso?: boolean;
+};
+
+export function Pedidos({ pedidos, onAbrir, onEnProceso, mostrarEnProceso }: Props) {
   return (
     <section>
-      <h1>Pedidos</h1>
-      <label className="switch-tablet">
-        <input type="checkbox" checked={tabletCocina} onChange={(e) => onTablet(e.target.checked)} />
-        Tablet en cocina (permite anular o cambiar si aún no está en proceso)
-      </label>
-      {!tabletCocina ? (
-        <p className="login-odoo__ayuda">Ticket en papel: lo enviado no se anula ni se cambia (no hay cómo verificarlo en cocina).</p>
-      ) : null}
+      <h1>Órdenes</h1>
       <div className="kds">
         {pedidos.map((p) => (
           <article className="tarjeta" key={p.id}>
             <button className="pedido-cabecera" onClick={() => onAbrir(p.id)}>
-              <strong>{p.mesa ? `Mesa ${p.mesa}` : "Sin mesa"}</strong>
+              <strong>{p.mesa ? `Mesa ${p.mesa}` : "Sin mesa asignada"}</strong>
+              <span className="pedido-estado">{p.estado ? (ESTADO[p.estado] ?? p.estado) : "Sin completar"}</span>
               <span>
                 {p.mesero} · {p.hace}
               </span>
             </button>
+            {p.indicaciones ? <p className="pedido-indicaciones">{p.indicaciones}</p> : null}
             {p.lineas.map((l) => (
               <div className="pedido-linea" key={l.id}>
                 <span>
                   {l.cantidad} × {l.nombre}
+                  {l.nota ? ` (${l.nota})` : ""}
                 </span>
-                {l.sePuedeEditar && onCantidad ? (
-                  <>
-                    <button type="button" onClick={() => onCantidad(l.id, l.cantidad - 1)}>
-                      −
-                    </button>
-                    <button type="button" onClick={() => onCantidad(l.id, l.cantidad + 1)}>
-                      +
-                    </button>
-                  </>
-                ) : null}
-                {l.sePuedeEditar ? (
-                  <button className="peligro" onClick={() => onQuitar(l.id)}>
-                    Anular
-                  </button>
-                ) : null}
-                {tabletCocina && l.estado === "enviada" ? (
+                {mostrarEnProceso && l.estado === "enviada" ? (
                   <button onClick={() => onEnProceso(l.id)}>En proceso</button>
                 ) : null}
               </div>
             ))}
+            {p.lineas.length === 0 ? <p className="login-odoo__ayuda">Sin productos aún</p> : null}
           </article>
         ))}
         {pedidos.length === 0 ? <p>No hay pedidos en curso</p> : null}

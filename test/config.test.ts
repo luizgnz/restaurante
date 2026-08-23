@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { defaultConfig, loadConfig, saveConfig } from "../src/config.ts";
+import { defaultConfig, loadConfig, normalizarConfig, saveConfig } from "../src/config.ts";
 
 describe("config", () => {
   it("default: puerto 8080, extra nube off, inventario reserva→firme en caja", () => {
@@ -19,7 +19,18 @@ describe("config", () => {
     expect(c.precuenta_obligatoria_antes_de_caja).toBe(true);
     expect(c.liberar_mesa_cuando).toBe("al_enviar_a_caja");
     expect(c.bloqueo_inactividad_seg).toBe(60);
+    expect(c.barra_ultimos_pedidos).toBe(true);
+    expect(c.barra_atrasados).toBe(true);
+    expect(c.nombre_local).toBe("Restaurante");
+    expect(c.logo_data).toBeNull();
+    expect(c.tipografia).toBe("sans");
+    expect(c.tamano_ui).toBe("normal");
+    expect(c.pin_habilitado).toBe(true);
+    expect(c.pin_momento).toBe("enviar");
+    expect(c.confirmar_comanda).toBe(false);
+    expect(c.pin_al_anular).toBe(true);
   });
+
 
   it("crea config.json con defaults si no existe", () => {
     const dir = mkdtempSync(path.join(tmpdir(), "rest-cfg-"));
@@ -34,5 +45,20 @@ describe("config", () => {
     const c = loadConfig(dir);
     saveConfig(dir, { ...c, puerto: 9090 });
     expect(loadConfig(dir).puerto).toBe(9090);
+  });
+
+  it("desactiva auditoría y justificación por defecto", () => {
+    const cfg = defaultConfig();
+    expect(cfg.auditoria_anulaciones).toBe(false);
+    expect(cfg.justificacion_anulacion).toBe(false);
+  });
+
+  it("no permite justificación activa sin auditoría", () => {
+    const cfg = normalizarConfig({
+      ...defaultConfig(),
+      auditoria_anulaciones: false,
+      justificacion_anulacion: true,
+    });
+    expect(cfg.justificacion_anulacion).toBe(false);
   });
 });

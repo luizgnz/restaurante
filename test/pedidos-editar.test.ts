@@ -93,4 +93,36 @@ describe("editar o anular enviado", () => {
     expect(job.payload).toMatch(/Mesa 7|mesaNumero.:7/);
     db.close();
   });
+
+  it("el flujo legacy no crea correcciones ni comandas del modelo nuevo", async () => {
+    const db = openTestDb();
+    const ids = seedCartaDemo(db);
+    await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });
+    const { pedidoId } = abrirMesa(db, { mesaId: ids.mesa7, cubiertos: 4, preset: "salon", meseroId: 1 });
+    const { lineaId } = agregarLinea(db, pedidoId, { productoId: ids.hamburguesa, cantidad: 2 });
+    await enviarACocina(db, pedidoId, "1234", new MemoryPrinter(), defaultConfig());
+
+    cambiarCantidad(db, lineaId, 1, { ...defaultConfig(), tablet_cocina: true });
+    quitarLinea(db, lineaId, { ...defaultConfig(), tablet_cocina: true });
+
+    expect(db.prepare("SELECT count(*) AS c FROM orden_correcciones").get() as { c: number }).toEqual({ c: 0 });
+    expect(db.prepare("SELECT count(*) AS c FROM orden_correccion_lineas").get() as { c: number }).toEqual({ c: 0 });
+    expect(db.prepare("SELECT count(*) AS c FROM auditoria_anulaciones").get() as { c: number }).toEqual({ c: 0 });
+    expect(db.prepare("SELECT count(*) AS c FROM cuentas").get() as { c: number }).toEqual({ c: 0 });
+    const comandas = db.prepare("SELECT tipo, orden_id, correccion_id FROM comandas").all() as {
+      tipo: string;
+      orden_id: number | null;
+      correccion_id: number | null;
+    }[];
+    expect(comandas).toEqual([{ tipo: "legacy", orden_id: null, correccion_id: null }]);
+    const kinds = (db.prepare("SELECT kind FROM print_jobs ORDER BY id").all() as { kind: string }[]).map(
+      (j) => j.kind,
+    );
+    expect(kinds).toEqual(["comanda", "anulacion"]);
+    expect(
+      (db.prepare("SELECT etapa FROM comanda_lineas WHERE pedido_linea_id = ?").get(lineaId) as { etapa: string })
+        .etapa,
+    ).toBe("cancelado");
+    db.close();
+  });
 });

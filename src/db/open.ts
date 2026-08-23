@@ -8,6 +8,7 @@ export function openSalonDb(
 ): Database.Database {
   mkdirSync(path.dirname(filePath), { recursive: true });
   const db = new Database(filePath);
+  db.pragma("foreign_keys = ON");
   db.pragma("journal_mode = WAL");
   db.pragma("synchronous = FULL");
   if (platform === "darwin") {
