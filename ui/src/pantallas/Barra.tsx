@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ClipboardList, LayoutGrid } from "lucide-react";
 
 export type Destino =
   | "plano"
@@ -77,17 +78,19 @@ export function Barra({ vista, marca, logo, nombre, onMesas, onOrdenes, onCerrar
   }, [cuentaAbierta, menuAbierto]);
 
   return (
-    <nav>
-      <button type="button" className={`tactil ${vista === "plano" ? "is-on" : ""}`} title="Mesas (M)" onClick={onMesas}>
-        Mesas
+    <nav className="pos-nav" aria-label="Navegación principal">
+      <button type="button" className={`tactil pos-nav__item ${vista === "plano" ? "is-on" : ""}`} title="Mesas (M)" onClick={onMesas}>
+        <LayoutGrid size={20} aria-hidden="true" />
+        <span>Mesas</span>
       </button>
       <button
         type="button"
-        className={`tactil ${vista === "pedidos" ? "is-on" : ""}`}
+        className={`tactil pos-nav__item ${vista === "pedidos" ? "is-on" : ""}`}
         title="Órdenes (O)"
         onClick={onOrdenes}
       >
-        Órdenes
+        <ClipboardList size={20} aria-hidden="true" />
+        <span>Órdenes</span>
       </button>
       <span className="pos-odoo__marca">
         {logo ? <img src={logo} alt="" className="pos-odoo__logo" /> : null}

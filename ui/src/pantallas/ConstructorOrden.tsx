@@ -1,5 +1,9 @@
-import { Send, Trash2 } from "lucide-react";
+import { ChevronDown, Send, ShoppingBag, Trash2, X } from "lucide-react";
 import { useState } from "react";
+import type { CSSProperties } from "react";
+import { Badge } from "@/components/ui/badge.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Card } from "@/components/ui/card.tsx";
 import type { BorradorOrden } from "../lib/borradores.ts";
 import { ModalArmadoPlato, type SeleccionArmado, type SlotArmadoUi, type VarianteArmadoUi } from "./ModalArmadoPlato.tsx";
 
@@ -94,8 +98,10 @@ export function ConstructorOrden({
   const [enviando, setEnviando] = useState(false);
   const [lineasUi, setLineasUi] = useState(() => crearLineasConstructor(borrador.lineas));
   const [armado, setArmado] = useState<{ producto: ProductoCarta; slots: SlotArmadoUi[] } | null>(null);
+  const [resumenMovilAbierto, setResumenMovilAbierto] = useState(false);
   const titulo = mesaFija ? `Nueva orden · Mesa #${mesaFija.numero}` : "Nueva orden";
   const mesaId = mesaFija?.id ?? borrador.mesaId;
+  const cantidadProductos = lineasUi.reduce((total, linea) => total + Math.max(0, linea.cantidad), 0);
 
   function cambiar(patch: Partial<BorradorOrden>) {
     onCambiar({ ...borrador, ...patch, actualizadoEn: new Date().toISOString() });
@@ -168,9 +174,14 @@ export function ConstructorOrden({
   }
 
   return (
+    <>
     <section className="constructor-orden">
       <header className="constructor-orden__cabecera">
-        <h1>{titulo}</h1>
+        <div>
+          <span className="constructor-orden__eyebrow">Toma de pedido</span>
+          <h1>{titulo}</h1>
+          <p>Selecciona productos y revisa la orden antes de enviarla.</p>
+        </div>
         {!mesaFija ? (
           <label>
             Mesa
@@ -193,8 +204,23 @@ export function ConstructorOrden({
       </header>
 
       <div className="constructor-orden__cuerpo">
-        <aside className="tarjeta constructor-orden__resumen">
-          <h2>Orden nueva</h2>
+        <Card className={`tarjeta constructor-orden__resumen${resumenMovilAbierto ? " is-mobile-open" : ""}`}>
+          <div className="constructor-orden__resumen-cabecera">
+            <div>
+              <span className="constructor-orden__eyebrow">Resumen</span>
+              <h2>Orden nueva</h2>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="constructor-orden__cerrar-movil"
+              aria-label="Cerrar orden"
+              onClick={() => setResumenMovilAbierto(false)}
+            >
+              <X size={20} aria-hidden="true" />
+            </Button>
+          </div>
           {lineasUi
             .filter((linea) => linea.cantidad > 0)
             .map((linea) => {
@@ -205,14 +231,15 @@ export function ConstructorOrden({
                     <strong>
                       {linea.cantidad} × {producto?.nombre ?? `Producto ${linea.productoId}`}
                     </strong>
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       className="icono-secundario"
                       title="Quitar producto"
                       onClick={() => cambiarLineas(lineasUi.filter((item) => item.idUi !== linea.idUi))}
                     >
                       <Trash2 size={18} aria-hidden="true" />
-                    </button>
+                    </Button>
                   </div>
                   {linea.contornosTexto ? <span className="pedido-nota-fija">{linea.contornosTexto}</span> : null}
                 </div>
@@ -231,21 +258,29 @@ export function ConstructorOrden({
             />
           </label>
           <div className="constructor-orden__acciones">
-            <button type="button" onClick={onCancelar}>
+            <Button type="button" variant="outline" onClick={onCancelar}>
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               className="primario"
               disabled={!mesaId || lineasPersistibles(lineasUi).length === 0 || enviando}
               onClick={enviar}
             >
               <Send size={18} aria-hidden="true" /> {enviando ? "Enviando…" : "Enviar"}
-            </button>
+            </Button>
           </div>
-        </aside>
+        </Card>
 
-        <div className="carta constructor-orden__carta">
+        <div className="constructor-orden__catalogo">
+          <div className="constructor-orden__catalogo-cabecera">
+            <div>
+              <span className="constructor-orden__eyebrow">Carta</span>
+              <h2>Productos</h2>
+            </div>
+            <Badge variant="secondary">{productos.length} disponibles</Badge>
+          </div>
+          <div className="carta constructor-orden__carta">
           {productos.map((producto) => {
             const linea = lineasUi.find((item) => item.productoId === producto.id);
             return (
@@ -254,7 +289,7 @@ export function ConstructorOrden({
                 role="button"
                 tabIndex={0}
                 className={`carta__item${linea ? " is-on" : ""}`}
-                style={producto.color ? { borderColor: producto.color } : undefined}
+                style={producto.color ? ({ "--product-color": producto.color } as CSSProperties) : undefined}
                 onClick={() => tocarProducto(producto)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -264,9 +299,12 @@ export function ConstructorOrden({
                 }}
               >
                 {producto.foto_data ? <img src={producto.foto_data} alt="" className="carta__foto" /> : null}
-                <strong>{producto.nombre}</strong>
-                {producto.codigo ? <span>{producto.codigo}</span> : null}
-                <span>${producto.precio_centavos}</span>
+                <span className="carta__contenido">
+                  <strong>{producto.nombre}</strong>
+                  {producto.codigo ? <span>{producto.codigo}</span> : null}
+                  <span className="carta__precio">${producto.precio_centavos}</span>
+                  {producto.configurable ? <Badge>Personalizable</Badge> : null}
+                </span>
                 {linea ? (
                   <span className="carta__cantidad" onClick={(event) => event.stopPropagation()}>
                     <button
@@ -289,8 +327,37 @@ export function ConstructorOrden({
               </div>
             );
           })}
+          </div>
         </div>
       </div>
+      <Button
+        type="button"
+        size="lg"
+        className="constructor-orden__abrir-resumen"
+        onClick={() => setResumenMovilAbierto(true)}
+      >
+        <ShoppingBag size={20} aria-hidden="true" />
+        Ver orden · {cantidadProductos} {cantidadProductos === 1 ? "producto" : "productos"}
+        <ChevronDown size={18} aria-hidden="true" />
+      </Button>
+      {resumenMovilAbierto ? (
+        <button
+          type="button"
+          className="constructor-orden__velo"
+          aria-label="Cerrar resumen"
+          onClick={() => setResumenMovilAbierto(false)}
+        />
+      ) : null}
     </section>
+    {armado && contornos ? (
+      <ModalArmadoPlato
+        productoNombre={armado.producto.nombre}
+        slots={armado.slots}
+        variantes={contornos.variantes}
+        onConfirmar={confirmarArmado}
+        onCancelar={() => setArmado(null)}
+      />
+    ) : null}
+    </>
   );
 }

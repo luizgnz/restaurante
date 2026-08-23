@@ -1,5 +1,8 @@
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Clock3, Pencil, Plus, ReceiptText, Send, Trash2, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Card } from "@/components/ui/card.tsx";
 
 export type LineaOrdenUi = {
   lineaClave: string;
@@ -65,49 +68,60 @@ export function CuentaMesa({
     <section className="cuenta-mesa">
       <header className="cuenta-mesa__cabecera">
         <div>
+          <span className="cuenta-mesa__eyebrow">Servicio en curso</span>
           <h1>Cuenta de mesa #{cuenta.mesa.numero}</h1>
-          <p className="login-odoo__ayuda">
-            {cuenta.estado.replaceAll("_", " ")} · Total ${cuenta.totalCentavos}
-          </p>
+          <div className="cuenta-mesa__resumen">
+            <Badge variant={cuenta.estado === "precuenta_emitida" ? "warning" : "success"}>
+              {cuenta.estado.replaceAll("_", " ")}
+            </Badge>
+            <strong>Total ${cuenta.totalCentavos}</strong>
+          </div>
         </div>
         {aceptaConsumo ? (
-          <button type="button" className="primario" onClick={onNuevaOrden}>
+          <Button type="button" size="lg" className="primario" onClick={onNuevaOrden}>
             <Plus size={18} aria-hidden="true" /> Nueva orden
-          </button>
+          </Button>
         ) : null}
       </header>
 
       <div className="cuenta-mesa__ordenes">
         {cuenta.ordenes.map((orden) => (
-          <article className="tarjeta cuenta-orden" key={orden.id}>
+          <Card className="tarjeta cuenta-orden" key={orden.id}>
             <header className="cuenta-orden__cabecera">
               <div>
                 <h2>Orden #{orden.numero}</h2>
-                <span className="pedido-estado">{orden.estado}</span>
+                <Badge variant={orden.estado === "anulada" ? "danger" : orden.estado === "corregida" ? "warning" : "default"}>
+                  {orden.estado}
+                </Badge>
               </div>
               {aceptaConsumo && orden.estado !== "anulada" ? (
                 <div className="cuenta-orden__acciones">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     className="icono-secundario"
                     title="Editar orden"
                     onClick={() => onEditarOrden(orden)}
                   >
                     <Pencil size={19} aria-hidden="true" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     className="icono-secundario peligro"
                     title="Anular orden"
                     onClick={() => onAnularOrden(orden)}
                   >
                     <Trash2 size={19} aria-hidden="true" />
-                  </button>
+                  </Button>
                 </div>
               ) : null}
             </header>
             <p className="cuenta-orden__meta">
-              {orden.empleado} · {new Date(orden.creadaEn).toLocaleString("es")}
+              <UserRound size={15} aria-hidden="true" /> {orden.empleado}
+              <Clock3 size={15} aria-hidden="true" /> {new Date(orden.creadaEn).toLocaleString("es")}
             </p>
             {orden.lineas.filter((linea) => linea.cantidad > 0).map((linea) => (
               <div className="pedido-linea" key={linea.lineaClave}>
@@ -122,7 +136,7 @@ export function CuentaMesa({
               </div>
             ))}
             {orden.indicaciones ? <p className="pedido-indicaciones">Indicaciones: {orden.indicaciones}</p> : null}
-          </article>
+          </Card>
         ))}
       </div>
 
@@ -144,16 +158,16 @@ export function CuentaMesa({
       </label>
 
       <footer className="cuenta-mesa__pie">
-        <strong>Total ${cuenta.totalCentavos}</strong>
+        <div><span>Total de la cuenta</span><strong>${cuenta.totalCentavos}</strong></div>
         {aceptaConsumo ? (
           <>
-            <button type="button" onClick={onPrecuenta}>
-              Precuenta
-            </button>
+            <Button type="button" variant="outline" onClick={onPrecuenta}>
+              <ReceiptText size={18} aria-hidden="true" /> Precuenta
+            </Button>
             {puedeCerrar ? (
-              <button type="button" className="primario" onClick={onCerrarCuenta}>
-                Cerrar cuenta
-              </button>
+              <Button type="button" className="primario" onClick={onCerrarCuenta}>
+                <Send size={18} aria-hidden="true" /> Cerrar cuenta
+              </Button>
             ) : null}
           </>
         ) : null}

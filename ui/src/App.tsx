@@ -174,6 +174,10 @@ export function App() {
     document.documentElement.dataset.tamano = tamanoUi;
   }, [tipografia, tamanoUi]);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [vista, contextoOrden?.tipo, cuentaActual?.id]);
+
   function conEspera(lista: CuentaEnCursoUi[]): PedidoBarra[] {
     return lista.map((cuenta) => {
       const abiertaEn = cuenta.abiertaEn ?? new Date().toISOString();

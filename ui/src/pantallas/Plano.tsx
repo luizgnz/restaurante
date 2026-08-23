@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { interpretarTecla } from "../../../src/modules/salon/teclado.ts";
 import type { NivelEspera } from "../../../src/modules/tiempo.ts";
+import { Armchair, Clock3, Plus, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge.tsx";
+import { Button } from "@/components/ui/button.tsx";
 
 export type Mesa = {
   id: number;
@@ -146,15 +149,28 @@ export function Plano({
 
   const listaPisos = pisos && pisos.length > 0 ? pisos : [{ id: pisoId ?? 0, nombre: piso }];
   const mesasDelPiso = mesas.filter((m) => pisoId == null || m.piso_id == null || m.piso_id === pisoId);
+  const libres = mesasDelPiso.filter((mesa) => mesa.estado === "libre").length;
+  const ocupadas = mesasDelPiso.length - libres;
 
   return (
     <section className="salon-odoo">
+      <div className="salon-odoo__resumen">
+        <div>
+          <span className="salon-odoo__eyebrow">Punto de venta</span>
+          <h1>{piso}</h1>
+          <p>Selecciona una mesa para comenzar o continuar el servicio.</p>
+        </div>
+        <div className="salon-odoo__metricas" aria-label="Resumen del salón">
+          <div><Armchair size={19} aria-hidden="true" /><strong>{libres}</strong><span>libres</span></div>
+          <div><Clock3 size={19} aria-hidden="true" /><strong>{ocupadas}</strong><span>en servicio</span></div>
+        </div>
+      </div>
       <header className="salon-odoo__pisos">
         <div className="salon-odoo__pisos-izq">
           {onNuevoPedido ? (
-            <button type="button" className="primario tactil" title="Nueva orden (N)" onClick={onNuevoPedido}>
-              + Nueva orden
-            </button>
+            <Button type="button" size="lg" className="primario tactil" title="Nueva orden (N)" onClick={onNuevoPedido}>
+              <Plus size={20} aria-hidden="true" /> Nueva orden
+            </Button>
           ) : null}
         </div>
         <div className="salon-odoo__pisos-centro" role="tablist" aria-label="Pisos">
@@ -176,9 +192,9 @@ export function Plano({
           })}
         </div>
         <div className="salon-odoo__pisos-der">
-        <button type="button" className="tactil numeral" title="Elegir mesa por número (#)" onClick={abrirBuscar}>
-          #
-        </button>
+        <Button type="button" variant="outline" size="icon" className="tactil numeral" title="Elegir mesa por número (#)" onClick={abrirBuscar}>
+          <Search size={21} aria-hidden="true" /><span className="sr-only">#</span>
+        </Button>
         {onToggleUltimos ? (
           <button
             type="button"
@@ -262,7 +278,13 @@ export function Plano({
             onClick={() => onMesa(m)}
           >
             <span className="mesa-odoo__num">Mesa {m.numero}</span>
-            <span className="mesa-odoo__meta">{ETIQUETA[m.estado] ?? m.estado}</span>
+            <Badge
+              className="mesa-odoo__meta"
+              variant={m.estado === "libre" ? "success" : m.estado === "precuenta" ? "warning" : "default"}
+            >
+              {ETIQUETA[m.estado] ?? m.estado}
+            </Badge>
+            <span className="mesa-odoo__asientos">{m.asientos} asientos</span>
           </button>
         ))}
       </div>

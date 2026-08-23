@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { Check, Minus, Sparkles, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge.tsx";
+import { Button } from "@/components/ui/button.tsx";
 
 export type SlotArmadoUi = {
   posicion: number;
@@ -71,12 +74,25 @@ export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar
       }}
     >
       <div className="modal-caja armado-plato">
-        <h2>{productoNombre}</h2>
+        <header className="armado-plato__cabecera">
+          <div>
+            <span className="armado-plato__eyebrow">Personaliza tu plato</span>
+            <h2>{productoNombre}</h2>
+            <p>Elige una opción en cada sección. Puedes agregar extras donde estén disponibles.</p>
+          </div>
+          <Button type="button" variant="ghost" size="icon" aria-label="Cerrar armado" onClick={onCancelar}>
+            <X size={21} aria-hidden="true" />
+          </Button>
+        </header>
+        <div className="armado-plato__progreso" aria-label="Progreso del armado">
+          <span>{Object.values(elegidas).filter((valor) => valor !== undefined).length} de {slots.length} selecciones</span>
+          <div><i style={{ width: `${slots.length ? (Object.values(elegidas).filter((valor) => valor !== undefined).length / slots.length) * 100 : 0}%` }} /></div>
+        </div>
         {slots.map((slot) => {
           const gruposDistintos = slot.grupos.length > 1;
           return (
             <fieldset className="armado-plato__slot" key={slot.posicion}>
-              <legend>{slot.nombre}</legend>
+              <legend><span>{slot.posicion}</span>{slot.nombre}{elegidas[slot.posicion] ? <Check size={18} aria-hidden="true" /> : null}</legend>
               {slot.grupos.map((grupo) => {
                 const delGrupo = variantesDe(slot).filter((variante) => variante.grupoId === grupo.id);
                 if (delGrupo.length === 0) return null;
@@ -87,8 +103,9 @@ export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar
                       {delGrupo.map((variante) => {
                         const elegida = elegidas[slot.posicion] === variante.id;
                         return (
-                          <button
+                          <Button
                             type="button"
+                            variant={elegida ? "default" : "outline"}
                             key={variante.id}
                             className={`tactil${elegida ? " is-on" : ""}`}
                             aria-pressed={elegida}
@@ -98,7 +115,7 @@ export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar
                             {variante.suplementoCentavos > 0 ? (
                               <span className="armado-plato__precio"> +{precio(variante.suplementoCentavos)}</span>
                             ) : null}
-                          </button>
+                          </Button>
                         );
                       })}
                     </div>
@@ -107,16 +124,19 @@ export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar
               })}
               {slot.permiteExtra ? (
                 <div className="armado-plato__extras">
+                  <p><Sparkles size={16} aria-hidden="true" /> Extras opcionales</p>
                   {variantesDe(slot).filter((variante) => variante.extraCentavos > 0).map((variante) => (
-                    <button
+                    <Button
                       type="button"
                       key={`extra-${variante.id}`}
+                      variant="secondary"
+                      size="sm"
                       className="armado-plato__extra"
                       onClick={() => setExtras([...extras, { slotPosicion: slot.posicion, varianteId: variante.id }])}
                     >
                       + Extra {variante.nombre}
                       {variante.extraCentavos > 0 ? ` (${precio(variante.extraCentavos)})` : ""}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               ) : null}
@@ -128,24 +148,26 @@ export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar
             {extras.map((extra, indice) => (
               <li key={`${extra.slotPosicion}-${extra.varianteId}-${indice}`}>
                 + Extra {nombreVariante(extra.varianteId)}
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   aria-label={`Quitar extra ${nombreVariante(extra.varianteId)}`}
                   onClick={() => setExtras(extras.filter((item, i) => i !== indice))}
                 >
-                  ×
-                </button>
+                  <Minus size={16} aria-hidden="true" /> Quitar
+                </Button>
               </li>
             ))}
           </ul>
         ) : null}
         <div className="constructor-orden__acciones">
-          <button type="button" onClick={onCancelar}>
+          <Button type="button" variant="outline" onClick={onCancelar}>
             Cancelar
-          </button>
-          <button type="button" className="primario" disabled={!completos} onClick={confirmar}>
-            Listo
-          </button>
+          </Button>
+          <Button type="button" className="primario" size="lg" disabled={!completos} onClick={confirmar}>
+            <Check size={19} aria-hidden="true" /> Agregar a la orden
+          </Button>
         </div>
       </div>
     </div>
