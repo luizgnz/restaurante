@@ -1,6 +1,6 @@
 # Relaciones del dominio y de la base
 
-**Fecha:** 2026-08-22  
+**Fecha:** 2026-08-23
 **Fuente:** migraciones en `src/db/migrations/` y reglas de `salon`, `pedidos`, `kds`, `precuenta`, `caja`, `inventario`.  
 **Persistencia extra:** identidad del local, PIN y apariencia viven en `config.json`, no en SQLite.
 
@@ -127,6 +127,21 @@ usuario único si no es NULL
 PIN / password en hash; el PIN identifica **quién hace este acto** (enviar, precuenta, caja, anular, …), no “dueño exclusivo de la mesa”. Cualquier empleado con el derecho de esa acción puede operarla.
 ```
 
+### 3.6 Contornos y armado de platos
+
+```text
+producto plato       1 ── 0..N  plato_slots
+plato_slot           N ── N     contorno_grupos       (plato_slot_grupos)
+contorno_grupo       1 ── N     contorno_variantes
+orden_linea          1 ── 0..N  orden_linea_contornos (snapshot)
+```
+
+Un producto sin slots conserva el flujo normal. Un producto con slots exige una selección válida por cada posición antes de enviarse. Cada slot declara qué grupos acepta y si permite extras. Las selecciones enviadas guardan nombre y precio como snapshot, por lo que un cambio posterior de configuración no altera cuentas históricas.
+
+El precio guardado en `orden_lineas.precio_centavos` ya incorpora los suplementos y extras seleccionados por unidad; por eso precuenta, cuenta y caja usan el mismo total efectivo. El inventario por variante y la corrección directa de contornos permanecen diferidos.
+
+El seed incluye `Menú del día`, con proteína y dos contornos, y el producto independiente `Extra`, que abre un selector de Pollo, Carne o Longaniza.
+
 ---
 
 ## 4. Diagrama compacto
@@ -139,8 +154,9 @@ empleados ─┬─ sesiones_pos
            └─ caja_handoffs ── precuentas
 
 mesas ── cuentas ── ordenes ── orden_lineas ── productos ── categorias_pos
-                       ├─ correcciones              ├─ receta_lineas
-                       └─ comandas                  └─ stock
+                       ├─ correcciones       │      ├─ receta_lineas
+                       ├─ comandas           │      └─ stock
+                       └─ contornos          └─ plato_slots ── grupos ── variantes
 
 print_jobs  (payload JSON; sin FK)
 config.json (nombre_local, logo, PIN, tipografía, confirmar_comanda, auditoría/justificación de anulaciones, …)

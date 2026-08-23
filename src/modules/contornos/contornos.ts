@@ -198,6 +198,9 @@ export function validarSelecciones(
       if (esExtra && !slot.permiteExtra) {
         throw new ContornoError("extra_no_permitido", `${slot.nombre} no permite extras`);
       }
+      if (esExtra && variante.extra_centavos <= 0) {
+        throw new ContornoError("extra_no_permitido", `${variante.nombre} no tiene precio de extra configurado`);
+      }
       salida.push({
         slotPosicion: slot.posicion,
         slotNombre: slot.nombre,

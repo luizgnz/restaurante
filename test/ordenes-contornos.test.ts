@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { totalEfectivoCuenta } from "../src/modules/cuentas/totales.ts";
-import { configurarSlots, crearGrupo, crearVariante } from "../src/modules/contornos/contornos.ts";
+import { configurarSlots, listarContornos } from "../src/modules/contornos/contornos.ts";
 import { enviarOrden, OrdenError } from "../src/modules/ordenes/enviar.ts";
 import { seedCartaDemo } from "../src/modules/productos/seed.ts";
 import { MemoryPrinter } from "../src/print/memory.ts";
@@ -10,13 +10,14 @@ import { codigoDe, crearOrden, entornoApi, post } from "./helpers.ts";
 async function escenario() {
   const db = (await entornoApi()).db;
   const ids = seedCartaDemo(db);
-  const proteina = crearGrupo(db, { nombre: "Proteína" });
-  const carbohidrato = crearGrupo(db, { nombre: "Carbohidrato" });
-  const ensalada = crearGrupo(db, { nombre: "Ensalada" });
-  const pollo = crearVariante(db, { grupoId: proteina.id, nombre: "Pollo", extraCentavos: 1500 });
-  const carne = crearVariante(db, { grupoId: proteina.id, nombre: "Carne", suplementoCentavos: 500, extraCentavos: 2000 });
-  const papas = crearVariante(db, { grupoId: carbohidrato.id, nombre: "Papas fritas" });
-  const rusa = crearVariante(db, { grupoId: ensalada.id, nombre: "Ensalada rusa" });
+  const listado = listarContornos(db);
+  const proteina = listado.grupos.find((grupo) => grupo.nombre === "Proteína")!;
+  const carbohidrato = listado.grupos.find((grupo) => grupo.nombre === "Carbohidrato")!;
+  const ensalada = listado.grupos.find((grupo) => grupo.nombre === "Ensalada")!;
+  const pollo = proteina.variantes.find((item) => item.nombre === "Pollo")!;
+  const carne = proteina.variantes.find((item) => item.nombre === "Carne")!;
+  const papas = carbohidrato.variantes.find((item) => item.nombre === "Papas fritas")!;
+  const rusa = ensalada.variantes.find((item) => item.nombre === "Ensalada rusa")!;
   configurarSlots(db, ids.hamburguesa, [
     { posicion: 1, nombre: "Proteína", permiteExtra: true, grupoIds: [proteina.id] },
     { posicion: 2, nombre: "Contorno", grupoIds: [carbohidrato.id] },
@@ -139,7 +140,7 @@ describe("envío de órdenes con contornos", () => {
   it("por API valida igual que el módulo", async () => {
     const e = await entornoApi();
     const ids = e.ids;
-    const proteina = (await (await post(e.app, "/api/contornos/grupos", { nombre: "Proteína" })).json()) as { id: number };
+    const proteina = (await (await post(e.app, "/api/contornos/grupos", { nombre: "Proteína API" })).json()) as { id: number };
     const pollo = (await (
       await post(e.app, "/api/contornos/variantes", { grupoId: proteina.id, nombre: "Pollo" })
     ).json()) as { id: number };

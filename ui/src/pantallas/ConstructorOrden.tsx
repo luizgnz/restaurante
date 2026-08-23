@@ -15,7 +15,7 @@ export type ProductoCarta = {
 };
 
 export type ConfigContornosUi = {
-  grupos: Array<{ id: number; nombre: string }>;
+  grupos: Array<{ id: number; nombre: string; variantes: VarianteArmadoUi[] }>;
   variantes: VarianteArmadoUi[];
 };
 

@@ -951,3 +951,45 @@ main {
     width: 100%;
   }
 }
+
+.contornos-admin {
+  padding: 1.25rem;
+}
+.contornos-admin__columnas {
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.9fr) minmax(24rem, 1.1fr);
+  gap: 1rem;
+  align-items: start;
+}
+.contornos-admin__grupo {
+  border-bottom: 1px solid #444;
+  padding-block: 0.6rem;
+}
+.contornos-admin__grupo ul {
+  list-style: none;
+  padding: 0;
+}
+.contornos-admin__grupo li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.25rem;
+}
+.contornos-admin__formulario,
+.contornos-admin__slot {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #555;
+  border-radius: 0.65rem;
+}
+.contornos-admin__checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin-block: 0.75rem;
+}
+@media (max-width: 850px) {
+  .contornos-admin__columnas {
+    grid-template-columns: 1fr;
+  }
+}

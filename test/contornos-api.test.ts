@@ -14,7 +14,7 @@ describe("API de contornos", () => {
   it("crea grupos y variantes y los lista agrupados", async () => {
     const e = await crearBase();
 
-    const grupo = await post(e.app, "/api/contornos/grupos", { nombre: "Proteína" });
+    const grupo = await post(e.app, "/api/contornos/grupos", { nombre: "Salsas" });
     expect(grupo.status).toBe(201);
     const { id: grupoId } = (await grupo.json()) as { id: number };
 
@@ -29,8 +29,8 @@ describe("API de contornos", () => {
     const listado = (await (await e.app.request("/api/contornos")).json()) as {
       grupos: { id: number; nombre: string; variantes: { nombre: string; extraCentavos: number }[] }[];
     };
-    const proteina = listado.grupos.find((g) => g.nombre === "Proteína");
-    expect(proteina?.variantes.map((v) => ({ nombre: v.nombre, extraCentavos: v.extraCentavos }))).toEqual([
+    const salsas = listado.grupos.find((g) => g.nombre === "Salsas");
+    expect(salsas?.variantes.map((v) => ({ nombre: v.nombre, extraCentavos: v.extraCentavos }))).toEqual([
       { nombre: "Pollo", extraCentavos: 1500 },
     ]);
     e.db.close();
@@ -38,12 +38,12 @@ describe("API de contornos", () => {
 
   it("rechaza duplicados con 400 y código de dominio", async () => {
     const e = await crearBase();
-    await post(e.app, "/api/contornos/grupos", { nombre: "Proteína" });
-    const duplicado = await post(e.app, "/api/contornos/grupos", { nombre: "proteína" });
+    await post(e.app, "/api/contornos/grupos", { nombre: "Aderezos" });
+    const duplicado = await post(e.app, "/api/contornos/grupos", { nombre: "aderezos" });
     expect(duplicado.status).toBe(400);
     expect(await codigoDe(duplicado)).toBe("grupo_duplicado");
 
-    const { id: grupoId } = (await (await post(e.app, "/api/contornos/grupos", { nombre: "Carbohidrato" })).json()) as {
+    const { id: grupoId } = (await (await post(e.app, "/api/contornos/grupos", { nombre: "Guarnición API" })).json()) as {
       id: number;
     };
     await post(e.app, "/api/contornos/variantes", { grupoId, nombre: "Arroz" });
@@ -59,14 +59,14 @@ describe("API de contornos", () => {
     expect(sinNombre.status).toBe(400);
     const varianteSinGrupo = await post(e.app, "/api/contornos/variantes", { nombre: "Pollo" });
     expect(varianteSinGrupo.status).toBe(400);
-    expect((e.db.prepare("SELECT count(*) AS c FROM contorno_grupos").get() as { c: number }).c).toBe(0);
+    expect((e.db.prepare("SELECT count(*) AS c FROM contorno_grupos").get() as { c: number }).c).toBe(4);
     e.db.close();
   });
 
   it("configura y lee los slots de un plato", async () => {
     const e = await crearBase();
-    const proteina = (await (await post(e.app, "/api/contornos/grupos", { nombre: "Proteína" })).json()) as { id: number };
-    const carbohidrato = (await (await post(e.app, "/api/contornos/grupos", { nombre: "Carbohidrato" })).json()) as {
+    const proteina = (await (await post(e.app, "/api/contornos/grupos", { nombre: "Proteína API" })).json()) as { id: number };
+    const carbohidrato = (await (await post(e.app, "/api/contornos/grupos", { nombre: "Carbohidrato API" })).json()) as {
       id: number;
     };
 

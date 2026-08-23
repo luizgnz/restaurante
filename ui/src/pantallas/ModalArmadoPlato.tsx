@@ -107,7 +107,7 @@ export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar
               })}
               {slot.permiteExtra ? (
                 <div className="armado-plato__extras">
-                  {variantesDe(slot).map((variante) => (
+                  {variantesDe(slot).filter((variante) => variante.extraCentavos > 0).map((variante) => (
                     <button
                       type="button"
                       key={`extra-${variante.id}`}

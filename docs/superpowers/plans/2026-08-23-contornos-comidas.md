@@ -64,11 +64,11 @@ validarSelecciones(db, productoId, selecciones: { slotPosicion, varianteId }[]):
 // errores: contornos_incompletos | variante_inexistente | variante_no_permitida | extra_no_permitido
 ```
 
-- [ ] **Step 1: Tests del módulo** — grupos/variantes únicos, slots por plato, validación de selecciones completas/incompletas/grupo equivocado/extras permitidos y no.
-- [ ] **Step 2: Verificar fallo.**
-- [ ] **Step 3: Migración 014** — tablas del spec §3 (`contorno_grupos`, `contorno_variantes`, `plato_slots`, `plato_slot_grupos`, `orden_linea_contornos`).
-- [ ] **Step 4: Implementar módulo.**
-- [ ] **Step 5: Tests verdes + typecheck.**
+- [x] **Step 1: Tests del módulo** — grupos/variantes únicos, slots por plato, validación de selecciones completas/incompletas/grupo equivocado/extras permitidos y no.
+- [x] **Step 2: Verificar fallo.**
+- [x] **Step 3: Migración 014** — tablas del spec §3 (`contorno_grupos`, `contorno_variantes`, `plato_slots`, `plato_slot_grupos`, `orden_linea_contornos`).
+- [x] **Step 4: Implementar módulo.**
+- [x] **Step 5: Tests verdes + typecheck.**
 
 ---
 
@@ -89,10 +89,10 @@ GET  /api/productos/:id/slots        → { slots: [...] }
 PUT  /api/productos/:id/slots        → { slots: [...] }
 ```
 
-- [ ] **Step 1: Tests de contrato HTTP.**
-- [ ] **Step 2: Verificar fallo.**
-- [ ] **Step 3: Montar rutas en app.ts.**
-- [ ] **Step 4: Tests verdes.**
+- [x] **Step 1: Tests de contrato HTTP.**
+- [x] **Step 2: Verificar fallo.**
+- [x] **Step 3: Montar rutas en app.ts.**
+- [x] **Step 4: Tests verdes.**
 
 ---
 
@@ -111,11 +111,11 @@ PUT  /api/productos/:id/slots        → { slots: [...] }
 - Snapshot en `orden_linea_contornos` (nombres + precios al envío).
 - Total efectivo de la línea = `cantidad × precio + cantidad × Σ(contornos)`; precuenta, cuenta y tickets lo reflejan.
 
-- [ ] **Step 1: Tests de envío con contornos** — válido, incompleto, grupo equivocado, extra permitido/no permitido, total con suplemento y extra, idempotencia conserva contornos.
-- [ ] **Step 2: Verificar fallo.**
-- [ ] **Step 3: Implementar validación + snapshot en enviar.ts.**
-- [ ] **Step 4: Totales efectivos incorporan contornos.**
-- [ ] **Step 5: Tests verdes.**
+- [x] **Step 1: Tests de envío con contornos** — válido, incompleto, grupo equivocado, extra permitido/no permitido, total con suplemento y extra, idempotencia conserva contornos.
+- [x] **Step 2: Verificar fallo.**
+- [x] **Step 3: Implementar validación + snapshot en enviar.ts.**
+- [x] **Step 4: Totales efectivos incorporan contornos.**
+- [x] **Step 5: Tests verdes.**
 
 ---
 
@@ -126,10 +126,10 @@ PUT  /api/productos/:id/slots        → { slots: [...] }
 - Modify: `src/print/escpos.ts` (texto de comanda)
 - Test: `test/kds.test.ts`
 
-- [ ] **Step 1: Tests** — tarjeta KDS y texto de comanda incluyen las selecciones (`Proteína: Pollo`, `EXTRA: Pollo`).
-- [ ] **Step 2: Verificar fallo.**
-- [ ] **Step 3: Implementar.**
-- [ ] **Step 4: Tests verdes.**
+- [x] **Step 1: Tests** — tarjeta KDS y texto de comanda incluyen las selecciones (`Proteína: Pollo`, `EXTRA: Pollo`).
+- [x] **Step 2: Verificar fallo.**
+- [x] **Step 3: Implementar.**
+- [x] **Step 4: Tests verdes.**
 
 ---
 
@@ -148,11 +148,11 @@ PUT  /api/productos/:id/slots        → { slots: [...] }
 - Confirmar exige todos los slots cubiertos; la selección queda en el borrador (`lineas[].contornos`) y viaja en el envío.
 - El panel de la orden resume la selección: `1 × Menú del día (Pollo · Papas fritas · Ensalada rusa)`.
 
-- [ ] **Step 1: Tests SSR del modal y del resumen en el constructor.**
-- [ ] **Step 2: Verificar fallo.**
-- [ ] **Step 3: Implementar modal + integración en App/borrador.**
-- [ ] **Step 4: Cuenta de mesa muestra las selecciones por línea.**
-- [ ] **Step 5: Tests verdes + build.**
+- [x] **Step 1: Tests SSR del modal y del resumen en el constructor.**
+- [x] **Step 2: Verificar fallo.**
+- [x] **Step 3: Implementar modal + integración en App/borrador.**
+- [x] **Step 4: Cuenta de mesa muestra las selecciones por línea.**
+- [x] **Step 5: Tests verdes + build.**
 
 ---
 
@@ -168,10 +168,10 @@ PUT  /api/productos/:id/slots        → { slots: [...] }
 - Pantalla Backend → “Contornos”: lista grupos con sus variantes; formulario crea grupos y variantes (nombre, suplemento, precio extra).
 - Editor de slots por plato: elegir plato, definir posición/nombre/grupos permitidos/permite extra.
 
-- [ ] **Step 1: Tests SSR de la pantalla.**
-- [ ] **Step 2: Verificar fallo.**
-- [ ] **Step 3: Implementar pantalla + cableado.**
-- [ ] **Step 4: Tests verdes + build.**
+- [x] **Step 1: Tests SSR de la pantalla.**
+- [x] **Step 2: Verificar fallo.**
+- [x] **Step 3: Implementar pantalla + cableado.**
+- [x] **Step 4: Tests verdes + build.**
 
 ---
 
@@ -181,10 +181,10 @@ PUT  /api/productos/:id/slots        → { slots: [...] }
 - Modify: `src/modules/productos/seed.ts`
 - Modify: `docs/relaciones-bd.md`
 
-- [ ] **Step 1: Seed** — “Menú del día” con slots Proteína (Pollo/Carne/Longaniza), Contorno (Papas fritas/Arroz/Puré), Segundo contorno (carbohidratos + Ensalada rusa/Ensalada rallada, permite extra). Además, producto independiente **“extra”** con un único slot “Tipo de extra” (submenú) cuyas variantes son Pollo/Carne/Longaniza y el precio lo aporta el suplemento de la variante elegida.
-- [ ] **Step 2: Test del seed** — el menú queda configurable y pedible con contornos; el item “extra” se pide eligiendo tipo en el submenú.
-- [ ] **Step 3: Actualizar docs al estado real.**
-- [ ] **Step 4: Suite completa + build.**
+- [x] **Step 1: Seed** — “Menú del día” con slots Proteína (Pollo/Carne/Longaniza), Contorno (Papas fritas/Arroz/Puré), Segundo contorno (carbohidratos + Ensalada rusa/Ensalada rallada, permite extra). Además, producto independiente **“extra”** con un único slot “Tipo de extra” (submenú) cuyas variantes son Pollo/Carne/Longaniza y el precio lo aporta el suplemento de la variante elegida.
+- [x] **Step 2: Test del seed** — el menú queda configurable y pedible con contornos; el item “extra” se pide eligiendo tipo en el submenú.
+- [x] **Step 3: Actualizar docs al estado real.**
+- [x] **Step 4: Suite completa + build.**
 
 ---
 

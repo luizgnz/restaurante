@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { defaultConfig } from "../src/config.ts";
-import { configurarSlots, crearGrupo, crearVariante } from "../src/modules/contornos/contornos.ts";
+import { configurarSlots, listarContornos } from "../src/modules/contornos/contornos.ts";
 import { crearEmpleado } from "../src/modules/empleados/empleados.ts";
 import {
   avanzarEtapa,
@@ -164,10 +164,11 @@ describe("tarjetasKds", () => {
     const db = openTestDb();
     const ids = seedCartaDemo(db);
     await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });
-    const proteina = crearGrupo(db, { nombre: "Proteína" });
-    const carbohidrato = crearGrupo(db, { nombre: "Carbohidrato" });
-    const pollo = crearVariante(db, { grupoId: proteina.id, nombre: "Pollo", extraCentavos: 1500 });
-    const papas = crearVariante(db, { grupoId: carbohidrato.id, nombre: "Papas fritas" });
+    const grupos = listarContornos(db).grupos;
+    const proteina = grupos.find((grupo) => grupo.nombre === "Proteína")!;
+    const carbohidrato = grupos.find((grupo) => grupo.nombre === "Carbohidrato")!;
+    const pollo = proteina.variantes.find((item) => item.nombre === "Pollo")!;
+    const papas = carbohidrato.variantes.find((item) => item.nombre === "Papas fritas")!;
     configurarSlots(db, ids.hamburguesa, [
       { posicion: 1, nombre: "Proteína", permiteExtra: true, grupoIds: [proteina.id] },
       { posicion: 2, nombre: "Contorno", grupoIds: [carbohidrato.id] },

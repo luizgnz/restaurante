@@ -81,12 +81,14 @@ describe("pantallas módulo restaurante", () => {
       createElement(Backend, {
         onCrearProducto: () => undefined,
         onCategorias: () => undefined,
+        onContornos: () => undefined,
         onEditarMapa: () => undefined,
         onMesas: () => undefined,
       }),
     );
     expect(html).toContain("Crear producto");
     expect(html).toContain("Categorías");
+    expect(html).toContain("Contornos");
     expect(html).toContain("Editar mapa");
     expect(html).toContain("Backend");
   });

@@ -8,6 +8,7 @@ import { Categorias } from "./pantallas/Categorias.tsx";
 import { ComandaEnPantalla, type ComandaUi } from "./pantallas/ComandaEnPantalla.tsx";
 import { ConfirmarCierreCuenta } from "./pantallas/ConfirmarCierreCuenta.tsx";
 import { ConstructorOrden, type ConfigContornosUi, type ProductoCarta } from "./pantallas/ConstructorOrden.tsx";
+import { Contornos, type GrupoContornoUi, type SlotEditorUi } from "./pantallas/Contornos.tsx";
 import { type Categoria } from "./pantallas/CrearProducto.tsx";
 import { CuentaMesa, type CuentaDetalleUi, type OrdenCuentaUi } from "./pantallas/CuentaMesa.tsx";
 import { EditarMapa } from "./pantallas/EditarMapa.tsx";
@@ -217,9 +218,9 @@ export function App() {
   }
 
   async function cargarContornos() {
-    const data = await api<ConfigContornosUi>("/api/contornos");
+    const data = await api<{ grupos: GrupoContornoUi[] }>("/api/contornos");
     setContornosConfig({
-      grupos: data.grupos.map((grupo) => ({ id: grupo.id, nombre: grupo.nombre })),
+      grupos: data.grupos,
       variantes: data.grupos.flatMap((grupo) => grupo.variantes),
     });
   }
@@ -233,6 +234,10 @@ export function App() {
     if (v === "pedidos") cargarCuentasEnCurso().catch((e) => setError(String(e)));
     if (v === "plano" || v === "editar-mapa") cargarPlano().catch((e) => setError(String(e)));
     if (v === "categorias") cargarCategorias().catch((e) => setError(String(e)));
+    if (v === "contornos") {
+      cargarContornos().catch((e) => setError(String(e)));
+      cargarCarta().catch((e) => setError(String(e)));
+    }
     setVista(v);
   }
 
@@ -314,6 +319,7 @@ export function App() {
             nombre: productos.find((producto) => producto.id === linea.productoId)?.nombre ?? `Producto ${linea.productoId}`,
             cantidad: linea.cantidad,
             nota: linea.nota.trim() ? linea.nota : null,
+            contornos: linea.contornosTexto ? linea.contornosTexto.split(" · ") : [],
           })),
       });
       setContextoOrden(null);
@@ -344,7 +350,7 @@ export function App() {
     const mesaNumero = mesas.find((mesa) => mesa.id === borrador.mesaId)?.numero;
     const lineas = borrador.lineas.map((linea) => {
       const nombre = productos.find((producto) => producto.id === linea.productoId)?.nombre ?? `Producto ${linea.productoId}`;
-      return `${linea.cantidad} × ${nombre}${linea.nota ? ` (${linea.nota})` : ""}`;
+      return `${linea.cantidad} × ${nombre}${linea.contornosTexto ? ` (${linea.contornosTexto})` : ""}${linea.nota ? ` (${linea.nota})` : ""}`;
     });
     return [`Mesa #${mesaNumero ?? borrador.mesaId ?? "?"}`, ...lineas, borrador.indicaciones ? `Indicaciones: ${borrador.indicaciones}` : ""]
       .filter(Boolean)
@@ -703,6 +709,7 @@ export function App() {
           <Backend
             onCrearProducto={abrirCrearProducto}
             onCategorias={() => ir("categorias")}
+            onContornos={() => ir("contornos")}
             onEditarMapa={() => ir("editar-mapa")}
             onMesas={() => ir("plano")}
           />
@@ -713,6 +720,36 @@ export function App() {
             onCrear={async (nombre) => {
               await api("/api/categorias", { method: "POST", body: JSON.stringify({ nombre }) });
               await cargarCategorias();
+            }}
+            onVolver={() => ir("backend")}
+          />
+        ) : null}
+        {vista === "contornos" ? (
+          <Contornos
+            grupos={contornosConfig?.grupos ?? []}
+            productos={productos}
+            onCrearGrupo={async (nombre) => {
+              await api("/api/contornos/grupos", { method: "POST", body: JSON.stringify({ nombre }) });
+              await cargarContornos();
+            }}
+            onCrearVariante={async (input) => {
+              await api("/api/contornos/variantes", { method: "POST", body: JSON.stringify(input) });
+              await cargarContornos();
+            }}
+            onCargarSlots={slotsDeProducto}
+            onGuardarSlots={async (productoId: number, slots: SlotEditorUi[]) => {
+              await api(`/api/productos/${productoId}/slots`, {
+                method: "PUT",
+                body: JSON.stringify({
+                  slots: slots.map(({ posicion, nombre, permiteExtra, grupoIds }) => ({
+                    posicion,
+                    nombre,
+                    permiteExtra,
+                    grupoIds,
+                  })),
+                }),
+              });
+              await cargarCarta();
             }}
             onVolver={() => ir("backend")}
           />

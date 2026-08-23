@@ -3,7 +3,7 @@ export type ComandaUi = {
   ordenNumero: number;
   mesero: string;
   indicaciones: string | null;
-  lineas: Array<{ nombre: string; cantidad: number; nota: string | null }>;
+  lineas: Array<{ nombre: string; cantidad: number; nota: string | null; contornos?: string[] }>;
 };
 
 type Props = {
@@ -38,6 +38,11 @@ export function ComandaEnPantalla({ restaurante, comanda, onCerrar }: Props) {
                   {linea.cantidad} × {linea.nombre}
                 </strong>
                 {linea.nota ? <span className="ticket-papel__nota"> ({linea.nota})</span> : null}
+                {(linea.contornos ?? []).map((contorno) => (
+                  <span className="ticket-papel__nota" key={contorno}>
+                    {contorno}
+                  </span>
+                ))}
               </span>
             </li>
           ))}

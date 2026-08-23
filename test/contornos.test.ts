@@ -14,14 +14,15 @@ import { openTestDb } from "./helpers.ts";
 function escenario() {
   const db = openTestDb();
   const ids = seedCartaDemo(db);
-  const proteina = crearGrupo(db, { nombre: "Proteína" });
-  const carbohidrato = crearGrupo(db, { nombre: "Carbohidrato" });
-  const ensalada = crearGrupo(db, { nombre: "Ensalada" });
-  const pollo = crearVariante(db, { grupoId: proteina.id, nombre: "Pollo", suplementoCentavos: 0, extraCentavos: 1500 });
-  const carne = crearVariante(db, { grupoId: proteina.id, nombre: "Carne", suplementoCentavos: 500, extraCentavos: 2000 });
-  const papas = crearVariante(db, { grupoId: carbohidrato.id, nombre: "Papas fritas" });
-  const arroz = crearVariante(db, { grupoId: carbohidrato.id, nombre: "Arroz" });
-  const rusa = crearVariante(db, { grupoId: ensalada.id, nombre: "Ensalada rusa" });
+  const listado = listarContornos(db);
+  const proteina = listado.grupos.find((grupo) => grupo.nombre === "Proteína")!;
+  const carbohidrato = listado.grupos.find((grupo) => grupo.nombre === "Carbohidrato")!;
+  const ensalada = listado.grupos.find((grupo) => grupo.nombre === "Ensalada")!;
+  const pollo = proteina.variantes.find((item) => item.nombre === "Pollo")!;
+  const carne = proteina.variantes.find((item) => item.nombre === "Carne")!;
+  const papas = carbohidrato.variantes.find((item) => item.nombre === "Papas fritas")!;
+  const arroz = carbohidrato.variantes.find((item) => item.nombre === "Arroz")!;
+  const rusa = ensalada.variantes.find((item) => item.nombre === "Ensalada rusa")!;
   configurarSlots(db, ids.hamburguesa, [
     { posicion: 1, nombre: "Proteína", permiteExtra: true, grupoIds: [proteina.id] },
     { posicion: 2, nombre: "Contorno", grupoIds: [carbohidrato.id] },
@@ -45,7 +46,7 @@ describe("contornos: configuración", () => {
     const listado = listarContornos(e.db);
     const proteina = listado.grupos.find((g) => g.nombre === "Proteína");
     expect(proteina).toBeTruthy();
-    expect(proteina!.variantes.map((v) => v.nombre).sort()).toEqual(["Carne", "Pollo"]);
+    expect(proteina!.variantes.map((v) => v.nombre).sort()).toEqual(["Carne", "Longaniza", "Pollo"]);
     const pollo = proteina!.variantes.find((v) => v.nombre === "Pollo")!;
     expect(pollo.suplementoCentavos).toBe(0);
     expect(pollo.extraCentavos).toBe(1500);
@@ -124,6 +125,22 @@ describe("contornos: validación de selecciones", () => {
           { slotPosicion: 1, varianteId: e.pollo.id },
           { slotPosicion: 2, varianteId: e.papas.id },
           { slotPosicion: 2, varianteId: e.arroz.id },
+          { slotPosicion: 3, varianteId: e.rusa.id },
+        ]),
+      ),
+    ).toBe("extra_no_permitido");
+    e.db.close();
+  });
+
+  it("rechaza como extra una variante sin precio de extra", () => {
+    const e = escenario();
+    e.db.prepare("UPDATE contorno_variantes SET extra_centavos = 0 WHERE id = ?").run(e.rusa.id);
+    expect(
+      codigoDe(() =>
+        validarSelecciones(e.db, e.ids.hamburguesa, [
+          { slotPosicion: 1, varianteId: e.pollo.id },
+          { slotPosicion: 2, varianteId: e.papas.id },
+          { slotPosicion: 3, varianteId: e.rusa.id },
           { slotPosicion: 3, varianteId: e.rusa.id },
         ]),
       ),

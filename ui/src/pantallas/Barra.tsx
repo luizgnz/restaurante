@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 
-export type Destino = "plano" | "pedido" | "pedidos" | "editar-mapa" | "categorias" | "backend" | "opciones";
+export type Destino =
+  | "plano"
+  | "pedido"
+  | "pedidos"
+  | "editar-mapa"
+  | "categorias"
+  | "contornos"
+  | "backend"
+  | "opciones";
 
 type Props = {
   vista: Destino;
