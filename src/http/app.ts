@@ -27,6 +27,7 @@ import {
 } from "../modules/pedidos/pedidos.ts";
 import { emitirPrecuenta, reimprimirPrecuenta } from "../modules/precuenta/precuenta.ts";
 import { armableDeProducto, crearProducto, listarCategorias, listarProductos, ProductoError } from "../modules/productos/productos.ts";
+import { cuentaActivaPorMesa } from "../modules/cuentas/cuentas.ts";
 import {
   abrirMesa,
   abrirTab,
@@ -34,7 +35,6 @@ import {
   estadoMesa,
   guardarPlano,
   limpiarPedidosSinMesa,
-  pedidoIdAbierto,
   SalonError,
 } from "../modules/salon/salon.ts";
 import { despacharJobs } from "../print/queue.ts";
@@ -232,7 +232,7 @@ export function createApp(deps: AppDeps): Hono {
       fondo_data: string | null;
     }[];
     return c.json({
-      mesas: rows.map((m) => ({ ...m, estado: estadoMesa(db, m.id), pedidoId: pedidoIdAbierto(db, m.id) })),
+      mesas: rows.map((m) => ({ ...m, estado: estadoMesa(db, m.id), cuentaId: cuentaActivaPorMesa(db, m.id)?.id ?? null })),
       pisos: db
         .prepare(
           "SELECT id, nombre, fondo_color, CASE WHEN fondo_blob IS NULL THEN 0 ELSE 1 END AS tiene_fondo FROM pisos WHERE COALESCE(activo, 1) = 1",
@@ -366,6 +366,8 @@ export function createApp(deps: AppDeps): Hono {
     return c.json({ ok: true, etapa });
   });
 
+  // Legacy: lectura del modelo de pedidos. La UI del modelo de cuentas usa
+  // GET /api/cuentas; esta ruta queda solo para adaptadores hasta retirarla.
   app.get("/api/pedidos", (c) => {
     limpiarPedidosSinMesa(db);
     return c.json({ pedidos: listarPedidosEnCurso(db, config) });
@@ -409,6 +411,7 @@ export function createApp(deps: AppDeps): Hono {
     return c.json({ ok: true });
   });
 
+  // Legacy: lectura de un pedido del modelo anterior.
   app.get("/api/pedidos/:id", (c) => {
     const id = Number(c.req.param("id"));
     const pedido = db
@@ -488,6 +491,7 @@ export function createApp(deps: AppDeps): Hono {
     return c.json(result);
   });
 
+  // Legacy: vista previa de comanda del modelo anterior.
   app.get("/api/pedidos/:id/comanda-preview", (c) => {
     const s = sesionAbierta(db);
     if (!s) throw new PinError("credenciales_invalidas", "Hace falta sesión");

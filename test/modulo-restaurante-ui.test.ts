@@ -15,7 +15,8 @@ describe("pantallas módulo restaurante", () => {
         onCancelar: () => undefined,
       }),
     );
-    expect(html).toContain("Nuevo producto");
+    expect(html).not.toContain("Nuevo producto");
+    expect(html).not.toContain("<h1");
     expect(html).toContain("Precio de venta");
     expect(html).toContain("Categoría POS");
     expect(html).toContain("Disponible en el PdV");
@@ -36,7 +37,7 @@ describe("pantallas módulo restaurante", () => {
             id: 1,
             numero: 7,
             estado: "libre",
-            pedidoId: null,
+            cuentaId: null,
             asientos: 4,
             pos_x: 10,
             pos_y: 10,

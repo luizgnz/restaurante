@@ -4,6 +4,7 @@ import { idDeRuta, leerJson, pinOpcional, protegido, textoOpcional, type RutasDe
 import { crearOrdenDeMesa, type CuerpoOrden } from "./ordenes.ts";
 import { enviarCuentaACaja, quienCobra } from "../../modules/caja/caja.ts";
 import { actualizarNotaPrivadaCuenta, CuentaError, obtenerCuenta } from "../../modules/cuentas/cuentas.ts";
+import { listarCuentasActivas } from "../../modules/cuentas/listar.ts";
 import { PinError } from "../../modules/empleados/empleados.ts";
 import { sesionAbierta } from "../../modules/empleados/sesion.ts";
 import { totalEfectivoCuenta } from "../../modules/cuentas/totales.ts";
@@ -31,6 +32,8 @@ function mesaDeCuentaActiva(db: Database.Database, cuentaId: number): number {
 export function rutasCuentas(deps: RutasDeps): Hono {
   const { db, config, printer } = deps;
   const rutas = new Hono();
+
+  rutas.get("/", (c) => c.json({ cuentas: listarCuentasActivas(db) }));
 
   rutas.get("/:id", (c) => {
     const cuentaId = idDeRuta(c);

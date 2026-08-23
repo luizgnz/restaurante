@@ -186,6 +186,20 @@ button.icono {
   object-fit: cover;
   border-radius: 10px;
 }
+.crear-producto-modal {
+  align-items: stretch;
+  width: min(560px, 94vw);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+.crear-producto-modal .form-odoo__tarjeta {
+  width: 100%;
+  background: transparent;
+  padding: 0;
+}
+.confirmar-descarte {
+  z-index: 41;
+}
 .modal-cantidad {
   display: flex;
   align-items: center;

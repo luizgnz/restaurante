@@ -80,7 +80,7 @@
 - Produces: `AppConfig.auditoria_anulaciones: boolean`
 - Produces: `AppConfig.justificacion_anulacion: boolean`
 
-- [ ] **Step 1: Write failing config tests**
+- [x] **Step 1: Write failing config tests**
 
 ```typescript
 it("desactiva auditoría y justificación por defecto", () => {
@@ -99,7 +99,7 @@ it("no permite justificación activa sin auditoría", () => {
 });
 ```
 
-- [ ] **Step 2: Run the focused tests and verify failure**
+- [x] **Step 2: Run the focused tests and verify failure**
 
 Run:
 
@@ -109,7 +109,7 @@ Run:
 
 Expected: TypeScript/test failure because the new config fields and UI labels do not exist.
 
-- [ ] **Step 3: Add fields and normalization**
+- [x] **Step 3: Add fields and normalization**
 
 ```typescript
 export type AppConfig = {
@@ -135,11 +135,11 @@ justificacion_anulacion: false,
 
 Expose both fields in `GET/POST /api/config`. Add two checkboxes to Seguridad; hide the second unless the first is active and force it false when audit is disabled.
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Expected: all three test files pass.
 
-- [ ] **Step 5: Run typecheck**
+- [x] **Step 5: Run typecheck**
 
 ```bash
 ~/commands/bin/logged npx tsc -p tsconfig.json --noEmit
@@ -160,7 +160,7 @@ Expected: exit 0.
 - Produces tables: `cuentas`, `ordenes`, `orden_lineas`, `orden_correcciones`, `orden_correccion_lineas`, `auditoria_anulaciones`
 - Produces indexes: `cuenta_activa_mesa_unica`, `orden_numero_cuenta_unico`, `orden_idempotencia_unica`
 
-- [ ] **Step 1: Write failing schema tests**
+- [x] **Step 1: Write failing schema tests**
 
 ```typescript
 it("crea el esquema de cuentas y órdenes", () => {
@@ -181,7 +181,7 @@ it("crea el esquema de cuentas y órdenes", () => {
 });
 ```
 
-- [ ] **Step 2: Verify the test fails**
+- [x] **Step 2: Verify the test fails**
 
 ```bash
 ~/commands/bin/logged npx vitest run test/db.test.ts test/cuentas.test.ts
@@ -189,7 +189,7 @@ it("crea el esquema de cuentas y órdenes", () => {
 
 Expected: missing table.
 
-- [ ] **Step 3: Create migration 008**
+- [x] **Step 3: Create migration 008**
 
 Use this schema:
 
@@ -267,7 +267,7 @@ CREATE TABLE auditoria_anulaciones (
 
 Extend `comandas`, `precuentas` and `caja_handoffs` with nullable `orden_id`, `correccion_id`, `tipo`, or `cuenta_id`. Keep existing `pedido_id` columns intact during compatibility.
 
-- [ ] **Step 4: Test constraints**
+- [x] **Step 4: Test constraints**
 
 Add tests proving:
 
@@ -276,7 +276,7 @@ Add tests proving:
 - duplicate order number in one account fails;
 - duplicate idempotency key fails.
 
-- [ ] **Step 5: Run schema tests**
+- [x] **Step 5: Run schema tests**
 
 Expected: pass.
 
@@ -313,17 +313,17 @@ export function versionEfectivaOrden(db, ordenId: number): LineaEfectiva[];
 export function totalEfectivoCuenta(db, cuentaId: number): number;
 ```
 
-- [ ] **Step 1: Write tests for account lookup and effective lines**
+- [x] **Step 1: Write tests for account lookup and effective lines**
 
 Test account with `Orden #1` original quantity 2 and a correction to quantity 1. Assert effective quantity 1 and total uses 1.
 
-- [ ] **Step 2: Verify failure**
+- [x] **Step 2: Verify failure**
 
 ```bash
 ~/commands/bin/logged npx vitest run test/cuentas.test.ts test/ordenes.test.ts
 ```
 
-- [ ] **Step 3: Implement account readers**
+- [x] **Step 3: Implement account readers**
 
 `obtenerCuenta` must return:
 
@@ -345,11 +345,11 @@ type CuentaDetalle = {
 };
 ```
 
-- [ ] **Step 4: Implement effective version calculation**
+- [x] **Step 4: Implement effective version calculation**
 
 Start with original `orden_lineas`; apply corrections ordered by `numero_version`, replacing quantity and note for each original line/product. Keep zero-quantity lines in account history but exclude them from totals.
 
-- [ ] **Step 5: Run focused tests**
+- [x] **Step 5: Run focused tests**
 
 Expected: pass.
 
@@ -378,7 +378,7 @@ export async function enviarOrden(
 ): Promise<{ cuentaId: number; ordenId: number; comandaId: number; repetida: boolean }>;
 ```
 
-- [ ] **Step 1: Write failing behavior tests**
+- [x] **Step 1: Write failing behavior tests**
 
 Cover:
 
@@ -388,13 +388,13 @@ Cover:
 4. Repeating the same `claveIdempotencia` returns the first result and creates no rows/jobs.
 5. Empty lines fail with `orden_sin_productos`.
 
-- [ ] **Step 2: Verify failure**
+- [x] **Step 2: Verify failure**
 
 ```bash
 ~/commands/bin/logged npx vitest run test/ordenes.test.ts test/enviar.test.ts test/enviar-doble.test.ts
 ```
 
-- [ ] **Step 3: Implement one transaction**
+- [x] **Step 3: Implement one transaction**
 
 Inside `db.transaction()`:
 
@@ -410,7 +410,7 @@ Inside `db.transaction()`:
 
 Dispatch printer after commit.
 
-- [ ] **Step 4: Update ticket text**
+- [x] **Step 4: Update ticket text**
 
 Ticket header:
 
@@ -420,7 +420,7 @@ Mesa 7 · Orden 2
 Mesero: Ana
 ```
 
-- [ ] **Step 5: Run focused tests and typecheck**
+- [x] **Step 5: Run focused tests and typecheck**
 
 Expected: pass and exit 0.
 
@@ -461,7 +461,7 @@ export async function corregirOrden(
 ): Promise<{ correccionId: number; comandaId: number }>;
 ```
 
-- [ ] **Step 1: Write failing correction tests**
+- [x] **Step 1: Write failing correction tests**
 
 Assert:
 
@@ -475,13 +475,13 @@ Assert:
 - `justificacion_anulacion=true` rejects blank reason;
 - audit row exists only when `auditoria_anulaciones=true`.
 
-- [ ] **Step 2: Verify failure**
+- [x] **Step 2: Verify failure**
 
 ```bash
 ~/commands/bin/logged npx vitest run test/correcciones.test.ts test/pedidos-editar.test.ts test/escpos.test.ts
 ```
 
-- [ ] **Step 3: Implement diff calculation as a pure function**
+- [x] **Step 3: Implement diff calculation as a pure function**
 
 ```typescript
 export type DiferenciaCocina = {
@@ -500,7 +500,7 @@ export function calcularDiferencias(
 
 Reject a correction with no quantity/note/indication change.
 
-- [ ] **Step 4: Persist correction atomically**
+- [x] **Step 4: Persist correction atomically**
 
 Authenticate PIN before transaction. During transaction:
 
@@ -511,7 +511,7 @@ Authenticate PIN before transaction. During transaction:
 - insert audit snapshot if enabled;
 - create correction/anulation comanda and print job.
 
-- [ ] **Step 5: Run focused tests**
+- [x] **Step 5: Run focused tests**
 
 Expected: pass.
 
@@ -546,17 +546,17 @@ export async function enviarCuentaACaja(
 ): Promise<{ handoffId: number }>;
 ```
 
-- [ ] **Step 1: Rewrite circuit tests around account IDs**
+- [x] **Step 1: Rewrite circuit tests around account IDs**
 
 Build `Orden #1`, `Orden #2`, then correct one line. Assert precuenta total equals effective lines across both orders.
 
-- [ ] **Step 2: Verify tests fail**
+- [x] **Step 2: Verify tests fail**
 
 ```bash
 ~/commands/bin/logged npx vitest run test/precuenta.test.ts test/caja.test.ts test/circuito.test.ts
 ```
 
-- [ ] **Step 3: Implement account snapshots**
+- [x] **Step 3: Implement account snapshots**
 
 Snapshot JSON must include:
 
@@ -569,11 +569,11 @@ Snapshot JSON must include:
 }
 ```
 
-- [ ] **Step 4: Close account and release table**
+- [x] **Step 4: Close account and release table**
 
 `enviarCuentaACaja` validates a current precuenta and no unreflected order/correction, inserts `caja_handoffs.cuenta_id`, changes account to `en_caja`, and sets `cerrada_en`.
 
-- [ ] **Step 5: Run focused tests**
+- [x] **Step 5: Run focused tests**
 
 Expected: pass.
 
@@ -600,7 +600,7 @@ POST /api/cuentas/:id/precuenta
 POST /api/cuentas/:id/enviar-caja
 ```
 
-- [ ] **Step 1: Write API contract tests**
+- [x] **Step 1: Write API contract tests**
 
 Example first order:
 
@@ -620,17 +620,17 @@ expect(res.status).toBe(201);
 expect(await res.json()).toMatchObject({ ordenNumero: 1 });
 ```
 
-- [ ] **Step 2: Verify tests fail**
+- [x] **Step 2: Verify tests fail**
 
-- [ ] **Step 3: Mount route modules**
+- [x] **Step 3: Mount route modules**
 
 Keep `createApp` as composition root. Route modules receive `{ db, config, printer }` and do not import global state.
 
-- [ ] **Step 4: Add legacy adapters**
+- [x] **Step 4: Add legacy adapters**
 
 Existing read routes may map account detail back to the old response while the UI transition occurs. Legacy mutation routes must return a deprecation header and delegate to new services; they must not dual-write.
 
-- [ ] **Step 5: Run API tests**
+- [x] **Step 5: Run API tests**
 
 Expected: pass.
 
@@ -660,7 +660,7 @@ export function migrarPedidosACuentas(
 ): ResultadoMigracion;
 ```
 
-- [ ] **Step 1: Write migration fixture test**
+- [x] **Step 1: Write migration fixture test**
 
 Fixture must include:
 
@@ -672,9 +672,9 @@ Fixture must include:
 
 Assert two orders are reconstructed and pending lines are exported to JSON, not treated as sent.
 
-- [ ] **Step 2: Verify failure**
+- [x] **Step 2: Verify failure**
 
-- [ ] **Step 3: Implement idempotent migration**
+- [x] **Step 3: Implement idempotent migration**
 
 Use a migration marker table or detect `cuentas.legacy_pedido_id` (add unique nullable column in migration 008). Re-running returns zero new rows.
 
@@ -686,7 +686,7 @@ Export pending lines to:
 
 The JSON contains table, employee, products, notes and timestamp.
 
-- [ ] **Step 4: Add integrity report**
+- [x] **Step 4: Add integrity report**
 
 Before commit, compare:
 
@@ -697,7 +697,7 @@ Before commit, compare:
 
 Any mismatch rolls back and reports an error.
 
-- [ ] **Step 5: Run migration and circuit tests**
+- [x] **Step 5: Run migration and circuit tests**
 
 Expected: pass without changing test fixtures on second run.
 
@@ -732,17 +732,17 @@ export function guardarBorrador(storage: Storage, clave: string, value: Borrador
 export function eliminarBorrador(storage: Storage, clave: string): void;
 ```
 
-- [ ] **Step 1: Write tests with an in-memory Storage implementation**
+- [x] **Step 1: Write tests with an in-memory Storage implementation**
 
 Cover save/load, malformed JSON, version mismatch, separate keys, and clear after send.
 
-- [ ] **Step 2: Verify failure**
+- [x] **Step 2: Verify failure**
 
-- [ ] **Step 3: Implement defensive parsing**
+- [x] **Step 3: Implement defensive parsing**
 
 Malformed or incompatible values return `null` and are removed. Preserve idempotency key across reloads.
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Expected: pass.
 
@@ -776,7 +776,7 @@ type ConstructorOrdenProps = {
 };
 ```
 
-- [ ] **Step 1: Write SSR UI tests**
+- [x] **Step 1: Write SSR UI tests**
 
 Assert:
 
@@ -788,17 +788,17 @@ Assert:
 - sent order does not render an `Enviar` button;
 - `Nueva orden` opens constructor with fixed table.
 
-- [ ] **Step 2: Verify failure**
+- [x] **Step 2: Verify failure**
 
 ```bash
 ~/commands/bin/logged npx vitest run test/cuenta-mesa-ui.test.ts test/pedido-ticket-ui.test.ts test/pedidos-ui.test.ts
 ```
 
-- [ ] **Step 3: Extract constructor from Pedido**
+- [x] **Step 3: Extract constructor from Pedido**
 
 Use lucide icons (`Pencil`, `Trash2`, `Plus`, `Send`). Quantity controls exist only in the active constructor/modal, never permanently beside sent lines.
 
-- [ ] **Step 4: Integrate App state**
+- [x] **Step 4: Integrate App state**
 
 Replace `pedidoId`-centric state with:
 
@@ -814,11 +814,11 @@ const [contextoOrden, setContextoOrden] = useState<
 
 Save draft on each change. Remove it only after 2xx response.
 
-- [ ] **Step 5: Implement correction modal**
+- [x] **Step 5: Implement correction modal**
 
 Open full effective order, request PIN before submit, show textual diff preview, request justification only when configured and an effective quantity reaches zero.
 
-- [ ] **Step 6: Run UI tests and lints**
+- [x] **Step 6: Run UI tests and lints**
 
 Expected: pass and no new lints.
 
@@ -849,17 +849,17 @@ type ModalCrearProductoProps = {
 };
 ```
 
-- [ ] **Step 1: Write modal tests**
+- [x] **Step 1: Write modal tests**
 
 Assert `role="dialog"`, `aria-modal="true"`, title `Crear producto`, cancel action, and that the underlying route remains unchanged.
 
-- [ ] **Step 2: Verify failure**
+- [x] **Step 2: Verify failure**
 
-- [ ] **Step 3: Make CrearProducto presentational**
+- [x] **Step 3: Make CrearProducto presentational**
 
 Keep all form fields and validation in `CrearProducto`; remove assumptions about full-page navigation. Wrap it in `ModalCrearProducto`.
 
-- [ ] **Step 4: Replace destination with overlay state**
+- [x] **Step 4: Replace destination with overlay state**
 
 Remove `"producto-nuevo"` from `Destino`. In `App`:
 
@@ -869,7 +869,7 @@ const [crearProductoAbierto, setCrearProductoAbierto] = useState(false);
 
 Bar and Backend call `setCrearProductoAbierto(true)`. Successful save refreshes products and closes. Escape/click outside ask confirmation only if the form is dirty.
 
-- [ ] **Step 5: Run focused UI tests**
+- [x] **Step 5: Run focused UI tests**
 
 Expected: pass.
 
@@ -889,7 +889,7 @@ Expected: pass.
 - `estadoMesa(db, mesaId)` derives occupation from active `cuentas`.
 - `pedidoIdAbierto`, `abrirMesa`, `abrirTab`, `borradorSinMesa`, and `limpiarPedidosSinMesa` become legacy-only and are not called by new routes/UI.
 
-- [ ] **Step 1: Rewrite salon behavior tests**
+- [x] **Step 1: Rewrite salon behavior tests**
 
 Assert:
 
@@ -898,7 +898,7 @@ Assert:
 - closing account makes table free;
 - one table cannot have two active accounts.
 
-- [ ] **Step 2: Remove UI calls to legacy draft endpoints**
+- [x] **Step 2: Remove UI calls to legacy draft endpoints**
 
 Search:
 
@@ -908,7 +908,7 @@ Search:
 
 Expected after cutover: matches only in explicitly marked legacy adapters/tests.
 
-- [ ] **Step 3: Run all verification**
+- [x] **Step 3: Run all verification**
 
 ```bash
 ~/commands/bin/logged npm test
@@ -921,7 +921,7 @@ Expected:
 - TypeScript exits 0;
 - Vite build exits 0.
 
-- [ ] **Step 4: Exercise the real data migration on a copy**
+- [x] **Step 4: Exercise the real data migration on a copy**
 
 Copy the current dev database to a temporary path, run migration, and verify:
 
@@ -937,7 +937,9 @@ Expected: zero rows.
 
 Compare counts and totals from the migration report. Do not run destructive cleanup on the live file in this task.
 
-- [ ] **Step 5: Update docs to actual state**
+Executed 2026-08-23. No dev database existed on this machine, so the exercise ran on a file-based temp DB seeded with representative legacy data (enviado, precuenta emitida, borrador sin mesa, cancelado). Invariant returned zero rows, totals matched the legacy lines, `foreign_key_check` was clean and the second run converted nothing.
+
+- [x] **Step 5: Update docs to actual state**
 
 Mark implemented sections accurately. Keep reservations explicitly deferred. Record legacy endpoints/tables that remain and the later removal condition.
 

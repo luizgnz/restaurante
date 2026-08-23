@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { cuentaActivaPorMesa } from "../cuentas/cuentas.ts";
 
 export type EstadoMesa = "libre" | "ocupada" | "en_cocina" | "precuenta" | "en_caja";
 
@@ -13,6 +14,7 @@ export class SalonError extends Error {
 
 type PedidoRow = { id: number; estado: string };
 
+/** Legacy: los pedidos activos solo existen hasta retirar el modelo anterior. */
 function pedidoAbierto(db: Database.Database, mesaId: number): PedidoRow | undefined {
   return db
     .prepare(
@@ -21,24 +23,37 @@ function pedidoAbierto(db: Database.Database, mesaId: number): PedidoRow | undef
     .get(mesaId) as PedidoRow | undefined;
 }
 
+/** Legacy: expuesto solo para los adaptadores del modelo anterior. */
 export function pedidoIdAbierto(db: Database.Database, mesaId: number): number | null {
   return pedidoAbierto(db, mesaId)?.id ?? null;
 }
 
+/**
+ * La ocupación sale de la cuenta activa, no de los pedidos.
+ *
+ * Una cuenta nace al enviar la primera orden, así que `abierta` significa que
+ * hay consumo en cocina y `precuenta_emitida` que el servicio va cerrando. El
+ * handoff a caja cierra la cuenta y la mesa vuelve a quedar libre.
+ */
 export function estadoMesa(db: Database.Database, mesaId: number): EstadoMesa {
-  const pedido = pedidoAbierto(db, mesaId);
-  if (!pedido) return "libre";
-  if (pedido.estado === "precuenta_emitida") return "precuenta";
-  if (pedido.estado === "enviado" || pedido.estado === "parcialmente_enviado") return "en_cocina";
-  return "ocupada";
+  const cuenta = cuentaActivaPorMesa(db, mesaId);
+  if (!cuenta) return "libre";
+  if (cuenta.estado === "precuenta_emitida") return "precuenta";
+  return "en_cocina";
 }
 
+/** Ocupada por el modelo nuevo o por un pedido legacy sin retirar. */
+function mesaConConsumo(db: Database.Database, mesaId: number): boolean {
+  return cuentaActivaPorMesa(db, mesaId) !== null || pedidoAbierto(db, mesaId) !== undefined;
+}
+
+/** Legacy: el modelo de cuentas no abre mesas; la cuenta nace al enviar. */
 export function abrirMesa(
   db: Database.Database,
   input: { mesaId: number; cubiertos: number; preset: string; meseroId: number },
 ): { pedidoId: number } {
   if (input.cubiertos <= 0) throw new SalonError("cubiertos_requeridos", "Hay que indicar cubiertos");
-  if (pedidoAbierto(db, input.mesaId)) throw new SalonError("mesa_ocupada", "mesa_ocupada");
+  if (mesaConConsumo(db, input.mesaId)) throw new SalonError("mesa_ocupada", "mesa_ocupada");
   const info = db
     .prepare(
       "INSERT INTO pedidos (mesa_id, preset, cubiertos, estado, mesero_id, abierto_en) VALUES (?, ?, ?, 'borrador', ?, ?)",
@@ -47,7 +62,7 @@ export function abrirMesa(
   return { pedidoId: Number(info.lastInsertRowid) };
 }
 
-/** Devuelve el único pedido sin completar y sin mesa, si existe. */
+/** Legacy: los borradores nuevos viven en el navegador, no en SQLite. */
 export function borradorSinMesa(db: Database.Database): number | null {
   const row = db
     .prepare(
@@ -59,6 +74,7 @@ export function borradorSinMesa(db: Database.Database): number | null {
   return row?.id ?? null;
 }
 
+/** Legacy: solo lo usan los adaptadores del modelo anterior. */
 export function abrirTab(
   db: Database.Database,
   input: { cubiertos: number; preset: string; meseroId: number },
@@ -73,7 +89,7 @@ export function abrirTab(
   return { pedidoId: Number(info.lastInsertRowid) };
 }
 
-/** Borra los pedidos sin mesa que quedaron vacíos, dejando a lo sumo el borrador actual. */
+/** Legacy: borra los pedidos sin mesa que quedaron vacíos, dejando a lo sumo el borrador actual. */
 export function limpiarPedidosSinMesa(db: Database.Database): number {
   const sobrantes = db
     .prepare(
@@ -100,13 +116,14 @@ export function limpiarPedidosSinMesa(db: Database.Database): number {
   return aBorrar.length;
 }
 
+/** Legacy: solo los pedidos sin convertir se asignan así; el envío nuevo resuelve la mesa por cuenta. */
 export function asignarMesa(db: Database.Database, pedidoId: number, mesaId: number): void {
   const pedido = db.prepare("SELECT id, estado FROM pedidos WHERE id = ?").get(pedidoId) as PedidoRow | undefined;
   if (!pedido) throw new SalonError("pedido_inexistente", "Pedido inexistente");
   if (pedido.estado === "en_caja" || pedido.estado === "cancelado") {
     throw new SalonError("pedido_cerrado", "Pedido cerrado");
   }
-  if (pedidoAbierto(db, mesaId)) throw new SalonError("mesa_ocupada", "mesa_ocupada");
+  if (mesaConConsumo(db, mesaId)) throw new SalonError("mesa_ocupada", "mesa_ocupada");
   db.prepare("UPDATE pedidos SET mesa_id = ? WHERE id = ?").run(mesaId, pedidoId);
 }
 
@@ -260,7 +277,7 @@ export function guardarPlano(
     }
   }
   for (const mesaId of input.quitarMesaIds ?? []) {
-    if (pedidoAbierto(db, mesaId)) throw new SalonError("mesa_ocupada", "No se quita una mesa con pedido");
+    if (mesaConConsumo(db, mesaId)) throw new SalonError("mesa_ocupada", "No se quita una mesa con consumo");
     db.prepare("UPDATE mesas SET activa = 0 WHERE id = ?").run(mesaId);
   }
   for (const pisoId of input.quitarPisoIds ?? []) {
@@ -271,7 +288,7 @@ export function guardarPlano(
       )
       .all(pisoId) as { id: number }[];
     for (const m of ocupadas) {
-      if (pedidoAbierto(db, m.id)) throw new SalonError("piso_ocupado", "No se elimina un piso con pedidos abiertos");
+      if (mesaConConsumo(db, m.id)) throw new SalonError("piso_ocupado", "No se elimina un piso con consumo abierto");
     }
     db.prepare("UPDATE mesas SET activa = 0 WHERE piso_id = ?").run(pisoId);
     db.prepare("UPDATE pisos SET activo = 0 WHERE id = ?").run(pisoId);
@@ -279,6 +296,7 @@ export function guardarPlano(
   return { pisos: pisosOut };
 }
 
+/** Legacy: en el modelo de cuentas la mesa se libera cerrando la cuenta. */
 export function liberarMesa(db: Database.Database, mesaId: number): void {
   const pedido = pedidoAbierto(db, mesaId);
   if (!pedido) return;

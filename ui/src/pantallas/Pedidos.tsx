@@ -1,68 +1,69 @@
-export type LineaPedido = {
-  id: number;
+export type LineaCuentaUi = {
+  lineaClave: string;
+  productoId: number;
   nombre: string;
   cantidad: number;
-  estado: string;
-  nota?: string | null;
-  sePuedeEditar: boolean;
+  nota: string | null;
 };
 
-export type PedidoEnCurso = {
+export type CuentaEnCursoUi = {
   id: number;
-  mesa: number | null;
+  mesaId: number;
+  mesa: number;
   mesero: string;
+  estado: string;
+  abiertaEn?: string;
   hace: string;
   espera_min?: number;
-  abierto_en?: string;
-  estado?: string;
-  indicaciones?: string | null;
-  lineas: LineaPedido[];
+  totalCentavos: number;
+  ordenes: {
+    id: number;
+    numero: number;
+    lineas: LineaCuentaUi[];
+  }[];
 };
 
 const ESTADO: Record<string, string> = {
-  borrador: "Sin completar",
-  parcialmente_enviado: "Sin completar",
-  enviado: "En cocina",
+  abierta: "En pedido",
   precuenta_emitida: "Precuenta emitida",
 };
 
 type Props = {
-  pedidos: PedidoEnCurso[];
-  onAbrir: (id: number) => void;
-  onEnProceso: (lineaId: number) => void;
-  mostrarEnProceso?: boolean;
+  cuentas: CuentaEnCursoUi[];
+  onAbrir: (cuentaId: number) => void;
 };
 
-export function Pedidos({ pedidos, onAbrir, onEnProceso, mostrarEnProceso }: Props) {
+export function Pedidos({ cuentas, onAbrir }: Props) {
   return (
     <section>
       <h1>Órdenes</h1>
       <div className="kds">
-        {pedidos.map((p) => (
-          <article className="tarjeta" key={p.id}>
-            <button className="pedido-cabecera" onClick={() => onAbrir(p.id)}>
-              <strong>{p.mesa ? `Mesa ${p.mesa}` : "Sin mesa asignada"}</strong>
-              <span className="pedido-estado">{p.estado ? (ESTADO[p.estado] ?? p.estado) : "Sin completar"}</span>
+        {cuentas.map((cuenta) => (
+          <article className="tarjeta" key={cuenta.id}>
+            <button className="pedido-cabecera" onClick={() => onAbrir(cuenta.id)}>
+              <strong>Mesa {cuenta.mesa}</strong>
+              <span className="pedido-estado">{ESTADO[cuenta.estado] ?? cuenta.estado}</span>
               <span>
-                {p.mesero} · {p.hace}
+                {cuenta.mesero} · {cuenta.hace}
               </span>
             </button>
-            {p.indicaciones ? <p className="pedido-indicaciones">{p.indicaciones}</p> : null}
-            {p.lineas.map((l) => (
-              <div className="pedido-linea" key={l.id}>
-                <span>
-                  {l.cantidad} × {l.nombre}
-                  {l.nota ? ` (${l.nota})` : ""}
-                </span>
-                {mostrarEnProceso && l.estado === "enviada" ? (
-                  <button onClick={() => onEnProceso(l.id)}>En proceso</button>
-                ) : null}
+            {cuenta.ordenes.map((orden) => (
+              <div key={orden.id}>
+                <p className="pedido-indicaciones">Orden #{orden.numero}</p>
+                {orden.lineas.map((linea) => (
+                  <div className="pedido-linea" key={linea.lineaClave}>
+                    <span>
+                      {linea.cantidad} × {linea.nombre}
+                      {linea.nota ? ` (${linea.nota})` : ""}
+                    </span>
+                  </div>
+                ))}
               </div>
             ))}
-            {p.lineas.length === 0 ? <p className="login-odoo__ayuda">Sin productos aún</p> : null}
+            {cuenta.ordenes.length === 0 ? <p className="login-odoo__ayuda">Sin órdenes aún</p> : null}
           </article>
         ))}
-        {pedidos.length === 0 ? <p>No hay pedidos en curso</p> : null}
+        {cuentas.length === 0 ? <p>No hay cuentas en curso</p> : null}
       </div>
     </section>
   );

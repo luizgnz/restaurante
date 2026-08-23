@@ -6,7 +6,7 @@ export type Mesa = {
   id: number;
   numero: number;
   estado: string;
-  pedidoId: number | null;
+  cuentaId: number | null;
   asientos: number;
   pos_x: number;
   pos_y: number;

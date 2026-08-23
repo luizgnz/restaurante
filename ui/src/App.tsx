@@ -5,13 +5,14 @@ import { esperaMinutos, nivelEspera } from "../../src/modules/tiempo.ts";
 import { Barra, type Destino } from "./pantallas/Barra.tsx";
 import { Backend } from "./pantallas/Backend.tsx";
 import { ConstructorOrden, type ProductoCarta } from "./pantallas/ConstructorOrden.tsx";
-import { CrearProducto, type Categoria } from "./pantallas/CrearProducto.tsx";
+import { type Categoria } from "./pantallas/CrearProducto.tsx";
 import { CuentaMesa, type CuentaDetalleUi, type OrdenCuentaUi } from "./pantallas/CuentaMesa.tsx";
 import { EditarMapa } from "./pantallas/EditarMapa.tsx";
 import { Login } from "./pantallas/Login.tsx";
+import { ModalCrearProducto } from "./pantallas/ModalCrearProducto.tsx";
 import { ModalEditarOrden } from "./pantallas/ModalEditarOrden.tsx";
 import { Opciones, type OpcionesValores } from "./pantallas/Opciones.tsx";
-import { Pedidos, type PedidoEnCurso } from "./pantallas/Pedidos.tsx";
+import { Pedidos, type CuentaEnCursoUi } from "./pantallas/Pedidos.tsx";
 import { PinPad } from "./pantallas/PinPad.tsx";
 import { Plano, type Mesa, type PedidoBarra, type Piso } from "./pantallas/Plano.tsx";
 import { VistaPreviaComanda } from "./pantallas/VistaPreviaComanda.tsx";
@@ -25,13 +26,9 @@ import {
 import {
   completarEnvioBorrador,
   contextoNuevaOrdenDeCuenta,
-  cuentaConocidaDeMesa,
   ejecutarAccionModal,
-  estadoMesaConCuentas,
-  registrarCuentaConocida,
   vistaTrasAccionCuenta,
   type ContextoOrden,
-  type CuentasConocidas,
 } from "./lib/flujo-cuentas.ts";
 
 type PinPendiente =
@@ -55,16 +52,14 @@ export function App() {
   const [tieneFondo, setTieneFondo] = useState(false);
   const [fondoTick, setFondoTick] = useState(0);
   const [productos, setProductos] = useState<ProductoCarta[]>([]);
-  const [pedidos, setPedidos] = useState<PedidoEnCurso[]>([]);
-  const [cuentaId, setCuentaId] = useState<number | null>(null);
-  const [cuentasConocidas, setCuentasConocidas] = useState<CuentasConocidas>({});
+  const [cuentasEnCurso, setCuentasEnCurso] = useState<CuentaEnCursoUi[]>([]);
+  const [cuentaActual, setCuentaActual] = useState<CuentaDetalleUi | null>(null);
   const [contextoOrden, setContextoOrden] = useState<ContextoOrden | null>(null);
   const [borradorOrden, setBorradorOrden] = useState<BorradorOrden | null>(null);
   const [edicionOrden, setEdicionOrden] = useState<EdicionOrden | null>(null);
   const [pinPendiente, setPinPendiente] = useState<PinPendiente | null>(null);
   const [previewOrden, setPreviewOrden] = useState<BorradorOrden | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const [tabletCocina, setTabletCocina] = useState(false);
   const [barraUltimos, setBarraUltimos] = useState(true);
   const [barraAtrasados, setBarraAtrasados] = useState(true);
   const [nombreLocal, setNombreLocal] = useState("Restaurante");
@@ -77,11 +72,11 @@ export function App() {
   const [auditoriaAnulaciones, setAuditoriaAnulaciones] = useState(false);
   const [justificacionAnulacion, setJustificacionAnulacion] = useState(false);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [crearProductoAbierto, setCrearProductoAbierto] = useState(false);
+  const [errorCrearProducto, setErrorCrearProducto] = useState("");
   const [error, setError] = useState("");
   const [errorModal, setErrorModal] = useState("");
   const envioEnCurso = useRef(false);
-  const cuenta =
-    cuentaId == null ? null : Object.values(cuentasConocidas).find((item) => item.id === cuentaId) ?? null;
 
   async function cargarSesion() {
     setSesion(await api<Sesion>("/api/sesion"));
@@ -108,16 +103,15 @@ export function App() {
   }
   async function cargarCuenta(id: number) {
     const data = await api<CuentaDetalleUi>(`/api/cuentas/${id}`);
-    setCuentaId(id);
-    setCuentasConocidas((actuales) => registrarCuentaConocida(actuales, data));
+    setCuentaActual(data);
     return data;
   }
-  async function cargarPedidos() {
-    const data = await api<{ pedidos: PedidoEnCurso[] }>("/api/pedidos");
-    setPedidos(data.pedidos);
+  async function cargarCuentasEnCurso() {
+    const data = await api<{ cuentas: CuentaEnCursoUi[] }>("/api/cuentas");
+    setCuentasEnCurso(data.cuentas);
   }
   async function cargarConfig() {
-    const data = await api<OpcionesValores & { tablet_cocina: boolean; barra_ultimos_pedidos: boolean; barra_atrasados: boolean }>(
+    const data = await api<OpcionesValores & { barra_ultimos_pedidos: boolean; barra_atrasados: boolean }>(
       "/api/config",
     );
     aplicarConfig(data);
@@ -125,12 +119,10 @@ export function App() {
 
   function aplicarConfig(
     data: Partial<OpcionesValores> & {
-      tablet_cocina?: boolean;
       barra_ultimos_pedidos?: boolean;
       barra_atrasados?: boolean;
     },
   ) {
-    if (typeof data.tablet_cocina === "boolean") setTabletCocina(data.tablet_cocina);
     if (typeof data.barra_ultimos_pedidos === "boolean") setBarraUltimos(data.barra_ultimos_pedidos);
     if (typeof data.barra_atrasados === "boolean") setBarraAtrasados(data.barra_atrasados);
     if (typeof data.nombre_local === "string") setNombreLocal(data.nombre_local);
@@ -162,18 +154,18 @@ export function App() {
     document.documentElement.dataset.tamano = tamanoUi;
   }, [tipografia, tamanoUi]);
 
-  function conEspera(lista: PedidoEnCurso[]): PedidoBarra[] {
-    return lista.map((p) => {
-      const abierto_en = p.abierto_en ?? new Date().toISOString();
-      const espera_min = p.espera_min ?? esperaMinutos(abierto_en);
+  function conEspera(lista: CuentaEnCursoUi[]): PedidoBarra[] {
+    return lista.map((cuenta) => {
+      const abiertaEn = cuenta.abiertaEn ?? new Date().toISOString();
+      const espera_min = cuenta.espera_min ?? esperaMinutos(abiertaEn);
       return {
-        id: p.id,
-        mesa: p.mesa,
-        mesero: p.mesero,
-        hace: p.hace,
+        id: cuenta.id,
+        mesa: cuenta.mesa,
+        mesero: cuenta.mesero,
+        hace: cuenta.hace,
         espera_min,
         nivel: nivelEspera(espera_min),
-        abierto_en,
+        abierto_en: abiertaEn,
       };
     });
   }
@@ -186,7 +178,7 @@ export function App() {
     if (!sesion?.abierta) return;
     cargarPlano().catch((e) => setError(String(e)));
     cargarCarta().catch((e) => setError(String(e)));
-    cargarPedidos().catch((e) => setError(String(e)));
+    cargarCuentasEnCurso().catch((e) => setError(String(e)));
     cargarConfig().catch((e) => setError(String(e)));
   }, [sesion?.abierta]);
 
@@ -205,10 +197,15 @@ export function App() {
   }
 
   async function ir(v: Destino) {
-    if (v === "pedidos") cargarPedidos().catch((e) => setError(String(e)));
-    if (v === "producto-nuevo") cargarCategorias().catch((e) => setError(String(e)));
+    if (v === "pedidos") cargarCuentasEnCurso().catch((e) => setError(String(e)));
     if (v === "plano" || v === "editar-mapa") cargarPlano().catch((e) => setError(String(e)));
     setVista(v);
+  }
+
+  function abrirCrearProducto() {
+    setErrorCrearProducto("");
+    setCrearProductoAbierto(true);
+    cargarCategorias().catch((e) => setErrorCrearProducto(String(e)));
   }
 
   function contextoBorrador(contexto: ContextoOrden) {
@@ -235,7 +232,7 @@ export function App() {
   function abrirConstructor(contexto: ContextoOrden) {
     const clave = claveBorrador(contextoBorrador(contexto));
     const guardado = cargarBorrador(window.localStorage, clave);
-    if (contexto.tipo !== "cuenta") setCuentaId(null);
+    if (contexto.tipo !== "cuenta") setCuentaActual(null);
     setContextoOrden(contexto);
     setBorradorOrden(guardado ?? borradorNuevo(contexto));
     setVista("pedido");
@@ -275,7 +272,7 @@ export function App() {
       setContextoOrden(null);
       setBorradorOrden(null);
       setPinPendiente(null);
-      await Promise.all([cargarPlano(), cargarPedidos()]);
+      await Promise.all([cargarPlano(), cargarCuentasEnCurso()]);
     } finally {
       envioEnCurso.current = false;
       setEnviando(false);
@@ -326,11 +323,11 @@ export function App() {
     try {
       await api(`/api/cuentas/${id}/${tipo}`, { method: "POST", body: JSON.stringify({ pin }) });
       await cargarCuenta(id);
-      await Promise.all([cargarPlano(), cargarPedidos()]);
+      await Promise.all([cargarPlano(), cargarCuentasEnCurso()]);
       setPinPendiente(null);
       setVista(vistaTrasAccionCuenta(tipo));
       if (tipo === "enviar-caja") {
-        setCuentaId(null);
+        setCuentaActual(null);
         setContextoOrden(null);
         setBorradorOrden(null);
       }
@@ -341,13 +338,13 @@ export function App() {
   }
 
   function empezarAccionCuenta(tipo: "precuenta" | "enviar-caja") {
-    if (!cuentaId || enviando || pinPendiente) return;
+    if (!cuentaActual || enviando || pinPendiente) return;
     if (pinHabilitado) {
       setErrorModal("");
-      setPinPendiente({ tipo, cuentaId });
+      setPinPendiente({ tipo, cuentaId: cuentaActual.id });
       return;
     }
-    conError(() => accionCuenta(tipo, cuentaId));
+    conError(() => accionCuenta(tipo, cuentaActual.id));
   }
 
   async function resolverPin(pin: string) {
@@ -390,6 +387,7 @@ export function App() {
             setVista("plano");
           })
         }
+        onCrearProducto={abrirCrearProducto}
         onIr={ir}
       />
       {error ? <p role="alert">{error}</p> : null}
@@ -418,7 +416,7 @@ export function App() {
             onContinuar={() => conError(continuarPreviewOrden)}
           />
         ) : null}
-        {edicionOrden && cuenta ? (
+        {edicionOrden && cuentaActual ? (
           <ModalEditarOrden
             orden={edicionOrden.orden}
             productos={productos}
@@ -438,9 +436,9 @@ export function App() {
                   ...(edicionOrden.modo === "anular" ? { lineas: undefined, indicaciones: undefined } : {}),
                 }),
               });
-              await cargarCuenta(cuenta.id);
+              await cargarCuenta(cuentaActual.id);
               setEdicionOrden(null);
-              await Promise.all([cargarPlano(), cargarPedidos()]);
+              await Promise.all([cargarPlano(), cargarCuentasEnCurso()]);
             }}
           />
         ) : null}
@@ -449,7 +447,7 @@ export function App() {
             piso={piso}
             pisoId={pisoId}
             pisos={pisos}
-            mesas={mesas.map((m) => ({ ...m, estado: estadoMesaConCuentas(m.estado, cuentasConocidas, m.id) }))}
+            mesas={mesas}
             bloqueado={Boolean(pinPendiente || previewOrden || edicionOrden)}
             fondoUrl={tieneFondo && pisoId ? `/api/pisos/${pisoId}/fondo?t=${fondoTick}` : null}
             onPiso={(p) => {
@@ -459,31 +457,28 @@ export function App() {
             }}
             mostrarUltimos={barraUltimos}
             mostrarAtrasados={barraAtrasados}
-            ultimos={ultimosPedidos(conEspera(pedidos), 5)}
-            atrasados={pedidosAtrasados(conEspera(pedidos), 5)}
+            ultimos={ultimosPedidos(conEspera(cuentasEnCurso), 5)}
+            atrasados={pedidosAtrasados(conEspera(cuentasEnCurso), 5)}
             onPedido={() => setVista("pedidos")}
             onToggleUltimos={() => conError(() => guardarBarras({ barra_ultimos_pedidos: !barraUltimos }))}
             onToggleAtrasados={() => conError(() => guardarBarras({ barra_atrasados: !barraAtrasados }))}
             onOrdenes={() => {
               setVista("pedidos");
-              cargarPedidos().catch((e) => setError(String(e)));
+              cargarCuentasEnCurso().catch((e) => setError(String(e)));
             }}
             onNuevoPedido={() => abrirConstructor({ tipo: "general" })}
             onMesa={(m) => {
-              const conocida = cuentaConocidaDeMesa(cuentasConocidas, m.id);
-              if (conocida && (conocida.estado === "abierta" || conocida.estado === "precuenta_emitida")) {
-                setCuentaId(conocida.id);
-                setContextoOrden(null);
-                setBorradorOrden(null);
-                setVista("pedido");
+              if (m.cuentaId) {
+                conError(async () => {
+                  await cargarCuenta(m.cuentaId as number);
+                  setContextoOrden(null);
+                  setBorradorOrden(null);
+                  setVista("pedido");
+                });
                 return;
               }
-              if (conocida?.estado === "en_caja") {
-                setError(`La cuenta de Mesa #${m.numero} ya está en caja.`);
-                return;
-              }
-              if (m.pedidoId || m.estado !== "libre") {
-                setError("Esta mesa pertenece al circuito legacy; su coexistencia se resolverá en Task 12.");
+              if (m.estado !== "libre") {
+                setError(`La Mesa #${m.numero} no está disponible.`);
                 return;
               }
               abrirConstructor({ tipo: "mesa", mesaId: m.id, mesaNumero: m.numero });
@@ -503,61 +498,66 @@ export function App() {
             mesasSeleccionables={mesas.map((m) => ({
               id: m.id,
               numero: m.numero,
-              estado: estadoMesaConCuentas(m.estado, cuentasConocidas, m.id) === "libre" ? "libre" : "ocupada",
+              estado: m.estado === "libre" ? "libre" : "ocupada",
             }))}
             onCambiar={cambiarBorrador}
             onEnviar={(borrador) => conError(() => empezarEnviarOrden(borrador))}
             onCancelar={() => {
               setContextoOrden(null);
               setBorradorOrden(null);
-              setVista(cuenta ? "pedido" : "plano");
+              setVista(cuentaActual ? "pedido" : "plano");
             }}
           />
         ) : null}
-        {vista === "pedido" && !contextoOrden && cuenta ? (
+        {vista === "pedido" && !contextoOrden && cuentaActual ? (
           <CuentaMesa
-            cuenta={cuenta}
-            onNuevaOrden={() => abrirConstructor(contextoNuevaOrdenDeCuenta(cuenta))}
+            cuenta={cuentaActual}
+            onNuevaOrden={() => abrirConstructor(contextoNuevaOrdenDeCuenta(cuentaActual))}
             onEditarOrden={(orden) => setEdicionOrden({ orden, modo: "editar" })}
             onAnularOrden={(orden) => setEdicionOrden({ orden, modo: "anular" })}
             onPrecuenta={() => empezarAccionCuenta("precuenta")}
             onEnviarCaja={() => empezarAccionCuenta("enviar-caja")}
             onNotaPrivada={async (notaPrivada) => {
-              await api(`/api/cuentas/${cuenta.id}/nota-privada`, {
+              await api(`/api/cuentas/${cuentaActual.id}/nota-privada`, {
                 method: "POST",
                 body: JSON.stringify({ notaPrivada }),
               });
-              await cargarCuenta(cuenta.id);
+              await cargarCuenta(cuentaActual.id);
             }}
           />
         ) : null}
         {vista === "pedidos" ? (
           <Pedidos
-            mostrarEnProceso={tabletCocina}
-            pedidos={pedidos}
-            onAbrir={() => setError("La lista legacy es solo lectura hasta Task 12.")}
-            onEnProceso={(lineaId) =>
+            cuentas={cuentasEnCurso}
+            onAbrir={(cuentaId) =>
               conError(async () => {
-                await api(`/api/lineas/${lineaId}/en-proceso`, { method: "POST" });
-                await cargarPedidos();
+                await cargarCuenta(cuentaId);
+                setContextoOrden(null);
+                setBorradorOrden(null);
+                setVista("pedido");
               })
             }
           />
         ) : null}
-        {vista === "producto-nuevo" ? (
-          <CrearProducto
-            categorias={categorias}
-            error={error}
-            onCancelar={() => setVista("plano")}
-            onGuardar={(p) =>
-              conError(async () => {
-                await api("/api/productos", { method: "POST", body: JSON.stringify(p) });
-                await cargarCarta();
-                setVista("plano");
-              })
+        <ModalCrearProducto
+          abierto={crearProductoAbierto}
+          categorias={categorias}
+          error={errorCrearProducto}
+          onCerrar={() => {
+            setCrearProductoAbierto(false);
+            setErrorCrearProducto("");
+          }}
+          onGuardar={async (p) => {
+            try {
+              setErrorCrearProducto("");
+              await api("/api/productos", { method: "POST", body: JSON.stringify(p) });
+              await cargarCarta();
+              setCrearProductoAbierto(false);
+            } catch (e) {
+              setErrorCrearProducto(e instanceof Error ? e.message : String(e));
             }
-          />
-        ) : null}
+          }}
+        />
         {vista === "editar-mapa" ? (
           <EditarMapa
             pisos={pisos}
@@ -599,7 +599,7 @@ export function App() {
         ) : null}
         {vista === "backend" ? (
           <Backend
-            onCrearProducto={() => ir("producto-nuevo")}
+            onCrearProducto={abrirCrearProducto}
             onEditarMapa={() => ir("editar-mapa")}
             onMesas={() => ir("plano")}
           />

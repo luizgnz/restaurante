@@ -13,6 +13,7 @@ describe("barra POS", () => {
         onMesas: () => undefined,
         onOrdenes: () => undefined,
         onCerrarSesion: () => undefined,
+        onCrearProducto: () => undefined,
         onIr: () => undefined,
       }),
     );

@@ -1,9 +1,9 @@
 # Diseño: cuentas de mesa, órdenes y correcciones
 
 **Fecha:** 2026-08-22  
-**Estado:** aprobado conceptualmente; pendiente de revisión escrita  
+**Estado:** implementado (núcleo, correcciones, precuenta/caja, cocina, borradores en navegador y cutover de UI; retiro de tablas legacy diferido)  
 **Alcance:** modelo de datos, estados, flujo POS, cocina y borradores.  
-**Diferido:** reservas y bloqueo programado quedan especificados como fase posterior; no forman parte del primer plan de implementación del núcleo.
+**Diferido:** reservas y bloqueo programado quedan especificados como fase posterior; no forman parte del primer plan de implementación del núcleo. El retiro físico de `pedidos`/`pedido_lineas` va en una migración posterior.
 
 ## 1. Decisiones de dominio
 
@@ -385,7 +385,7 @@ Un error de dominio nunca es `500`. El código del dominio decide el status:
 
 ### Rutas del modelo anterior
 
-Las rutas de `pedidos` siguen operativas mientras la UI migra. Cada **mutación** legacy responde con `Deprecation: true` y un `Link: <sucesor>; rel="successor-version"`, y sigue escribiendo **solo** en el modelo anterior: no hay doble escritura que reconciliar después. Las lecturas no llevan aviso.
+Las rutas de `pedidos` siguen operativas como adaptadores de respaldo; la UI ya no las llama (cutover de la Tarea 12). Cada **mutación** legacy responde con `Deprecation: true` y un `Link: <sucesor>; rel="successor-version"`, y sigue escribiendo **solo** en el modelo anterior: no hay doble escritura que reconciliar después. Las lecturas no llevan aviso.
 
 `POST /api/lineas/:id/en-proceso` es un adaptador de verdad: traduce el id de línea de pedido al de comanda y delega en la misma transición protegida que usa la pantalla nueva. `precuenta` y `enviar-caja` de `pedidos` no pueden delegar en los servicios de cuenta —un pedido legacy no tiene cuenta hasta que la migración de datos lo convierta—, así que siguen sobre el servicio legacy con el encabezado que apunta al sucesor.
 

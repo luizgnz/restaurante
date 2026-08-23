@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-export type Destino = "plano" | "pedido" | "pedidos" | "producto-nuevo" | "editar-mapa" | "backend" | "opciones";
+export type Destino = "plano" | "pedido" | "pedidos" | "editar-mapa" | "backend" | "opciones";
 
 type Props = {
   vista: Destino;
@@ -10,6 +10,7 @@ type Props = {
   onMesas: () => void;
   onOrdenes: () => void;
   onCerrarSesion: () => void;
+  onCrearProducto: () => void;
   onIr: (vista: Destino) => void;
 };
 
@@ -30,7 +31,7 @@ function IconoMenu() {
   );
 }
 
-export function Barra({ vista, marca, logo, nombre, onMesas, onOrdenes, onCerrarSesion, onIr }: Props) {
+export function Barra({ vista, marca, logo, nombre, onMesas, onOrdenes, onCerrarSesion, onCrearProducto, onIr }: Props) {
   const [cuentaAbierta, setCuentaAbierta] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const iconos = useRef<HTMLDivElement>(null);
@@ -38,6 +39,11 @@ export function Barra({ vista, marca, logo, nombre, onMesas, onOrdenes, onCerrar
   function ir(d: Destino) {
     setMenuAbierto(false);
     onIr(d);
+  }
+
+  function crearProducto() {
+    setMenuAbierto(false);
+    onCrearProducto();
   }
 
   useEffect(() => {
@@ -125,7 +131,7 @@ export function Barra({ vista, marca, logo, nombre, onMesas, onOrdenes, onCerrar
               <button type="button" className="tactil" role="menuitem" onClick={() => ir("pedidos")}>
                 Órdenes
               </button>
-              <button type="button" className="tactil" role="menuitem" onClick={() => ir("producto-nuevo")}>
+              <button type="button" className="tactil" role="menuitem" onClick={crearProducto}>
                 Crear producto
               </button>
               <button type="button" className="tactil" role="menuitem" onClick={() => ir("editar-mapa")}>
