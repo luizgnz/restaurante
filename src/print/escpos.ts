@@ -15,7 +15,8 @@ export function textoComanda(ticket: TicketComanda): string {
   const lineas = ticket.lineas
     .map((l) => {
       const nota = l.nota?.trim() ? ` (${l.nota.trim()})` : "";
-      return `${l.cantidad} x ${l.nombre}${nota}`;
+      const contornos = (l.contornos ?? []).map((c) => `\n   ${c}`).join("");
+      return `${l.cantidad} x ${l.nombre}${nota}${contornos}`;
     })
     .join("\n");
   return `COMANDA\n${encabezadoMesa(ticket)}\nMesero: ${ticket.mesero}\n${indicaciones}${lineas}`;

@@ -7,7 +7,7 @@ import { Backend } from "./pantallas/Backend.tsx";
 import { Categorias } from "./pantallas/Categorias.tsx";
 import { ComandaEnPantalla, type ComandaUi } from "./pantallas/ComandaEnPantalla.tsx";
 import { ConfirmarCierreCuenta } from "./pantallas/ConfirmarCierreCuenta.tsx";
-import { ConstructorOrden, type ProductoCarta } from "./pantallas/ConstructorOrden.tsx";
+import { ConstructorOrden, type ConfigContornosUi, type ProductoCarta } from "./pantallas/ConstructorOrden.tsx";
 import { type Categoria } from "./pantallas/CrearProducto.tsx";
 import { CuentaMesa, type CuentaDetalleUi, type OrdenCuentaUi } from "./pantallas/CuentaMesa.tsx";
 import { EditarMapa } from "./pantallas/EditarMapa.tsx";
@@ -15,6 +15,7 @@ import { Login } from "./pantallas/Login.tsx";
 import { ModalCrearProducto } from "./pantallas/ModalCrearProducto.tsx";
 import { ModalEditarOrden } from "./pantallas/ModalEditarOrden.tsx";
 import { ModalOrdenesCuenta } from "./pantallas/ModalOrdenesCuenta.tsx";
+import type { SlotArmadoUi } from "./pantallas/ModalArmadoPlato.tsx";
 import { Opciones, type OpcionesValores } from "./pantallas/Opciones.tsx";
 import { Pedidos, type CuentaEnCursoUi } from "./pantallas/Pedidos.tsx";
 import { PinPad } from "./pantallas/PinPad.tsx";
@@ -83,6 +84,7 @@ export function App() {
   const [cierreRequiereAvanzado, setCierreRequiereAvanzado] = useState(false);
   const [confirmarCierre, setConfirmarCierre] = useState(false);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [contornosConfig, setContornosConfig] = useState<ConfigContornosUi | null>(null);
   const [crearProductoAbierto, setCrearProductoAbierto] = useState(false);
   const [errorCrearProducto, setErrorCrearProducto] = useState("");
   const [error, setError] = useState("");
@@ -197,6 +199,7 @@ export function App() {
     cargarCarta().catch((e) => setError(String(e)));
     cargarCuentasEnCurso().catch((e) => setError(String(e)));
     cargarConfig().catch((e) => setError(String(e)));
+    cargarContornos().catch((e) => setError(String(e)));
   }, [sesion?.abierta]);
 
   async function conError(fn: () => Promise<void>) {
@@ -211,6 +214,19 @@ export function App() {
   async function cargarCategorias() {
     const data = await api<{ categorias: Categoria[] }>("/api/categorias");
     setCategorias(data.categorias);
+  }
+
+  async function cargarContornos() {
+    const data = await api<ConfigContornosUi>("/api/contornos");
+    setContornosConfig({
+      grupos: data.grupos.map((grupo) => ({ id: grupo.id, nombre: grupo.nombre })),
+      variantes: data.grupos.flatMap((grupo) => grupo.variantes),
+    });
+  }
+
+  async function slotsDeProducto(productoId: number): Promise<SlotArmadoUi[]> {
+    const data = await api<{ slots: SlotArmadoUi[] }>(`/api/productos/${productoId}/slots`);
+    return data.slots;
   }
 
   async function ir(v: Destino) {
@@ -585,6 +601,8 @@ export function App() {
               numero: m.numero,
               estado: m.estado === "libre" ? "libre" : "ocupada",
             }))}
+            contornos={contornosConfig}
+            onSlotsDeProducto={slotsDeProducto}
             onCambiar={cambiarBorrador}
             onEnviar={(borrador) => conError(() => empezarEnviarOrden(borrador))}
             onCancelar={() => {

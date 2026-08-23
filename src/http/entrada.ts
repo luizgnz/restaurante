@@ -116,6 +116,14 @@ export function lineasNuevas(valor: unknown): NuevaLineaOrden[] {
     productoId: enteroPositivo(linea.productoId, "producto_invalido", "Producto inválido"),
     cantidad: cantidadPositiva(linea.cantidad),
     nota: textoOpcional(linea.nota) ?? null,
+    ...(linea.contornos === undefined ? {} : { contornos: contornosNuevos(linea.contornos) }),
+  }));
+}
+
+function contornosNuevos(valor: unknown): Array<{ slotPosicion: number; varianteId: number }> {
+  return objetos(valor ?? []).map((seleccion) => ({
+    slotPosicion: enteroPositivo(seleccion.slotPosicion, "slot_invalido", "Slot inválido"),
+    varianteId: enteroPositivo(seleccion.varianteId, "variante_invalida", "Variante inválida"),
   }));
 }
 

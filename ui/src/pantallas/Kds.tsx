@@ -6,6 +6,7 @@ type Linea = {
   cantidad: number;
   delta: number | null;
   nota: string | null;
+  contornos?: string[];
 };
 
 type Tarjeta = {
@@ -37,6 +38,13 @@ export function Kds({ tarjetas }: { tarjetas: Tarjeta[] }) {
                 <li key={l.id}>
                   {cantidad(l)} {l.nombre} · {l.esAviso ? "aviso" : l.etapa}
                   {l.nota ? ` · ${l.nota}` : ""}
+                  {(l.contornos ?? []).length > 0 ? (
+                    <span className="kds-contornos">
+                      {l.contornos!.map((contorno) => (
+                        <em key={contorno}>{contorno}</em>
+                      ))}
+                    </span>
+                  ) : null}
                 </li>
               ))}
             </ul>

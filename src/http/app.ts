@@ -3,6 +3,7 @@ import { Hono, type MiddlewareHandler } from "hono";
 import { saveConfig, normalizarConfig, type AppConfig } from "../config.ts";
 import { CajaError, enviarACaja } from "../modules/caja/caja.ts";
 import { listarPlugins, mensajesVacios } from "../modules/complementos/complementos.ts";
+import { ContornoError, configurarSlots, slotsDeProducto } from "../modules/contornos/contornos.ts";
 import { CuentaError } from "../modules/cuentas/cuentas.ts";
 import { PinError, exigirPin } from "../modules/empleados/empleados.ts";
 import { abrirSesion, cerrarSesion, sesionAbierta } from "../modules/empleados/sesion.ts";
@@ -11,6 +12,7 @@ import { CorreccionError } from "../modules/ordenes/correcciones.ts";
 import { OrdenError } from "../modules/ordenes/enviar.ts";
 import { PrecuentaError } from "../modules/precuenta/precuenta.ts";
 import { idDeRuta, leerJson, SolicitudError, textoRequerido } from "./entrada.ts";
+import { rutasContornos } from "./rutas/contornos.ts";
 import { rutasCuentas } from "./rutas/cuentas.ts";
 import { rutasOrdenes } from "./rutas/ordenes.ts";
 import {
@@ -58,6 +60,8 @@ const CODIGOS_404 = new Set([
   "mesa_inexistente",
   "producto_inexistente",
   "empleado_inexistente",
+  "variante_inexistente",
+  "grupo_inexistente",
 ]);
 
 /** Existe, pero su estado actual no admite la operación. */
@@ -85,7 +89,8 @@ function codigoStatus(err: unknown): StatusError {
     err instanceof CorreccionError ||
     err instanceof PrecuentaError ||
     err instanceof CajaError ||
-    err instanceof KdsError
+    err instanceof KdsError ||
+    err instanceof ContornoError
   ) {
     return statusPorCodigo(err.codigo);
   }
@@ -112,6 +117,7 @@ function codigoDe(err: unknown): string {
     err instanceof CorreccionError ||
     err instanceof PrecuentaError ||
     err instanceof KdsError ||
+    err instanceof ContornoError ||
     err instanceof SolicitudError
   ) {
     return err.codigo;
@@ -164,6 +170,19 @@ function logoValido(data: string | null | undefined): string | null {
   return data;
 }
 
+function normalizarSlotsInput(slots: unknown[]): Parameters<typeof configurarSlots>[2] {
+  return slots.map((slot) => {
+    if (typeof slot !== "object" || slot === null) throw new SolicitudError("slots_invalidos", "Slot inválido");
+    const s = slot as Record<string, unknown>;
+    if (typeof s.posicion !== "number" || !Number.isInteger(s.posicion)) {
+      throw new SolicitudError("slots_invalidos", "El slot necesita posición entera");
+    }
+    if (typeof s.nombre !== "string") throw new SolicitudError("slots_invalidos", "El slot necesita nombre");
+    const grupoIds = Array.isArray(s.grupoIds) ? (s.grupoIds.filter((g) => typeof g === "number") as number[]) : [];
+    return { posicion: s.posicion, nombre: s.nombre, permiteExtra: s.permiteExtra === true, grupoIds };
+  });
+}
+
 async function meseroAlCrear(db: AppDeps["db"], config: AppConfig, pin?: string) {
   if (config.pin_habilitado && config.pin_momento === "crear_orden") {
     return exigirPin(db, pin ?? "", "crear_pedido");
@@ -187,6 +206,17 @@ export function createApp(deps: AppDeps): Hono {
   // dependencias y no importan estado global.
   app.route("/api/cuentas", rutasCuentas({ db, config, printer }));
   app.route("/api/ordenes", rutasOrdenes({ db, config, printer }));
+  app.route("/api/contornos", rutasContornos({ db, config, printer }));
+
+  app.get("/api/productos/:id/slots", (c) => c.json({ slots: slotsDeProducto(db, idDeRuta(c)) }));
+
+  app.put("/api/productos/:id/slots", async (c) => {
+    const productoId = idDeRuta(c);
+    const body = await leerJson<{ slots: unknown }>(c);
+    const slots = Array.isArray(body.slots) ? body.slots : [];
+    configurarSlots(db, productoId, normalizarSlotsInput(slots));
+    return c.json({ slots: slotsDeProducto(db, productoId) });
+  });
 
   app.get("/api/salud", (c) => c.json({ ok: true }));
 
@@ -260,7 +290,14 @@ export function createApp(deps: AppDeps): Hono {
         rastrear_inventario: number;
       }[];
     return c.json({
-      productos: rows.map((p) => ({ ...p, armable: armableDeProducto(db, p.id) })),
+      productos: rows.map((p) => ({
+        ...p,
+        armable: armableDeProducto(db, p.id),
+        configurable:
+          Number(
+            (db.prepare("SELECT count(*) AS c FROM plato_slots WHERE producto_id = ?").get(p.id) as { c: number }).c,
+          ) > 0,
+      })),
     });
   });
 

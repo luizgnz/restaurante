@@ -1,15 +1,22 @@
 import { Send, Trash2 } from "lucide-react";
 import { useState } from "react";
 import type { BorradorOrden } from "../lib/borradores.ts";
+import { ModalArmadoPlato, type SeleccionArmado, type SlotArmadoUi, type VarianteArmadoUi } from "./ModalArmadoPlato.tsx";
 
 export type ProductoCarta = {
   id: number;
   nombre: string;
   precio_centavos: number;
   armable: number;
+  configurable?: boolean;
   codigo?: string | null;
   color?: string | null;
   foto_data?: string | null;
+};
+
+export type ConfigContornosUi = {
+  grupos: Array<{ id: number; nombre: string }>;
+  variantes: VarianteArmadoUi[];
 };
 
 export type ConstructorOrdenProps = {
@@ -18,6 +25,8 @@ export type ConstructorOrdenProps = {
   mesasSeleccionables?: Array<{ id: number; numero: number; estado: "libre" | "ocupada" }>;
   productos: ProductoCarta[];
   borrador: BorradorOrden;
+  contornos?: ConfigContornosUi | null;
+  onSlotsDeProducto?: (productoId: number) => Promise<SlotArmadoUi[]>;
   onCambiar: (borrador: BorradorOrden) => void;
   onEnviar: (borrador: BorradorOrden) => Promise<void>;
   onCancelar: () => void;
@@ -47,7 +56,13 @@ export function actualizarLineaConstructor(
 export function lineasPersistibles(lineas: LineaConstructorUi[]): BorradorOrden["lineas"] {
   return lineas
     .filter((linea) => linea.cantidad > 0)
-    .map(({ productoId, cantidad, nota }) => ({ productoId, cantidad, nota }));
+    .map(({ productoId, cantidad, nota, contornos, contornosTexto }) => ({
+      productoId,
+      cantidad,
+      nota,
+      ...(contornos ? { contornos } : {}),
+      ...(contornosTexto ? { contornosTexto } : {}),
+    }));
 }
 
 /**
@@ -70,12 +85,15 @@ export function ConstructorOrden({
   mesasSeleccionables = [],
   productos,
   borrador,
+  contornos,
+  onSlotsDeProducto,
   onCambiar,
   onEnviar,
   onCancelar,
 }: ConstructorOrdenProps) {
   const [enviando, setEnviando] = useState(false);
   const [lineasUi, setLineasUi] = useState(() => crearLineasConstructor(borrador.lineas));
+  const [armado, setArmado] = useState<{ producto: ProductoCarta; slots: SlotArmadoUi[] } | null>(null);
   const titulo = mesaFija ? `Nueva orden · Mesa #${mesaFija.numero}` : "Nueva orden";
   const mesaId = mesaFija?.id ?? borrador.mesaId;
 
@@ -109,6 +127,33 @@ export function ConstructorOrden({
         ? actualizarLineaConstructor(lineasUi, linea.idUi, { cantidad: linea.cantidad - 1 })
         : lineasUi.filter((item) => item.idUi !== linea.idUi),
     );
+  }
+
+  async function tocarProducto(producto: ProductoCarta) {
+    if (producto.configurable && contornos && onSlotsDeProducto) {
+      const slots = await onSlotsDeProducto(producto.id);
+      if (slots.length > 0) {
+        setArmado({ producto, slots });
+        return;
+      }
+    }
+    mostrarProducto(producto.id);
+  }
+
+  function confirmarArmado(selecciones: SeleccionArmado[], resumen: string) {
+    if (!armado) return;
+    cambiarLineas([
+      ...lineasUi,
+      {
+        idUi: uuid(),
+        productoId: armado.producto.id,
+        cantidad: 1,
+        nota: "",
+        contornos: selecciones,
+        contornosTexto: resumen,
+      },
+    ]);
+    setArmado(null);
   }
 
   async function enviar() {
@@ -169,6 +214,7 @@ export function ConstructorOrden({
                       <Trash2 size={18} aria-hidden="true" />
                     </button>
                   </div>
+                  {linea.contornosTexto ? <span className="pedido-nota-fija">{linea.contornosTexto}</span> : null}
                 </div>
               );
             })}
@@ -209,11 +255,11 @@ export function ConstructorOrden({
                 tabIndex={0}
                 className={`carta__item${linea ? " is-on" : ""}`}
                 style={producto.color ? { borderColor: producto.color } : undefined}
-                onClick={() => mostrarProducto(producto.id)}
+                onClick={() => tocarProducto(producto)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    mostrarProducto(producto.id);
+                    tocarProducto(producto);
                   }
                 }}
               >

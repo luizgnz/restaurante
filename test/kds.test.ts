@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { defaultConfig } from "../src/config.ts";
+import { configurarSlots, crearGrupo, crearVariante } from "../src/modules/contornos/contornos.ts";
 import { crearEmpleado } from "../src/modules/empleados/empleados.ts";
 import {
   avanzarEtapa,
@@ -123,6 +124,7 @@ describe("tarjetasKds", () => {
         delta: null,
         nota: "sin hielo",
         notaAnterior: null,
+        contornos: [],
       },
     ]);
     e.db.close();
@@ -152,9 +154,54 @@ describe("tarjetasKds", () => {
         delta: null,
         nota: "bien fría",
         notaAnterior: null,
+        contornos: [],
       },
     ]);
     e.db.close();
+  });
+
+  it("la comanda de un plato con contornos muestra las selecciones por línea", async () => {
+    const db = openTestDb();
+    const ids = seedCartaDemo(db);
+    await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });
+    const proteina = crearGrupo(db, { nombre: "Proteína" });
+    const carbohidrato = crearGrupo(db, { nombre: "Carbohidrato" });
+    const pollo = crearVariante(db, { grupoId: proteina.id, nombre: "Pollo", extraCentavos: 1500 });
+    const papas = crearVariante(db, { grupoId: carbohidrato.id, nombre: "Papas fritas" });
+    configurarSlots(db, ids.hamburguesa, [
+      { posicion: 1, nombre: "Proteína", permiteExtra: true, grupoIds: [proteina.id] },
+      { posicion: 2, nombre: "Contorno", grupoIds: [carbohidrato.id] },
+    ]);
+
+    const envio = await enviarOrden(
+      db,
+      {
+        mesaId: ids.mesa7,
+        empleadoId: 1,
+        claveIdempotencia: "kds-contornos-1",
+        lineas: [
+          {
+            productoId: ids.hamburguesa,
+            cantidad: 1,
+            contornos: [
+              { slotPosicion: 1, varianteId: pollo.id },
+              { slotPosicion: 2, varianteId: papas.id },
+              { slotPosicion: 1, varianteId: pollo.id },
+            ],
+          },
+        ],
+      },
+      new MemoryPrinter(),
+      defaultConfig(),
+    );
+
+    const tarjeta = porId(tarjetasKds(db), envio.comandaId);
+    expect(tarjeta.lineas[0].contornos).toEqual([
+      "Proteína: Pollo",
+      "EXTRA: Pollo",
+      "Contorno: Papas fritas",
+    ]);
+    db.close();
   });
 
   it("la corrección muestra delta, notas anterior y nueva, y su etapa de aviso", async () => {
@@ -182,6 +229,7 @@ describe("tarjetasKds", () => {
         delta: -2,
         nota: "sin hielo tampoco",
         notaAnterior: "bien fría",
+        contornos: [],
       },
     ]);
     e.db.close();

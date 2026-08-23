@@ -163,6 +163,8 @@ export type LineaTarjetaKds = {
   delta: number | null;
   nota: string | null;
   notaAnterior: string | null;
+  /** Selecciones de contorno de la línea (vacío en legacy y correcciones). */
+  contornos: string[];
 };
 
 export type TarjetaKds = {
@@ -205,6 +207,10 @@ type ComandaRow = {
 
 type LineaLegacyRow = { id: number; etapa: string; nombre: string; cantidad: number; nota: string | null };
 
+type LineaOrdenKdsRow = LineaLegacyRow & { orden_linea_id: number };
+
+type ContornoLineaRow = { slot_nombre: string; variante_nombre: string; es_extra: number };
+
 type LineaCorreccionRow = {
   id: number;
   etapa: string;
@@ -236,7 +242,12 @@ function lineaSimple(row: LineaLegacyRow): LineaTarjetaKds {
     delta: null,
     nota: row.nota,
     notaAnterior: null,
+    contornos: [],
   };
+}
+
+function textoContorno(row: ContornoLineaRow): string {
+  return row.es_extra ? `EXTRA: ${row.variante_nombre}` : `${row.slot_nombre}: ${row.variante_nombre}`;
 }
 
 /**
@@ -278,12 +289,15 @@ export function tarjetasKds(db: Database.Database): TarjetaKds[] {
      ORDER BY cl.id`,
   );
   const lineasOrden = db.prepare(
-    `SELECT cl.id, cl.etapa, pr.nombre, ol.cantidad, ol.nota
+    `SELECT cl.id, cl.etapa, pr.nombre, ol.cantidad, ol.nota, ol.id AS orden_linea_id
      FROM comanda_lineas cl
      JOIN orden_lineas ol ON ol.id = cl.orden_linea_id
      JOIN productos pr ON pr.id = ol.producto_id
      WHERE cl.comanda_id = ?
      ORDER BY cl.id`,
+  );
+  const contornosDeLinea = db.prepare(
+    "SELECT slot_nombre, variante_nombre, es_extra FROM orden_linea_contornos WHERE orden_linea_id = ? ORDER BY id",
   );
   const lineasCorreccion = db.prepare(
     `SELECT cl.id, cl.etapa, pr.nombre, ocl.cantidad_nueva, ocl.cantidad_anterior, ocl.nota_nueva, ocl.nota_anterior
@@ -307,10 +321,14 @@ export function tarjetasKds(db: Database.Database): TarjetaKds[] {
           delta: l.cantidad_nueva - l.cantidad_anterior,
           nota: l.nota_nueva,
           notaAnterior: l.nota_anterior,
+          contornos: [],
         }))
-      : (
-          (row.orden_id != null ? lineasOrden.all(row.id) : lineasLegacy.all(row.id)) as LineaLegacyRow[]
-        ).map(lineaSimple);
+      : row.orden_id != null
+        ? (lineasOrden.all(row.id) as LineaOrdenKdsRow[]).map((l) => ({
+            ...lineaSimple(l),
+            contornos: (contornosDeLinea.all(l.orden_linea_id) as ContornoLineaRow[]).map(textoContorno),
+          }))
+        : (lineasLegacy.all(row.id) as LineaLegacyRow[]).map(lineaSimple);
 
     const indicaciones = esCorreccion
       ? row.correccion_indicaciones || null

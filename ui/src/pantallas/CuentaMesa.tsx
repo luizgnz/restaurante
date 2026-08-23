@@ -9,6 +9,7 @@ export type LineaOrdenUi = {
   cantidad: number;
   precioCentavos: number;
   nota: string | null;
+  contornos?: string[];
 };
 
 export type OrdenCuentaUi = {
@@ -115,6 +116,9 @@ export function CuentaMesa({
                   {linea.nota ? ` (${linea.nota})` : ""}
                 </span>
                 <span>${linea.cantidad * linea.precioCentavos}</span>
+                {(linea.contornos ?? []).length > 0 ? (
+                  <span className="pedido-nota-fija">{linea.contornos!.join(" · ")}</span>
+                ) : null}
               </div>
             ))}
             {orden.indicaciones ? <p className="pedido-indicaciones">Indicaciones: {orden.indicaciones}</p> : null}

@@ -299,6 +299,14 @@ button.icono {
   border: 1px solid #333;
   border-radius: 8px;
 }
+.kds-contornos {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  font-style: normal;
+  opacity: 0.85;
+}
 .modal-cantidad {
   display: flex;
   align-items: center;
