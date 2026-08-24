@@ -1,11 +1,15 @@
 import type Database from "better-sqlite3";
 import { indicacionesEfectivasOrden } from "../ordenes/ordenes.ts";
+import { incidenciasDeComanda, type IncidenciaCocina } from "./incidencias.ts";
 
 export type TipoComanda = "legacy" | "orden" | "correccion" | "anulacion";
 
 export class KdsError extends Error {
-  codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable";
-  constructor(codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable", message: string) {
+  codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable" | "incidencia_pendiente";
+  constructor(
+    codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable" | "incidencia_pendiente",
+    message: string,
+  ) {
     super(message);
     this.name = "KdsError";
     this.codigo = codigo;
@@ -116,12 +120,23 @@ export function avanzarEtapa(db: Database.Database, comandaLineaId: number, etap
   if (!(ETAPAS_DESTINO as readonly string[]).includes(etapa)) {
     throw new KdsError("etapa_invalida", `Etapa desconocida: ${etapa}`);
   }
-  const linea = db.prepare("SELECT etapa FROM comanda_lineas WHERE id = ?").get(comandaLineaId) as
-    | { etapa: string }
+  const linea = db.prepare("SELECT etapa, comanda_id FROM comanda_lineas WHERE id = ?").get(comandaLineaId) as
+    | { etapa: string; comanda_id: number }
     | undefined;
   if (!linea) throw new KdsError("linea_inexistente", "Línea de comanda inexistente");
   if (!(ETAPAS_TAREA as readonly string[]).includes(linea.etapa)) {
     throw new KdsError("etapa_no_avanzable", `Una línea en ${linea.etapa} ya no avanza`);
+  }
+  const incidencia = db
+    .prepare(
+      `SELECT id FROM cocina_incidencias
+       WHERE comanda_id = ? AND estado = 'pendiente'
+         AND (comanda_linea_id IS NULL OR comanda_linea_id = ?)
+       LIMIT 1`,
+    )
+    .get(linea.comanda_id, comandaLineaId);
+  if (incidencia) {
+    throw new KdsError("incidencia_pendiente", "El mesero debe responder la solicitud antes de preparar");
   }
   db.prepare("UPDATE comanda_lineas SET etapa = ? WHERE id = ?").run(etapa, comandaLineaId);
 }
@@ -186,6 +201,7 @@ export type TarjetaKds = {
   indicaciones: string | null;
   indicacionesCambiadas: boolean;
   lineas: LineaTarjetaKds[];
+  incidencias: IncidenciaCocina[];
 };
 
 type ComandaRow = {
@@ -352,6 +368,7 @@ export function tarjetasKds(db: Database.Database): TarjetaKds[] {
       indicaciones,
       indicacionesCambiadas: esCorreccion && row.correccion_indicaciones !== null,
       lineas,
+      incidencias: incidenciasDeComanda(db, row.id),
     };
   });
 }

@@ -71,6 +71,7 @@ describe("db", () => {
       "caja_handoffs",
       "sesiones_pos",
       "inventario_movimientos",
+      "cocina_incidencias",
     ]) {
       expect(names).toContain(t);
     }

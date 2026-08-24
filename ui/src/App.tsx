@@ -13,6 +13,7 @@ import { type Categoria } from "./pantallas/CrearProducto.tsx";
 import { CuentaMesa, type CuentaDetalleUi, type OrdenCuentaUi } from "./pantallas/CuentaMesa.tsx";
 import { EditarMapa } from "./pantallas/EditarMapa.tsx";
 import { Inventario, type MaterialInventarioUi } from "./pantallas/Inventario.tsx";
+import { Kds, type IncidenciaCocinaUi, type TarjetaKdsUi } from "./pantallas/Kds.tsx";
 import { Login } from "./pantallas/Login.tsx";
 import { ModalCrearProducto } from "./pantallas/ModalCrearProducto.tsx";
 import { ModalEditarOrden } from "./pantallas/ModalEditarOrden.tsx";
@@ -53,6 +54,7 @@ type Sesion = { abierta: boolean; administrador: Administrador | null };
 export function App() {
   const [sesion, setSesion] = useState<Sesion | null>(null);
   const [vista, setVista] = useState<Vista>("plano");
+  const [area, setArea] = useState<"mesero" | "cocina">("mesero");
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [piso, setPiso] = useState("Salón");
   const [pisoId, setPisoId] = useState<number | null>(null);
@@ -61,6 +63,8 @@ export function App() {
   const [fondoTick, setFondoTick] = useState(0);
   const [productos, setProductos] = useState<ProductoCarta[]>([]);
   const [materialesInventario, setMaterialesInventario] = useState<MaterialInventarioUi[]>([]);
+  const [tarjetasKds, setTarjetasKds] = useState<TarjetaKdsUi[]>([]);
+  const [incidenciasCocina, setIncidenciasCocina] = useState<IncidenciaCocinaUi[]>([]);
   const [cuentasEnCurso, setCuentasEnCurso] = useState<CuentaEnCursoUi[]>([]);
   const [cuentaActual, setCuentaActual] = useState<CuentaDetalleUi | null>(null);
   const [contextoOrden, setContextoOrden] = useState<ContextoOrden | null>(null);
@@ -120,6 +124,14 @@ export function App() {
   async function cargarInventario() {
     const data = await api<{ materiales: MaterialInventarioUi[] }>("/api/inventario");
     setMaterialesInventario(data.materiales);
+  }
+  async function cargarKds() {
+    const data = await api<{ tarjetas: TarjetaKdsUi[] }>("/api/kds");
+    setTarjetasKds(data.tarjetas);
+  }
+  async function cargarIncidenciasCocina() {
+    const data = await api<{ incidencias: IncidenciaCocinaUi[] }>("/api/cocina/incidencias");
+    setIncidenciasCocina(data.incidencias);
   }
   async function cargarCuenta(id: number) {
     const data = await api<CuentaDetalleUi>(`/api/cuentas/${id}`);
@@ -211,7 +223,17 @@ export function App() {
     cargarCuentasEnCurso().catch((e) => setError(String(e)));
     cargarConfig().catch((e) => setError(String(e)));
     cargarContornos().catch((e) => setError(String(e)));
+    cargarIncidenciasCocina().catch((e) => setError(String(e)));
   }, [sesion?.abierta]);
+
+  useEffect(() => {
+    if (!sesion?.abierta) return;
+    const intervalo = window.setInterval(() => {
+      cargarIncidenciasCocina().catch(() => undefined);
+      if (area === "cocina") cargarKds().catch(() => undefined);
+    }, 4_000);
+    return () => window.clearInterval(intervalo);
+  }, [sesion?.abierta, area]);
 
   async function conError(fn: () => Promise<void>) {
     try {
@@ -242,6 +264,7 @@ export function App() {
 
   async function ir(v: Destino) {
     if (v === "pedidos") cargarCuentasEnCurso().catch((e) => setError(String(e)));
+    if (v === "kds") cargarKds().catch((e) => setError(String(e)));
     if (v === "inventario") cargarInventario().catch((e) => setError(String(e)));
     if (v === "plano" || v === "editar-mapa") cargarPlano().catch((e) => setError(String(e)));
     if (v === "categorias") cargarCategorias().catch((e) => setError(String(e)));
@@ -460,16 +483,31 @@ export function App() {
     <div className="pos-odoo">
       <Barra
         vista={vista}
+        area={area}
         marca={nombreLocal}
         logo={logoData}
         nombre={sesion.administrador?.nombre ?? ""}
         onMesas={() => ir("plano")}
         onOrdenes={() => ir("pedidos")}
         onInventario={() => ir("inventario")}
+        onCocina={() => ir("kds")}
+        notificacionesCocina={incidenciasCocina.length}
+        onCambiarArea={(siguiente) => {
+          setArea(siguiente);
+          setError("");
+          if (siguiente === "cocina") {
+            setVista("kds");
+            cargarKds().catch((e) => setError(String(e)));
+          } else {
+            setVista("plano");
+            cargarPlano().catch((e) => setError(String(e)));
+          }
+        }}
         onCerrarSesion={() =>
           conError(async () => {
             await api("/api/sesion/cerrar", { method: "POST" });
             setSesion({ abierta: false, administrador: null });
+            setArea("mesero");
             setVista("plano");
           })
         }
@@ -648,9 +686,41 @@ export function App() {
             }}
           />
         ) : null}
+        {vista === "kds" ? (
+          <Kds
+            tarjetas={tarjetasKds}
+            onRecargar={cargarKds}
+            onCambiarEtapa={async (lineaId, etapa) => {
+              await api(`/api/kds/lineas/${lineaId}/etapa`, {
+                method: "POST",
+                body: JSON.stringify({ etapa }),
+              });
+              await cargarKds();
+            }}
+            onCrearIncidencia={async (incidencia) => {
+              await api("/api/cocina/incidencias", {
+                method: "POST",
+                body: JSON.stringify(incidencia),
+              });
+              await Promise.all([cargarKds(), cargarIncidenciasCocina()]);
+            }}
+          />
+        ) : null}
         {vista === "pedidos" ? (
           <Pedidos
             cuentas={cuentasEnCurso}
+            incidencias={incidenciasCocina}
+            onAceptarSugerencia={async (incidenciaId) => {
+              await api(`/api/cocina/incidencias/${incidenciaId}/aceptar`, { method: "POST" });
+              await Promise.all([cargarIncidenciasCocina(), cargarKds()]);
+            }}
+            onEliminarIncidencia={async (incidenciaId, pin) => {
+              await api(`/api/cocina/incidencias/${incidenciaId}/eliminar`, {
+                method: "POST",
+                body: JSON.stringify({ pin }),
+              });
+              await Promise.all([cargarIncidenciasCocina(), cargarKds(), cargarCuentasEnCurso(), cargarPlano()]);
+            }}
             onAbrir={(cuentaId) =>
               conError(async () => {
                 await cargarCuenta(cuentaId);
@@ -662,7 +732,7 @@ export function App() {
         {vista === "inventario" ? (
           <Inventario
             materiales={materialesInventario}
-            puedeIngresar={sesion.administrador?.derecho === "avanzado"}
+            puedeIngresar={area === "mesero" && sesion.administrador?.derecho === "avanzado"}
             onRecargar={cargarInventario}
             onRegistrarEntrada={async (productoId, cantidad, pin) => {
               await api(`/api/inventario/${productoId}/entradas`, {

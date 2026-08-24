@@ -1871,6 +1871,312 @@ button.icono {
   }
 }
 
+/* --------------------------------------------------------------------------
+   Áreas Mesero / Cocina y coordinación de cambios
+   -------------------------------------------------------------------------- */
+.pos-nav__areas {
+  display: inline-flex;
+  gap: 0.2rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--muted);
+}
+.pos-nav__areas button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.65rem;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+.pos-nav__areas button.is-on {
+  background: var(--card);
+  color: var(--primary);
+  box-shadow: 0 2px 8px rgb(67 48 29 / 0.09);
+}
+.pos-nav__badge {
+  display: grid;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  padding-inline: 0.25rem;
+  border-radius: 999px;
+  background: var(--destructive);
+  color: white;
+  font-size: 0.67rem;
+  font-weight: 850;
+}
+
+.cocina-resumen {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.cocina-resumen > div {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+.cocina-resumen svg {
+  box-sizing: content-box;
+  padding: 0.55rem;
+  border-radius: 0.8rem;
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.cocina-resumen div div {
+  display: flex;
+  flex-direction: column;
+}
+.cocina-resumen strong {
+  font-size: 1.35rem;
+}
+.cocina-resumen span {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+}
+.cocina-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  align-items: start;
+  gap: 1rem;
+}
+.cocina-tarjeta {
+  overflow: hidden;
+  padding: 0 !important;
+}
+.cocina-tarjeta__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.cocina-tarjeta__cabecera > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.cocina-tarjeta__cabecera > div > strong {
+  font-size: 1.05rem;
+}
+.cocina-tarjeta__cabecera > div > span {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+.cocina-indicaciones {
+  margin: 0;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: #fff8dc;
+  color: #67500f;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+.cocina-lineas {
+  display: flex;
+  flex-direction: column;
+}
+.cocina-linea {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+}
+.cocina-linea.etapa-por_preparar { border-left-color: #7593a6; }
+.cocina-linea.etapa-en_proceso { border-left-color: #d39b33; }
+.cocina-linea.etapa-listo { border-left-color: #3b9a69; }
+.cocina-linea.etapa-cancelado { opacity: 0.62; }
+.cocina-linea__principal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.cocina-linea__nota {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.84rem;
+}
+.cocina-linea__acciones,
+.cocina-tarjeta__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+.cocina-tarjeta__acciones {
+  padding: 0.8rem 1rem;
+  background: var(--muted);
+}
+.cocina-tarjeta__acciones > span {
+  margin-right: auto;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.cocina-incidencia {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0.75rem 1rem;
+  padding: 0.75rem;
+  border: 1px solid #e8c76a;
+  border-radius: 0.85rem;
+  background: #fff8dc;
+  color: #67500f;
+}
+.cocina-linea .cocina-incidencia {
+  margin: 0;
+}
+.cocina-incidencia.is-aceptada {
+  border-color: #83c69f;
+  background: #eaf8ef;
+  color: #235f3f;
+}
+.cocina-incidencia > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.cocina-incidencia span,
+.cocina-incidencia em {
+  font-size: 0.8rem;
+}
+.cocina-incidencia em {
+  font-weight: 650;
+}
+.cocina-incidencia-modal textarea {
+  resize: vertical;
+}
+
+.mesero-notificacion {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-color: #e8c76a;
+  background: #fff8dc;
+  color: #67500f;
+}
+.mesero-notificacion > div {
+  display: flex;
+  flex-direction: column;
+}
+.mesero-notificacion span {
+  font-size: 0.84rem;
+}
+.mesero-error {
+  margin: 0;
+  padding: 0.75rem;
+  background: #fff0ef;
+}
+.mesero-incidencia {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.65rem;
+  padding: 0.75rem;
+  border: 1px solid #e8c76a;
+  border-radius: 0.85rem;
+  background: #fff8dc;
+  color: #67500f;
+}
+.mesero-incidencia.is-rechazo {
+  border-color: #e7a49d;
+  background: #fff0ef;
+  color: #873830;
+}
+.mesero-incidencia__texto {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.pedido-card .mesero-incidencia__texto span,
+.mesero-incidencia__texto em {
+  color: inherit;
+  font-size: 0.8rem;
+}
+.mesero-incidencia__acciones {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+@media (max-width: 900px) {
+  .cocina-resumen {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .cocina-resumen > div {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .pos-nav__areas {
+    flex: 1;
+    align-self: flex-start;
+    justify-content: center;
+    min-height: 54px;
+    padding: 0.25rem;
+  }
+  .pos-nav__areas button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 0.25rem;
+  }
+  .pos-nav__areas button span {
+    display: none;
+  }
+  .pos-nav__badge {
+    position: absolute;
+    top: 0.15rem;
+    right: 0.3rem;
+  }
+  .pos-nav__item {
+    position: relative;
+  }
+  .cocina-resumen {
+    grid-template-columns: 1fr;
+  }
+  .cocina-resumen > div {
+    min-height: 70px;
+  }
+  .cocina-linea__principal {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .cocina-linea__acciones button,
+  .cocina-tarjeta__acciones button,
+  .mesero-incidencia__acciones button {
+    width: 100%;
+  }
+  .cocina-tarjeta__acciones > span {
+    flex: 1 0 100%;
+  }
+  .pedidos-page__metricas {
+    flex-wrap: wrap;
+  }
+  .mesero-incidencia {
+    grid-template-columns: 1fr;
+  }
+  .mesero-incidencia > svg {
+    display: none;
+  }
+}
+
 @media (min-width: 768px) and (max-width: 1023px) {
   .constructor-orden__cuerpo {
     grid-template-columns: minmax(0, 1fr) 310px;

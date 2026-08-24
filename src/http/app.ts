@@ -8,9 +8,17 @@ import { CuentaError } from "../modules/cuentas/cuentas.ts";
 import { PinError, exigirPin } from "../modules/empleados/empleados.ts";
 import { abrirSesion, cerrarSesion, sesionAbierta } from "../modules/empleados/sesion.ts";
 import { avanzarEtapa, KdsError, tarjetasKds } from "../modules/kds/kds.ts";
+import {
+  aceptarSugerencia,
+  crearIncidenciaCocina,
+  IncidenciaCocinaError,
+  listarIncidenciasMesero,
+  marcarIncidenciaEliminada,
+  prepararEliminacion,
+} from "../modules/kds/incidencias.ts";
 import { registrarEntradaInventario, listarInventario } from "../modules/inventario/gestion.ts";
 import { InventarioError } from "../modules/inventario/asientos.ts";
-import { CorreccionError } from "../modules/ordenes/correcciones.ts";
+import { corregirOrden, CorreccionError } from "../modules/ordenes/correcciones.ts";
 import { OrdenError } from "../modules/ordenes/enviar.ts";
 import { PrecuentaError } from "../modules/precuenta/precuenta.ts";
 import { idDeRuta, leerJson, SolicitudError, textoRequerido } from "./entrada.ts";
@@ -64,10 +72,20 @@ const CODIGOS_404 = new Set([
   "empleado_inexistente",
   "variante_inexistente",
   "grupo_inexistente",
+  "incidencia_inexistente",
 ]);
 
 /** Existe, pero su estado actual no admite la operación. */
-const CODIGOS_409 = new Set(["cuenta_cerrada", "orden_anulada", "precuenta_desactualizada", "etapa_no_avanzable"]);
+const CODIGOS_409 = new Set([
+  "cuenta_cerrada",
+  "orden_anulada",
+  "precuenta_desactualizada",
+  "etapa_no_avanzable",
+  "incidencia_pendiente",
+  "incidencia_resuelta",
+  "producto_ya_iniciado",
+  "orden_ya_iniciada",
+]);
 
 function statusPorCodigo(codigo: string): StatusError {
   if (CODIGOS_404.has(codigo)) return 404;
@@ -92,6 +110,7 @@ function codigoStatus(err: unknown): StatusError {
     err instanceof PrecuentaError ||
     err instanceof CajaError ||
     err instanceof KdsError ||
+    err instanceof IncidenciaCocinaError ||
     err instanceof ContornoError ||
     err instanceof InventarioError
   ) {
@@ -120,6 +139,7 @@ function codigoDe(err: unknown): string {
     err instanceof CorreccionError ||
     err instanceof PrecuentaError ||
     err instanceof KdsError ||
+    err instanceof IncidenciaCocinaError ||
     err instanceof ContornoError ||
     err instanceof InventarioError ||
     err instanceof SolicitudError
@@ -442,6 +462,73 @@ export function createApp(deps: AppDeps): Hono {
     const etapa = textoRequerido(cuerpo.etapa, "etapa_invalida", "Hace falta la etapa");
     avanzarEtapa(db, comandaLineaId, etapa);
     return c.json({ ok: true, etapa });
+  });
+
+  app.get("/api/cocina/incidencias", (c) => {
+    if (!sesionAbierta(db)) throw new PinError("credenciales_invalidas", "Hace falta sesión");
+    return c.json({ incidencias: listarIncidenciasMesero(db) });
+  });
+
+  app.post("/api/cocina/incidencias", async (c) => {
+    if (!sesionAbierta(db)) throw new PinError("credenciales_invalidas", "Hace falta sesión");
+    const body = await leerJson<{
+      comandaId: unknown;
+      comandaLineaId: unknown;
+      tipo: unknown;
+      alcance: unknown;
+      motivo: unknown;
+      propuesta: unknown;
+    }>(c);
+    if (typeof body.comandaId !== "number") throw new SolicitudError("comanda_invalida", "Comanda inválida");
+    if (body.comandaLineaId != null && typeof body.comandaLineaId !== "number") {
+      throw new SolicitudError("linea_invalida", "Producto inválido");
+    }
+    if (typeof body.tipo !== "string" || typeof body.alcance !== "string" || typeof body.motivo !== "string") {
+      throw new SolicitudError("incidencia_invalida", "La solicitud de cocina está incompleta");
+    }
+    return c.json(
+      crearIncidenciaCocina(db, {
+        comandaId: body.comandaId,
+        comandaLineaId: body.comandaLineaId,
+        tipo: body.tipo as "rechazo" | "sugerencia",
+        alcance: body.alcance as "linea" | "orden",
+        motivo: body.motivo,
+        propuesta: typeof body.propuesta === "string" ? body.propuesta : null,
+      }),
+      201,
+    );
+  });
+
+  app.post("/api/cocina/incidencias/:id/aceptar", (c) => {
+    if (!sesionAbierta(db)) throw new PinError("credenciales_invalidas", "Hace falta sesión");
+    return c.json({ incidencia: aceptarSugerencia(db, idDeRuta(c)) });
+  });
+
+  app.post("/api/cocina/incidencias/:id/eliminar", async (c) => {
+    if (!sesionAbierta(db)) throw new PinError("credenciales_invalidas", "Hace falta sesión");
+    const id = idDeRuta(c);
+    const body = await leerJson<{ pin: unknown }>(c);
+    if (typeof body.pin !== "string") throw new SolicitudError("pin_invalido", "Hace falta el PIN del mesero");
+    const { incidencia, lineas } = prepararEliminacion(db, id);
+    const correccion = await corregirOrden(
+      db,
+      {
+        ordenId: incidencia.ordenId,
+        lineas: lineas.map((linea) => ({
+          lineaClave: linea.lineaClave,
+          productoId: linea.productoId,
+          ordenLineaId: linea.ordenLineaId,
+          cantidad: 0,
+          nota: linea.nota,
+        })),
+        motivo: `Solicitud de cocina: ${incidencia.motivo}`,
+        claveIdempotencia: `incidencia-${id}-eliminar`,
+        pin: body.pin,
+      },
+      printer,
+      config,
+    );
+    return c.json({ incidencia: marcarIncidenciaEliminada(db, id), correccion });
   });
 
   // Legacy: lectura del modelo de pedidos. La UI del modelo de cuentas usa
