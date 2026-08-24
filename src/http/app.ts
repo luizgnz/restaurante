@@ -1,11 +1,21 @@
 import type Database from "better-sqlite3";
 import { Hono, type MiddlewareHandler } from "hono";
-import { saveConfig, normalizarConfig, type AppConfig } from "../config.ts";
+import { networkInterfaces } from "node:os";
+import { saveConfig, normalizarConfig, type AppConfig, type ImpresoraRedConfig } from "../config.ts";
 import { CajaError, enviarACaja } from "../modules/caja/caja.ts";
 import { listarPlugins, mensajesVacios } from "../modules/complementos/complementos.ts";
 import { ContornoError, configurarSlots, slotsDeProducto } from "../modules/contornos/contornos.ts";
 import { CuentaError } from "../modules/cuentas/cuentas.ts";
-import { PinError, exigirPin } from "../modules/empleados/empleados.ts";
+import {
+  actualizarUsuario,
+  crearEmpleado,
+  EmpleadoError,
+  listarUsuarios,
+  PinError,
+  ROLES,
+  exigirPin,
+  type RolClave,
+} from "../modules/empleados/empleados.ts";
 import { abrirSesion, cerrarSesion, sesionAbierta } from "../modules/empleados/sesion.ts";
 import { avanzarEtapa, KdsError, tarjetasKds } from "../modules/kds/kds.ts";
 import {
@@ -50,6 +60,7 @@ import {
   SalonError,
 } from "../modules/salon/salon.ts";
 import { despacharJobs } from "../print/queue.ts";
+import { diagnosticarImpresora, enviarAImpresoraRed, textoPrueba } from "../print/network.ts";
 import type { PrinterPort } from "../print/types.ts";
 
 export type AppDeps = {
@@ -112,7 +123,8 @@ function codigoStatus(err: unknown): StatusError {
     err instanceof KdsError ||
     err instanceof IncidenciaCocinaError ||
     err instanceof ContornoError ||
-    err instanceof InventarioError
+    err instanceof InventarioError ||
+    err instanceof EmpleadoError
   ) {
     return statusPorCodigo(err.codigo);
   }
@@ -142,6 +154,7 @@ function codigoDe(err: unknown): string {
     err instanceof IncidenciaCocinaError ||
     err instanceof ContornoError ||
     err instanceof InventarioError ||
+    err instanceof EmpleadoError ||
     err instanceof SolicitudError
   ) {
     return err.codigo;
@@ -182,7 +195,41 @@ function configPublica(config: AppConfig) {
     justificacion_anulacion: config.justificacion_anulacion,
     precuenta_obligatoria_antes_de_caja: config.precuenta_obligatoria_antes_de_caja,
     enviar_a_caja_requiere_avanzado: config.enviar_a_caja_requiere_avanzado,
+    impresora_comanda: config.impresora_comanda,
+    impresora_boleta: config.impresora_boleta,
+    plantilla_comanda: config.plantilla_comanda,
+    plantilla_boleta: config.plantilla_boleta,
+    servidor_red_habilitado: config.servidor_red_habilitado,
+    nombre_servidor: config.nombre_servidor,
   };
+}
+
+function impresoraValida(valor: unknown, anterior: ImpresoraRedConfig): ImpresoraRedConfig {
+  if (typeof valor !== "object" || valor === null || Array.isArray(valor)) {
+    throw new SolicitudError("impresora_invalida", "La configuración de impresora no es válida");
+  }
+  const entrada = valor as Partial<ImpresoraRedConfig>;
+  const puerto = entrada.puerto ?? anterior.puerto;
+  const ancho = entrada.ancho_mm ?? anterior.ancho_mm;
+  if (!Number.isInteger(puerto) || puerto < 1 || puerto > 65535) {
+    throw new SolicitudError("puerto_invalido", "El puerto de la impresora debe estar entre 1 y 65535");
+  }
+  if (ancho !== 58 && ancho !== 80) throw new SolicitudError("ancho_invalido", "El papel debe ser de 58 u 80 mm");
+  return {
+    habilitada: entrada.habilitada ?? anterior.habilitada,
+    nombre: typeof entrada.nombre === "string" ? entrada.nombre.trim().slice(0, 60) : anterior.nombre,
+    host: typeof entrada.host === "string" ? entrada.host.trim().slice(0, 255) : anterior.host,
+    puerto,
+    ancho_mm: ancho,
+  };
+}
+
+function urlsDeRed(puerto: number, habilitado: boolean): string[] {
+  if (!habilitado) return [];
+  const ips = Object.values(networkInterfaces()).flatMap((interfaces) => interfaces ?? [])
+    .filter((interfaz) => interfaz.family === "IPv4" && !interfaz.internal)
+    .map((interfaz) => interfaz.address);
+  return [...new Set(ips)].map((ip) => `http://${ip}:${puerto}`);
 }
 
 function logoValido(data: string | null | undefined): string | null {
@@ -266,6 +313,43 @@ export function createApp(deps: AppDeps): Hono {
   app.get("/api/empleados", (c) => {
     const rows = db.prepare("SELECT id, nombre, derecho, activo FROM empleados WHERE activo = 1").all();
     return c.json({ empleados: rows });
+  });
+
+  app.get("/api/usuarios", (c) => {
+    if (!sesionAbierta(db)) throw new PinError("credenciales_invalidas", "Hace falta sesión de administrador");
+    return c.json({ usuarios: listarUsuarios(db), roles: ROLES });
+  });
+
+  app.post("/api/usuarios", async (c) => {
+    if (!sesionAbierta(db)) throw new PinError("credenciales_invalidas", "Hace falta sesión de administrador");
+    const body = await leerJson<{ nombre: unknown; usuario: unknown; pin: unknown; password: unknown; roles: unknown }>(c);
+    if (typeof body.nombre !== "string" || typeof body.pin !== "string" || !Array.isArray(body.roles)) {
+      throw new SolicitudError("usuario_invalido", "Completa nombre, PIN y al menos un rol");
+    }
+    const creado = await crearEmpleado(db, {
+      nombre: body.nombre,
+      usuario: typeof body.usuario === "string" ? body.usuario : undefined,
+      pin: body.pin,
+      password: typeof body.password === "string" ? body.password : undefined,
+      roles: body.roles.filter((rol): rol is RolClave => typeof rol === "string") as RolClave[],
+    });
+    return c.json({ usuario: listarUsuarios(db).find((item) => item.id === creado.id) }, 201);
+  });
+
+  app.put("/api/usuarios/:id", async (c) => {
+    if (!sesionAbierta(db)) throw new PinError("credenciales_invalidas", "Hace falta sesión de administrador");
+    const body = await leerJson<{ nombre: unknown; usuario: unknown; pin: unknown; password: unknown; roles: unknown; activo: unknown }>(c);
+    if (typeof body.nombre !== "string" || !Array.isArray(body.roles) || typeof body.activo !== "boolean") {
+      throw new SolicitudError("usuario_invalido", "Completa nombre, estado y al menos un rol");
+    }
+    return c.json({ usuario: await actualizarUsuario(db, idDeRuta(c), {
+      nombre: body.nombre,
+      usuario: typeof body.usuario === "string" ? body.usuario : null,
+      pin: typeof body.pin === "string" ? body.pin : undefined,
+      password: typeof body.password === "string" ? body.password : undefined,
+      roles: body.roles.filter((rol): rol is RolClave => typeof rol === "string") as RolClave[],
+      activo: body.activo,
+    }) });
   });
 
   app.get("/api/mesas", (c) => {
@@ -405,6 +489,12 @@ export function createApp(deps: AppDeps): Hono {
       justificacion_anulacion?: boolean;
       precuenta_obligatoria_antes_de_caja?: boolean;
       enviar_a_caja_requiere_avanzado?: boolean;
+      impresora_comanda?: unknown;
+      impresora_boleta?: unknown;
+      plantilla_comanda?: AppConfig["plantilla_comanda"];
+      plantilla_boleta?: AppConfig["plantilla_boleta"];
+      servidor_red_habilitado?: boolean;
+      nombre_servidor?: string;
     }>();
     if (typeof body.tablet_cocina === "boolean") config.tablet_cocina = body.tablet_cocina;
     if (typeof body.barra_ultimos_pedidos === "boolean") config.barra_ultimos_pedidos = body.barra_ultimos_pedidos;
@@ -432,9 +522,59 @@ export function createApp(deps: AppDeps): Hono {
     if (typeof body.enviar_a_caja_requiere_avanzado === "boolean") {
       config.enviar_a_caja_requiere_avanzado = body.enviar_a_caja_requiere_avanzado;
     }
+    if (body.impresora_comanda !== undefined) config.impresora_comanda = impresoraValida(body.impresora_comanda, config.impresora_comanda);
+    if (body.impresora_boleta !== undefined) config.impresora_boleta = impresoraValida(body.impresora_boleta, config.impresora_boleta);
+    if (body.plantilla_comanda && typeof body.plantilla_comanda === "object") {
+      config.plantilla_comanda = {
+        titulo: String(body.plantilla_comanda.titulo ?? "").trim().slice(0, 60) || "COMANDA",
+        encabezado: String(body.plantilla_comanda.encabezado ?? "").trim().slice(0, 300),
+        pie: String(body.plantilla_comanda.pie ?? "").trim().slice(0, 300),
+      };
+    }
+    if (body.plantilla_boleta && typeof body.plantilla_boleta === "object") {
+      config.plantilla_boleta = {
+        titulo: String(body.plantilla_boleta.titulo ?? "").trim().slice(0, 60) || "COMPROBANTE",
+        encabezado: String(body.plantilla_boleta.encabezado ?? "").trim().slice(0, 300),
+        pie: String(body.plantilla_boleta.pie ?? "").trim().slice(0, 300),
+      };
+    }
+    if (typeof body.servidor_red_habilitado === "boolean") config.servidor_red_habilitado = body.servidor_red_habilitado;
+    if (typeof body.nombre_servidor === "string") config.nombre_servidor = body.nombre_servidor.trim().slice(0, 60) || "Restaurante";
     Object.assign(config, normalizarConfig(config));
     if (dataDir) saveConfig(dataDir, config);
     return c.json(configPublica(config));
+  });
+
+  app.get("/api/red/estado", (c) => {
+    const url = new URL(c.req.url);
+    const puerto = Number(url.port || (url.protocol === "https:" ? 443 : 80));
+    return c.json({
+      habilitado: config.servidor_red_habilitado,
+      nombre: config.nombre_servidor,
+      puerto,
+      urls: urlsDeRed(puerto, config.servidor_red_habilitado),
+      salud: "operativo",
+      requiereReinicio: false,
+    });
+  });
+
+  app.post("/api/impresoras/diagnosticar", async (c) => {
+    if (!sesionAbierta(db)) throw new PinError("credenciales_invalidas", "Hace falta sesión de administrador");
+    const body = await leerJson<{ impresora: unknown }>(c);
+    const destino = impresoraValida(body.impresora, config.impresora_comanda);
+    return c.json(await diagnosticarImpresora(destino));
+  });
+
+  app.post("/api/impresoras/prueba", async (c) => {
+    if (!sesionAbierta(db)) throw new PinError("credenciales_invalidas", "Hace falta sesión de administrador");
+    const body = await leerJson<{ tipo: unknown }>(c);
+    if (body.tipo !== "comanda" && body.tipo !== "boleta") {
+      throw new SolicitudError("tipo_impresion_invalido", "Selecciona comanda o boleta");
+    }
+    const destino = body.tipo === "comanda" ? config.impresora_comanda : config.impresora_boleta;
+    if (!destino.habilitada) throw new SolicitudError("impresora_deshabilitada", "Activa y guarda la impresora antes de probarla");
+    const latenciaMs = await enviarAImpresoraRed(destino, textoPrueba(body.tipo, config));
+    return c.json({ ok: true, latenciaMs, mensaje: "Página de prueba enviada" });
   });
 
   app.get("/api/pisos/:id/fondo", (c) => {

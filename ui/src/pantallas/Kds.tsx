@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRightLeft, CheckCheck, ChefHat, Clock3, RefreshCw, X } from "lucide-react";
+import { AlertTriangle, ArrowRightLeft, CheckCheck, ChefHat, CircleOff, Clock3, Play, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -190,12 +190,12 @@ export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar }:
                       {incidencia && incidencia !== incidenciaOrden ? <AvisoIncidencia incidencia={incidencia} /> : null}
                       {!linea.esAviso ? (
                         <div className="cocina-linea__acciones">
-                          {linea.etapa === "por_preparar" && !pendiente ? <Button type="button" size="sm" onClick={() => onCambiarEtapa(linea.id, "en_proceso")}>Comenzar preparación</Button> : null}
-                          {linea.etapa === "en_proceso" ? <Button type="button" size="sm" onClick={() => onCambiarEtapa(linea.id, "listo")}><CheckCheck size={16} aria-hidden="true" /> Marcar listo</Button> : null}
+                          {linea.etapa === "por_preparar" && !pendiente ? <Button type="button" size="icon" className="cocina-accion-icono is-start" aria-label="Comenzar preparación" title="Comenzar preparación" onClick={() => onCambiarEtapa(linea.id, "en_proceso")}><Play size={20} aria-hidden="true" /></Button> : null}
+                          {linea.etapa === "en_proceso" ? <Button type="button" size="icon" className="cocina-accion-icono is-ready" aria-label="Marcar listo" title="Marcar listo" onClick={() => onCambiarEtapa(linea.id, "listo")}><CheckCheck size={20} aria-hidden="true" /></Button> : null}
                           {tarjeta.tipo === "orden" && linea.etapa === "por_preparar" && !pendiente ? (
                             <>
-                              <Button type="button" size="sm" variant="outline" onClick={() => abrirModal(tarjeta, "sugerencia", linea)}><ArrowRightLeft size={15} aria-hidden="true" /> Sugerir cambio</Button>
-                              <Button type="button" size="sm" variant="ghost" onClick={() => abrirModal(tarjeta, "rechazo", linea)}><X size={15} aria-hidden="true" /> No disponible</Button>
+                              <Button type="button" size="icon" className="cocina-accion-icono is-suggest" variant="outline" aria-label="Sugerir cambio" title="Sugerir cambio" onClick={() => abrirModal(tarjeta, "sugerencia", linea)}><ArrowRightLeft size={19} aria-hidden="true" /></Button>
+                              <Button type="button" size="icon" className="cocina-accion-icono is-unavailable" variant="ghost" aria-label="No disponible" title="No disponible" onClick={() => abrirModal(tarjeta, "rechazo", linea)}><CircleOff size={19} aria-hidden="true" /></Button>
                             </>
                           ) : null}
                         </div>
@@ -207,8 +207,8 @@ export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar }:
               {ordenCompletaDisponible && !incidenciaOrden ? (
                 <footer className="cocina-tarjeta__acciones">
                   <span>Problema con toda la orden:</span>
-                  <Button type="button" size="sm" variant="outline" onClick={() => abrirModal(tarjeta, "sugerencia")}><ArrowRightLeft size={15} aria-hidden="true" /> Sugerir cambio</Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => abrirModal(tarjeta, "rechazo")}><AlertTriangle size={15} aria-hidden="true" /> Rechazar orden</Button>
+                  <Button type="button" size="icon" className="cocina-accion-icono is-suggest" variant="outline" aria-label="Sugerir cambio para toda la orden" title="Sugerir cambio" onClick={() => abrirModal(tarjeta, "sugerencia")}><ArrowRightLeft size={19} aria-hidden="true" /></Button>
+                  <Button type="button" size="icon" className="cocina-accion-icono is-unavailable" variant="ghost" aria-label="No disponible para toda la orden" title="No disponible" onClick={() => abrirModal(tarjeta, "rechazo")}><AlertTriangle size={19} aria-hidden="true" /></Button>
                 </footer>
               ) : null}
             </Card>

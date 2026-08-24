@@ -16,22 +16,31 @@ const valores = {
   justificacion_anulacion: false,
   precuenta_obligatoria_antes_de_caja: true,
   enviar_a_caja_requiere_avanzado: true,
+  impresora_comanda: { habilitada: false, nombre: "Cocina", host: "", puerto: 9100, ancho_mm: 80 as const },
+  impresora_boleta: { habilitada: false, nombre: "Caja", host: "", puerto: 9100, ancho_mm: 80 as const },
+  plantilla_comanda: { titulo: "COMANDA", encabezado: "", pie: "" },
+  plantilla_boleta: { titulo: "COMPROBANTE", encabezado: "", pie: "Gracias" },
+  servidor_red_habilitado: true,
+  nombre_servidor: "La Mesa",
 };
 
 describe("opciones", () => {
-  it("agrupa identidad, apariencia, seguridad e impresoras; no menciona tablet", () => {
+  it("agrupa identidad, apariencia, seguridad, impresión, usuarios y red", () => {
     const html = renderToStaticMarkup(createElement(Opciones, { valores, onCambiar: () => undefined }));
     expect(html).toContain("Opciones");
     expect(html).toContain("Identidad");
     expect(html).toContain("Apariencia");
     expect(html).toContain("Seguridad y autorizaciones");
     expect(html).toContain("Impresoras");
-    expect(html).toContain("Configuración próximamente");
+    expect(html).toContain("Confirmar conexión");
+    expect(html).toContain("Diseñar plantilla");
+    expect(html).toContain("Usuarios y roles");
+    expect(html).toContain("Servidor y red local");
     expect(html).toContain("Solicitar contraseña");
     expect(html).toContain("Confirmar comanda");
     expect(html).toContain("Pedir precuenta antes de cerrar la cuenta");
     expect(html).toContain("Pedir permiso avanzado para cerrar la cuenta");
-    expect(html).toContain("disabled");
+    expect(html).toContain("ESC/POS");
     expect(html).not.toContain("Tablet en cocina");
   });
 

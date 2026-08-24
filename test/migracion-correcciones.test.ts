@@ -338,7 +338,7 @@ describe("migración 011 sobre una base que ya aplicó 010", () => {
     const db = baseConHistoriaLegacy();
     const antes = db
       .prepare(
-        "SELECT name, sql FROM sqlite_master WHERE type = 'table' AND name NOT IN ('precuentas', 'caja_handoffs', 'cuentas', 'ordenes', 'contorno_grupos', 'contorno_variantes', 'plato_slots', 'plato_slot_grupos', 'orden_linea_contornos', 'inventario_movimientos', 'cocina_incidencias') ORDER BY name",
+        "SELECT name, sql FROM sqlite_master WHERE type = 'table' AND name NOT IN ('precuentas', 'caja_handoffs', 'cuentas', 'ordenes', 'contorno_grupos', 'contorno_variantes', 'plato_slots', 'plato_slot_grupos', 'orden_linea_contornos', 'inventario_movimientos', 'cocina_incidencias', 'roles', 'empleado_roles') ORDER BY name",
       )
       .all();
 
@@ -347,7 +347,7 @@ describe("migración 011 sobre una base que ya aplicó 010", () => {
     expect(
       db
         .prepare(
-          "SELECT name, sql FROM sqlite_master WHERE type = 'table' AND name NOT IN ('precuentas', 'caja_handoffs', 'cuentas', 'ordenes', 'contorno_grupos', 'contorno_variantes', 'plato_slots', 'plato_slot_grupos', 'orden_linea_contornos', 'inventario_movimientos', 'cocina_incidencias') ORDER BY name",
+          "SELECT name, sql FROM sqlite_master WHERE type = 'table' AND name NOT IN ('precuentas', 'caja_handoffs', 'cuentas', 'ordenes', 'contorno_grupos', 'contorno_variantes', 'plato_slots', 'plato_slot_grupos', 'orden_linea_contornos', 'inventario_movimientos', 'cocina_incidencias', 'roles', 'empleado_roles') ORDER BY name",
         )
         .all(),
     ).toEqual(antes);

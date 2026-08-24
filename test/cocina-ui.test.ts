@@ -52,7 +52,7 @@ describe("vistas coordinadas de cocina y mesero", () => {
     expect(html).toContain("Comenzar preparación");
     expect(html).toContain("Sugerir cambio");
     expect(html).toContain("No disponible");
-    expect(html).toContain("Rechazar orden");
+    expect(html).toContain("No disponible para toda la orden");
   });
 
   it("una sugerencia pendiente se presenta al mesero como notificación", () => {

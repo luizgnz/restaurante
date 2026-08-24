@@ -19,7 +19,7 @@ import { ModalCrearProducto } from "./pantallas/ModalCrearProducto.tsx";
 import { ModalEditarOrden } from "./pantallas/ModalEditarOrden.tsx";
 import { ModalOrdenesCuenta } from "./pantallas/ModalOrdenesCuenta.tsx";
 import type { SlotArmadoUi } from "./pantallas/ModalArmadoPlato.tsx";
-import { Opciones, type OpcionesValores } from "./pantallas/Opciones.tsx";
+import { Opciones, type ImpresoraConfigUi, type OpcionesValores, type PlantillaImpresionUi } from "./pantallas/Opciones.tsx";
 import { Pedidos, type CuentaEnCursoUi } from "./pantallas/Pedidos.tsx";
 import { PinPad } from "./pantallas/PinPad.tsx";
 import { PrecuentaEnPantalla, type PrecuentaUi } from "./pantallas/PrecuentaEnPantalla.tsx";
@@ -89,6 +89,12 @@ export function App() {
   const [justificacionAnulacion, setJustificacionAnulacion] = useState(false);
   const [precuentaObligatoria, setPrecuentaObligatoria] = useState(true);
   const [cierreRequiereAvanzado, setCierreRequiereAvanzado] = useState(false);
+  const [impresoraComanda, setImpresoraComanda] = useState<ImpresoraConfigUi>({ habilitada: false, nombre: "Cocina", host: "", puerto: 9100, ancho_mm: 80 });
+  const [impresoraBoleta, setImpresoraBoleta] = useState<ImpresoraConfigUi>({ habilitada: false, nombre: "Caja", host: "", puerto: 9100, ancho_mm: 80 });
+  const [plantillaComanda, setPlantillaComanda] = useState<PlantillaImpresionUi>({ titulo: "COMANDA", encabezado: "", pie: "" });
+  const [plantillaBoleta, setPlantillaBoleta] = useState<PlantillaImpresionUi>({ titulo: "COMPROBANTE", encabezado: "", pie: "Gracias por su visita" });
+  const [servidorRedHabilitado, setServidorRedHabilitado] = useState(true);
+  const [nombreServidor, setNombreServidor] = useState("Restaurante");
   const [confirmarCierre, setConfirmarCierre] = useState(false);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [contornosConfig, setContornosConfig] = useState<ConfigContornosUi | null>(null);
@@ -172,6 +178,12 @@ export function App() {
     if (typeof data.enviar_a_caja_requiere_avanzado === "boolean") {
       setCierreRequiereAvanzado(data.enviar_a_caja_requiere_avanzado);
     }
+    if (data.impresora_comanda) setImpresoraComanda(data.impresora_comanda);
+    if (data.impresora_boleta) setImpresoraBoleta(data.impresora_boleta);
+    if (data.plantilla_comanda) setPlantillaComanda(data.plantilla_comanda);
+    if (data.plantilla_boleta) setPlantillaBoleta(data.plantilla_boleta);
+    if (typeof data.servidor_red_habilitado === "boolean") setServidorRedHabilitado(data.servidor_red_habilitado);
+    if (typeof data.nombre_servidor === "string") setNombreServidor(data.nombre_servidor);
   }
 
   async function guardarBarras(patch: { barra_ultimos_pedidos?: boolean; barra_atrasados?: boolean }) {
@@ -864,6 +876,12 @@ export function App() {
               justificacion_anulacion: justificacionAnulacion,
               precuenta_obligatoria_antes_de_caja: precuentaObligatoria,
               enviar_a_caja_requiere_avanzado: cierreRequiereAvanzado,
+              impresora_comanda: impresoraComanda,
+              impresora_boleta: impresoraBoleta,
+              plantilla_comanda: plantillaComanda,
+              plantilla_boleta: plantillaBoleta,
+              servidor_red_habilitado: servidorRedHabilitado,
+              nombre_servidor: nombreServidor,
             }}
             onCambiar={(patch) => conError(() => guardarOpciones(patch))}
           />

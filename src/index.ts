@@ -11,7 +11,7 @@ import { asegurarCuentaAdmin, crearEmpleado } from "./modules/empleados/empleado
 import { cerrarSesion } from "./modules/empleados/sesion.ts";
 import { migrarPedidosACuentas } from "./modules/migracion/pedidos-a-cuentas.ts";
 import { seedCartaDemo, asegurarPlanoDemo, asegurarProductosDemo } from "./modules/productos/seed.ts";
-import { ConsolePrinter } from "./print/console.ts";
+import { ConfigurablePrinter } from "./print/network.ts";
 
 async function seedSiVacio(db: ReturnType<typeof openSalonDb>): Promise<void> {
   const n = db.prepare("SELECT count(*) AS c FROM empleados").get() as { c: number };
@@ -41,14 +41,18 @@ asegurarPlanoDemo(db);
 asegurarProductosDemo(db);
 cerrarSesion(db);
 
-const app = createApp({ db, config: cfg, printer: new ConsolePrinter(), dataDir: dir });
+const app = createApp({ db, config: cfg, printer: new ConfigurablePrinter(cfg), dataDir: dir });
 const uiDist = path.join(path.dirname(fileURLToPath(import.meta.url)), "../ui/dist");
 const uiOk = montarUi(app, uiDist);
 if (!uiOk) {
   console.error("No está la UI compilada (ui/dist). Ejecuta npm run build.");
 }
 try {
-  const { mensaje, puerto } = await escucharHttp({ fetch: app.fetch, puerto: cfg.puerto, hostname: "0.0.0.0" });
+  const { mensaje, puerto } = await escucharHttp({
+    fetch: app.fetch,
+    puerto: cfg.puerto,
+    hostname: cfg.servidor_red_habilitado ? "0.0.0.0" : "127.0.0.1",
+  });
   const url = urlLocal(puerto);
   console.log(mensaje);
   console.log("Login administrador: usuario admin / contraseña admin");

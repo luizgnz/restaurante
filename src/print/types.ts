@@ -1,7 +1,7 @@
 export type PrintJobKind = "comanda" | "precuenta" | "anulacion" | "correccion";
 
 export type PrinterPort = {
-  print(bytes: Uint8Array): Promise<void>;
+  print(bytes: Uint8Array, contexto?: { kind: PrintJobKind }): Promise<void>;
 };
 
 export type TicketLinea = {
