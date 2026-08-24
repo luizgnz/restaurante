@@ -20,7 +20,7 @@ describe("pantallas módulo restaurante", () => {
     expect(html).toContain("Precio de venta");
     // Todo producto queda asociado a una categoría.
     expect(html).not.toContain("Sin categoría");
-    expect(html).toContain("Categoría POS");
+    expect(html).toContain("Categoría del menú");
     expect(html).toContain("Disponible en el PdV");
     expect(html).toContain("Rastrear en el inventario");
     expect(html).toContain("Código de producto");

@@ -105,7 +105,7 @@ export function Barra({
         <>
           <button type="button" className={`tactil pos-nav__item ${vista === "plano" ? "is-on" : ""}`} title="Mesas (M)" onClick={onMesas}>
             <LayoutGrid size={20} aria-hidden="true" />
-            <span>Mesas</span>
+            <span className="pos-nav__label">Mesas</span>
           </button>
           <button
             type="button"
@@ -114,14 +114,14 @@ export function Barra({
             onClick={onOrdenes}
           >
             <ClipboardList size={20} aria-hidden="true" />
-            <span>Órdenes</span>
+            <span className="pos-nav__label">Órdenes</span>
             {notificacionesCocina ? <span className="pos-nav__badge" aria-hidden="true">{notificacionesCocina}</span> : null}
           </button>
         </>
       ) : (
         <button type="button" className={`tactil pos-nav__item ${vista === "kds" ? "is-on" : ""}`} title="Pedidos de cocina" onClick={onCocina}>
           <ChefHat size={20} aria-hidden="true" />
-          <span>Cocina</span>
+          <span className="pos-nav__label">Cocina</span>
         </button>
       )}
       <button
@@ -131,7 +131,7 @@ export function Barra({
         onClick={onInventario}
       >
         <Boxes size={20} aria-hidden="true" />
-        <span>Inventario</span>
+        <span className="pos-nav__label">Inventario</span>
       </button>
       <span className="pos-odoo__marca">
         {logo ? <img src={logo} alt="" className="pos-odoo__logo" /> : null}

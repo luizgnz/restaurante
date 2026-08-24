@@ -51,6 +51,20 @@ type Vista = Destino;
 type Administrador = { id: number; nombre: string; derecho: string };
 type Sesion = { abierta: boolean; administrador: Administrador | null };
 
+function nombreDeVista(vista: Vista, area: "mesero" | "cocina"): string {
+  if (vista === "plano") return "Mesas";
+  if (vista === "pedido") return "Orden en mesa";
+  if (vista === "pedidos") return "Órdenes";
+  if (vista === "inventario") return "Inventario";
+  if (vista === "kds") return "Cocina";
+  if (vista === "editar-mapa") return "Mapa del salón";
+  if (vista === "categorias") return "Categorías";
+  if (vista === "contornos") return "Contornos";
+  if (vista === "backend") return "Administración";
+  if (vista === "opciones") return "Opciones";
+  return area === "cocina" ? "Cocina" : "Restaurante";
+}
+
 export function App() {
   const [sesion, setSesion] = useState<Sesion | null>(null);
   const [vista, setVista] = useState<Vista>("plano");
@@ -526,6 +540,10 @@ export function App() {
         onCrearProducto={abrirCrearProducto}
         onIr={ir}
       />
+      <div className="mobile-view-context" aria-live="polite">
+        <span>Sección actual</span>
+        <strong>{nombreDeVista(vista, area)}</strong>
+      </div>
       {error ? <p role="alert">{error}</p> : null}
       <main>
         {pinPendiente ? (

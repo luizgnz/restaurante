@@ -40,10 +40,10 @@ function leerImagen(file: File, cb: (url: string) => void) {
 
 function NavOpciones() {
   return <nav className="settings-nav" aria-label="Secciones de opciones">
-    <a href="#general"><SlidersHorizontal size={17} aria-hidden="true" />General</a>
-    <a href="#impresion"><Printer size={17} aria-hidden="true" />Impresión</a>
-    <a href="#usuarios"><Users size={17} aria-hidden="true" />Usuarios</a>
-    <a href="#red-local"><Network size={17} aria-hidden="true" />Red local</a>
+    <a href="#general" aria-label="General" title="General"><SlidersHorizontal size={17} aria-hidden="true" /><span>General</span></a>
+    <a href="#impresion" aria-label="Impresión" title="Impresión"><Printer size={17} aria-hidden="true" /><span>Impresión</span></a>
+    <a href="#usuarios" aria-label="Usuarios" title="Usuarios"><Users size={17} aria-hidden="true" /><span>Usuarios</span></a>
+    <a href="#red-local" aria-label="Red local" title="Red local"><Network size={17} aria-hidden="true" /><span>Red local</span></a>
   </nav>;
 }
 
@@ -186,7 +186,7 @@ export function Opciones({ valores, onCambiar }: Props) {
       <legend>Apariencia</legend>
       <label>Tipo de letra<select value={valores.tipografia} onChange={(event) => onCambiar({ tipografia: event.target.value as OpcionesValores["tipografia"] })}><option value="sans">Sans</option><option value="serif">Serif</option><option value="redondeada">Redondeada</option></select></label>
       <label>Tamaño<select value={valores.tamano_ui} onChange={(event) => onCambiar({ tamano_ui: event.target.value as OpcionesValores["tamano_ui"] })}><option value="compacto">Compacto</option><option value="normal">Normal</option><option value="grande">Grande</option></select></label>
-      <p className="login-odoo__ayuda">Se aplica a todo el POS en cuanto lo cambias.</p>
+      <p className="login-odoo__ayuda">Se aplica a todo el sistema en cuanto lo cambias.</p>
     </fieldset>
     <fieldset className="form-odoo__tarjeta settings-card settings-card--wide">
       <legend>Seguridad y autorizaciones</legend>
@@ -207,7 +207,7 @@ export function Opciones({ valores, onCambiar }: Props) {
         <SeccionImpresora tipo="comanda" impresora={valores.impresora_comanda} plantilla={valores.plantilla_comanda} onImpresora={(impresora_comanda) => onCambiar({ impresora_comanda })} onPlantilla={(plantilla_comanda) => onCambiar({ plantilla_comanda })} />
         <SeccionImpresora tipo="boleta" impresora={valores.impresora_boleta} plantilla={valores.plantilla_boleta} onImpresora={(impresora_boleta) => onCambiar({ impresora_boleta })} onPlantilla={(plantilla_boleta) => onCambiar({ plantilla_boleta })} />
       </div>
-      <p className="settings-callout is-warning"><ShieldCheck size={18} />El comprobante impreso por el POS no es automáticamente una boleta tributaria. Para validez fiscal se debe integrar el proveedor de facturación o servicio tributario correspondiente.</p>
+      <p className="settings-callout is-warning"><ShieldCheck size={18} />El comprobante impreso por el sistema no es automáticamente una boleta tributaria. Para validez fiscal se debe integrar el proveedor de facturación o servicio tributario correspondiente.</p>
     </fieldset>
     <GestionUsuarios />
     <EstadoServidor valores={valores} onCambiar={onCambiar} />

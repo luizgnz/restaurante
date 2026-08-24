@@ -161,7 +161,7 @@ export function Pedido({
           Nota privada
           <textarea
             className="pedido-nota-area"
-            placeholder="Opcional. Solo en el POS."
+            placeholder="Opcional. Solo en el sistema."
             value={notaPrivada}
             onChange={(e) => onNotaPrivada(e.target.value)}
             onBlur={(e) => onGuardarNotas({ notaPrivada: e.target.value, indicaciones })}

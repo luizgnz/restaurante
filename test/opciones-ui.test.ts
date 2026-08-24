@@ -36,6 +36,8 @@ describe("opciones", () => {
     expect(html).toContain("Diseñar plantilla");
     expect(html).toContain("Usuarios y roles");
     expect(html).toContain("Servidor y red local");
+    expect(html).not.toContain("Punto de venta");
+    expect(html).not.toContain("todo el POS");
     expect(html).toContain("Solicitar contraseña");
     expect(html).toContain("Confirmar comanda");
     expect(html).toContain("Pedir precuenta antes de cerrar la cuenta");

@@ -1136,6 +1136,9 @@ textarea:focus {
   background: var(--accent);
   color: var(--accent-foreground);
 }
+.mobile-view-context {
+  display: none;
+}
 .pos-odoo__marca {
   color: var(--foreground);
 }
@@ -1684,6 +1687,34 @@ button.icono {
     border-radius: 0.75rem;
     font-size: 0.72rem;
   }
+  .pos-nav__item {
+    justify-content: center;
+  }
+  .pos-nav__label {
+    display: none;
+  }
+  .mobile-view-context {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.7rem 0.75rem 0;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 0.8rem;
+    background: var(--card);
+    color: var(--foreground);
+    box-shadow: 0 5px 18px rgb(44 34 22 / 0.06);
+  }
+  .mobile-view-context span {
+    color: var(--muted-foreground);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .mobile-view-context strong {
+    font-size: 0.9rem;
+  }
   .pos-odoo__marca {
     display: none;
   }
@@ -1727,6 +1758,17 @@ button.icono {
   }
   .salon-odoo__pisos-izq button {
     width: 100%;
+  }
+  .salon-odoo__pisos-izq .salon-odoo__nueva {
+    width: 48px;
+    min-width: 48px;
+    height: 48px;
+    min-height: 48px;
+    padding: 0;
+    border-radius: 50%;
+  }
+  .salon-odoo__nueva span {
+    display: none;
   }
   .salon-odoo__pisos-centro {
     order: 3;
@@ -2223,6 +2265,17 @@ button.icono {
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
+  .salon-odoo__nueva {
+    width: 48px;
+    min-width: 48px;
+    height: 48px;
+    min-height: 48px;
+    padding: 0;
+    border-radius: 50%;
+  }
+  .salon-odoo__nueva span {
+    display: none;
+  }
   .constructor-orden__cuerpo {
     grid-template-columns: minmax(0, 1fr) 310px;
   }
@@ -3046,7 +3099,68 @@ button.icono {
   .settings-card--wide {
     grid-column: auto;
   }
-  .settings-nav { top: 0; }
+  .opciones-page.form-odoo {
+    gap: 0.85rem;
+    font-size: 0.9rem;
+  }
+  .opciones-page .page-header h1 {
+    font-size: 1.5rem;
+    letter-spacing: -0.025em;
+  }
+  .opciones-page .page-header p {
+    margin-top: 0.2rem;
+    font-size: 0.84rem;
+    line-height: 1.4;
+  }
+  .opciones-page .page-eyebrow {
+    font-size: 0.64rem;
+  }
+  .settings-nav {
+    top: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding: 0.35rem;
+    border-radius: 0.85rem;
+  }
+  .settings-nav a {
+    min-width: 0;
+    min-height: 40px;
+    justify-content: center;
+    padding: 0.4rem;
+  }
+  .settings-nav a span {
+    display: none;
+  }
+  .opciones-page .settings-card {
+    gap: 0.7rem;
+    padding: 0.85rem;
+    border-radius: 0.9rem;
+  }
+  .opciones-page .settings-card legend {
+    font-size: 0.68rem;
+  }
+  .opciones-page .settings-card > label,
+  .opciones-page .security-grid > label {
+    font-size: 0.82rem;
+  }
+  .opciones-page .form-odoo__tarjeta input:not([type="checkbox"]),
+  .opciones-page .form-odoo__tarjeta select,
+  .opciones-page .form-odoo__tarjeta textarea {
+    min-height: 42px;
+    margin-top: 0.3rem;
+    padding: 0.58rem 0.65rem;
+    font-size: 0.9rem;
+  }
+  .opciones-page .switch-tablet {
+    margin-bottom: 0;
+    padding: 0.55rem;
+    line-height: 1.3;
+  }
+  .opciones-page .login-odoo__ayuda,
+  .opciones-page .settings-callout {
+    font-size: 0.75rem;
+  }
   .security-grid,
   .printer-list,
   .printer-grid,

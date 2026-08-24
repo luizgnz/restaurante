@@ -233,7 +233,7 @@ describe("cuenta de mesa", () => {
     expect(html).not.toContain('aria-label="Agregar una unidad"');
     expect(html).not.toContain('aria-label="Quitar una unidad"');
     expect(html).toContain("Nota privada");
-    expect(html).toContain("Solo visible en el POS");
+    expect(html).toContain("Solo visible en el sistema");
     // Sin precuenta emitida (y exigida) no se ofrece cerrar la cuenta.
     expect(html).toContain("Precuenta");
     expect(html).not.toContain("Cerrar cuenta");

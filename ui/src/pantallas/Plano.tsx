@@ -156,7 +156,7 @@ export function Plano({
     <section className="salon-odoo">
       <div className="salon-odoo__resumen">
         <div>
-          <span className="salon-odoo__eyebrow">Punto de venta</span>
+          <span className="salon-odoo__eyebrow">Servicio de mesas</span>
           <h1>{piso}</h1>
           <p>Selecciona una mesa para comenzar o continuar el servicio.</p>
         </div>
@@ -168,8 +168,8 @@ export function Plano({
       <header className="salon-odoo__pisos">
         <div className="salon-odoo__pisos-izq">
           {onNuevoPedido ? (
-            <Button type="button" size="lg" className="primario tactil" title="Nueva orden (N)" onClick={onNuevoPedido}>
-              <Plus size={20} aria-hidden="true" /> Nueva orden
+            <Button type="button" size="lg" className="primario tactil salon-odoo__nueva" aria-label="Nueva orden" title="Nueva orden (N)" onClick={onNuevoPedido}>
+              <Plus size={20} aria-hidden="true" /><span>Nueva orden</span>
             </Button>
           ) : null}
         </div>

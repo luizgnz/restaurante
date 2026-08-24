@@ -24,7 +24,7 @@ describe("modal crear producto", () => {
     expect(html).toContain('aria-modal="true"');
     expect(html).toContain("Crear producto");
     expect(html).toContain("Precio de venta");
-    expect(html).toContain("Categoría POS");
+    expect(html).toContain("Categoría del menú");
     expect(html).toContain("Código de producto");
     expect(html).toContain("Color del ítem");
     expect(html).toContain("Foto");

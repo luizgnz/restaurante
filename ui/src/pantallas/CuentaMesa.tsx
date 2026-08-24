@@ -144,7 +144,7 @@ export function CuentaMesa({
         Nota privada
         <textarea
           value={notaPrivada}
-          placeholder="Solo visible en el POS. No va a cocina."
+          placeholder="Solo visible en el sistema. No va a cocina."
           onChange={(event) => setNotaPrivada(event.target.value)}
           onBlur={() => {
             setErrorNota("");
@@ -153,7 +153,7 @@ export function CuentaMesa({
             );
           }}
         />
-        <span className="login-odoo__ayuda">Solo visible en el POS.</span>
+        <span className="login-odoo__ayuda">Solo visible en el sistema.</span>
         {errorNota ? <span role="alert">{errorNota}</span> : null}
       </label>
 

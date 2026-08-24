@@ -20,7 +20,7 @@ export function Backend({ onCrearProducto, onCategorias, onContornos, onEditarMa
           <p>Gestiona la carta, su estructura y la distribución del salón.</p>
         </div>
         <Button type="button" variant="outline" onClick={onMesas}>
-          <LayoutDashboard size={18} aria-hidden="true" /> Punto de venta
+          <LayoutDashboard size={18} aria-hidden="true" /> Volver al salón
         </Button>
       </header>
       <div className="backend-odoo__atajos">

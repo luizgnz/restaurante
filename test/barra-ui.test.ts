@@ -31,6 +31,7 @@ describe("barra POS", () => {
     expect(html).not.toMatch(/>Cerrar</);
     expect(html).toContain("aria-label=\"Cuenta\"");
     expect(html).toContain("aria-label=\"Menú\"");
+    expect(html).toContain("pos-nav__label");
     expect(html).toContain('aria-expanded="false"');
     expect(html).not.toContain("Crear producto");
     expect(html).not.toContain("Editar mapa");

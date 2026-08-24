@@ -107,7 +107,7 @@ export function CrearProducto({ categorias, error, onGuardar, onCancelar, onDirt
         <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
       </label>
       <label>
-        Categoría POS
+        Categoría del menú
           <select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
             {categorias.map((c) => (
               <option key={c.id} value={c.id}>
