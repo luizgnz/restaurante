@@ -25,9 +25,11 @@ function leerImagen(file: File, cb: (url: string) => void) {
 
 export function Opciones({ valores, onCambiar }: Props) {
   return (
-    <section className="form-odoo">
-      <h1>Opciones</h1>
-      <fieldset className="form-odoo__tarjeta">
+    <section className="page-shell form-odoo opciones-page">
+      <header className="page-header">
+        <div><span className="page-eyebrow">Preferencias del sistema</span><h1>Opciones</h1><p>Personaliza la identidad, la experiencia táctil y las autorizaciones.</p></div>
+      </header>
+      <fieldset className="form-odoo__tarjeta settings-card">
         <legend>Identidad</legend>
         <label>
           Nombre del restaurante
@@ -58,7 +60,7 @@ export function Opciones({ valores, onCambiar }: Props) {
           </>
         ) : null}
       </fieldset>
-      <fieldset className="form-odoo__tarjeta">
+      <fieldset className="form-odoo__tarjeta settings-card">
         <legend>Apariencia</legend>
         <label>
           Tipo de letra
@@ -84,7 +86,7 @@ export function Opciones({ valores, onCambiar }: Props) {
         </label>
         <p className="login-odoo__ayuda">Se aplica a todo el POS en cuanto lo cambias.</p>
       </fieldset>
-      <fieldset className="form-odoo__tarjeta">
+      <fieldset className="form-odoo__tarjeta settings-card settings-card--wide">
         <legend>Seguridad y autorizaciones</legend>
         <label className="switch-tablet">
           <input
@@ -155,7 +157,7 @@ export function Opciones({ valores, onCambiar }: Props) {
           </label>
         ) : null}
       </fieldset>
-      <fieldset className="form-odoo__tarjeta" disabled>
+      <fieldset className="form-odoo__tarjeta settings-card settings-card--wide" disabled>
         <legend>Impresoras</legend>
         <p className="login-odoo__ayuda">Configuración próximamente.</p>
         <label>

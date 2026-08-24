@@ -12,6 +12,7 @@ import { Contornos, type GrupoContornoUi, type SlotEditorUi } from "./pantallas/
 import { type Categoria } from "./pantallas/CrearProducto.tsx";
 import { CuentaMesa, type CuentaDetalleUi, type OrdenCuentaUi } from "./pantallas/CuentaMesa.tsx";
 import { EditarMapa } from "./pantallas/EditarMapa.tsx";
+import { Inventario, type MaterialInventarioUi } from "./pantallas/Inventario.tsx";
 import { Login } from "./pantallas/Login.tsx";
 import { ModalCrearProducto } from "./pantallas/ModalCrearProducto.tsx";
 import { ModalEditarOrden } from "./pantallas/ModalEditarOrden.tsx";
@@ -59,6 +60,7 @@ export function App() {
   const [tieneFondo, setTieneFondo] = useState(false);
   const [fondoTick, setFondoTick] = useState(0);
   const [productos, setProductos] = useState<ProductoCarta[]>([]);
+  const [materialesInventario, setMaterialesInventario] = useState<MaterialInventarioUi[]>([]);
   const [cuentasEnCurso, setCuentasEnCurso] = useState<CuentaEnCursoUi[]>([]);
   const [cuentaActual, setCuentaActual] = useState<CuentaDetalleUi | null>(null);
   const [contextoOrden, setContextoOrden] = useState<ContextoOrden | null>(null);
@@ -114,6 +116,10 @@ export function App() {
   async function cargarCarta() {
     const data = await api<{ productos: typeof productos }>("/api/carta");
     setProductos(data.productos);
+  }
+  async function cargarInventario() {
+    const data = await api<{ materiales: MaterialInventarioUi[] }>("/api/inventario");
+    setMaterialesInventario(data.materiales);
   }
   async function cargarCuenta(id: number) {
     const data = await api<CuentaDetalleUi>(`/api/cuentas/${id}`);
@@ -236,6 +242,7 @@ export function App() {
 
   async function ir(v: Destino) {
     if (v === "pedidos") cargarCuentasEnCurso().catch((e) => setError(String(e)));
+    if (v === "inventario") cargarInventario().catch((e) => setError(String(e)));
     if (v === "plano" || v === "editar-mapa") cargarPlano().catch((e) => setError(String(e)));
     if (v === "categorias") cargarCategorias().catch((e) => setError(String(e)));
     if (v === "contornos") {
@@ -458,6 +465,7 @@ export function App() {
         nombre={sesion.administrador?.nombre ?? ""}
         onMesas={() => ir("plano")}
         onOrdenes={() => ir("pedidos")}
+        onInventario={() => ir("inventario")}
         onCerrarSesion={() =>
           conError(async () => {
             await api("/api/sesion/cerrar", { method: "POST" });
@@ -649,6 +657,20 @@ export function App() {
                 setModalCuentaId(cuentaId);
               })
             }
+          />
+        ) : null}
+        {vista === "inventario" ? (
+          <Inventario
+            materiales={materialesInventario}
+            puedeIngresar={sesion.administrador?.derecho === "avanzado"}
+            onRecargar={cargarInventario}
+            onRegistrarEntrada={async (productoId, cantidad, pin) => {
+              await api(`/api/inventario/${productoId}/entradas`, {
+                method: "POST",
+                body: JSON.stringify({ cantidad, pin }),
+              });
+              await Promise.all([cargarInventario(), cargarCarta()]);
+            }}
           />
         ) : null}
         <ModalCrearProducto

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { ClipboardList, LayoutGrid } from "lucide-react";
+import { Boxes, ClipboardList, LayoutGrid } from "lucide-react";
 
 export type Destino =
   | "plano"
   | "pedido"
   | "pedidos"
+  | "inventario"
   | "editar-mapa"
   | "categorias"
   | "contornos"
@@ -18,6 +19,7 @@ type Props = {
   nombre: string;
   onMesas: () => void;
   onOrdenes: () => void;
+  onInventario: () => void;
   onCerrarSesion: () => void;
   onCrearProducto: () => void;
   onIr: (vista: Destino) => void;
@@ -40,7 +42,7 @@ function IconoMenu() {
   );
 }
 
-export function Barra({ vista, marca, logo, nombre, onMesas, onOrdenes, onCerrarSesion, onCrearProducto, onIr }: Props) {
+export function Barra({ vista, marca, logo, nombre, onMesas, onOrdenes, onInventario, onCerrarSesion, onCrearProducto, onIr }: Props) {
   const [cuentaAbierta, setCuentaAbierta] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const iconos = useRef<HTMLDivElement>(null);
@@ -92,6 +94,15 @@ export function Barra({ vista, marca, logo, nombre, onMesas, onOrdenes, onCerrar
         <ClipboardList size={20} aria-hidden="true" />
         <span>Órdenes</span>
       </button>
+      <button
+        type="button"
+        className={`tactil pos-nav__item ${vista === "inventario" ? "is-on" : ""}`}
+        title="Inventario"
+        onClick={onInventario}
+      >
+        <Boxes size={20} aria-hidden="true" />
+        <span>Inventario</span>
+      </button>
       <span className="pos-odoo__marca">
         {logo ? <img src={logo} alt="" className="pos-odoo__logo" /> : null}
         {marca}
@@ -141,6 +152,9 @@ export function Barra({ vista, marca, logo, nombre, onMesas, onOrdenes, onCerrar
               </button>
               <button type="button" className="tactil" role="menuitem" onClick={() => ir("pedidos")}>
                 Órdenes
+              </button>
+              <button type="button" className="tactil" role="menuitem" onClick={() => ir("inventario")}>
+                Inventario
               </button>
               <button type="button" className="tactil" role="menuitem" onClick={crearProducto}>
                 Crear producto

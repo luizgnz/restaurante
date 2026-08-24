@@ -83,11 +83,12 @@ export function Contornos({
   }
 
   return (
-    <section className="contornos-admin">
-      <header className="cuenta-mesa__cabecera">
+    <section className="page-shell contornos-admin">
+      <header className="page-header cuenta-mesa__cabecera">
         <div>
+          <span className="page-eyebrow">Configuración de la carta</span>
           <h1>Contornos</h1>
-          <p className="login-odoo__ayuda">Configura variantes globales y las opciones que acepta cada plato.</p>
+          <p>Configura variantes globales y las opciones que acepta cada plato.</p>
         </div>
         <button type="button" onClick={onVolver}>Volver</button>
       </header>

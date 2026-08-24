@@ -2,7 +2,7 @@ import type Database from "better-sqlite3";
 import { hashPin, verifyPin } from "./pin.ts";
 
 export type Derecho = "minimo" | "basico" | "avanzado";
-export type AccionPin = "enviar" | "precuenta" | "caja" | "abrir_sesion" | "crear_pedido" | "anular";
+export type AccionPin = "enviar" | "precuenta" | "caja" | "abrir_sesion" | "crear_pedido" | "anular" | "inventario";
 
 export type Empleado = {
   id: number;
@@ -97,7 +97,7 @@ export async function probarPin(db: Database.Database, pin: string): Promise<Emp
 }
 
 function puede(derecho: Derecho, accion: AccionPin): boolean {
-  if (accion === "caja" || accion === "abrir_sesion") return derecho === "avanzado";
+  if (accion === "caja" || accion === "abrir_sesion" || accion === "inventario") return derecho === "avanzado";
   return derecho === "basico" || derecho === "avanzado";
 }
 

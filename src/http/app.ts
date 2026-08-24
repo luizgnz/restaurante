@@ -8,6 +8,8 @@ import { CuentaError } from "../modules/cuentas/cuentas.ts";
 import { PinError, exigirPin } from "../modules/empleados/empleados.ts";
 import { abrirSesion, cerrarSesion, sesionAbierta } from "../modules/empleados/sesion.ts";
 import { avanzarEtapa, KdsError, tarjetasKds } from "../modules/kds/kds.ts";
+import { registrarEntradaInventario, listarInventario } from "../modules/inventario/gestion.ts";
+import { InventarioError } from "../modules/inventario/asientos.ts";
 import { CorreccionError } from "../modules/ordenes/correcciones.ts";
 import { OrdenError } from "../modules/ordenes/enviar.ts";
 import { PrecuentaError } from "../modules/precuenta/precuenta.ts";
@@ -90,7 +92,8 @@ function codigoStatus(err: unknown): StatusError {
     err instanceof PrecuentaError ||
     err instanceof CajaError ||
     err instanceof KdsError ||
-    err instanceof ContornoError
+    err instanceof ContornoError ||
+    err instanceof InventarioError
   ) {
     return statusPorCodigo(err.codigo);
   }
@@ -118,6 +121,7 @@ function codigoDe(err: unknown): string {
     err instanceof PrecuentaError ||
     err instanceof KdsError ||
     err instanceof ContornoError ||
+    err instanceof InventarioError ||
     err instanceof SolicitudError
   ) {
     return err.codigo;
@@ -311,6 +315,26 @@ export function createApp(deps: AppDeps): Hono {
   });
 
   app.get("/api/productos", (c) => c.json({ productos: listarProductos(db) }));
+
+  app.get("/api/inventario", (c) => {
+    if (!sesionAbierta(db)) throw new PinError("credenciales_invalidas", "Hace falta sesión");
+    return c.json({ materiales: listarInventario(db) });
+  });
+
+  app.post("/api/inventario/:id/entradas", async (c) => {
+    if (!sesionAbierta(db)) throw new PinError("credenciales_invalidas", "Hace falta sesión");
+    const body = await leerJson<{ cantidad: unknown; pin: unknown }>(c);
+    if (typeof body.cantidad !== "number") throw new SolicitudError("cantidad_invalida", "Cantidad inválida");
+    if (typeof body.pin !== "string") throw new SolicitudError("pin_invalido", "Hace falta el PIN de administrador");
+    return c.json(
+      await registrarEntradaInventario(db, {
+        productoId: idDeRuta(c),
+        cantidad: body.cantidad,
+        pin: body.pin,
+      }),
+      201,
+    );
+  });
 
   app.post("/api/productos", async (c) => {
     const body = await c.req.json<{

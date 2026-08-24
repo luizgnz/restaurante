@@ -287,7 +287,10 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
     (piso?.id && piso.id > 0 && piso.tiene_fondo && !piso.fondo_quitar_imagen ? `/api/pisos/${piso.id}/fondo` : undefined);
 
   return (
-    <section className="salon-odoo">
+    <section className="page-shell salon-odoo editor-page">
+      <div className="page-header editor-page__titulo">
+        <div><span className="page-eyebrow">Diseño del salón</span><h1>Editar mapa</h1><p>Organiza pisos y mesas para que coincidan con el espacio real.</p></div>
+      </div>
       <header className="salon-odoo__pisos">
         <div className="salon-odoo__pisos-izq" />
         <div className="salon-odoo__pisos-centro" role="tablist" aria-label="Pisos">

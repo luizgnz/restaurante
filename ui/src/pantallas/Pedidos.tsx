@@ -34,32 +34,43 @@ type Props = {
 };
 
 export function Pedidos({ cuentas, onAbrir }: Props) {
+  const totalOrdenes = cuentas.reduce((total, cuenta) => total + cuenta.ordenes.length, 0);
   return (
-    <section>
-      <h1>Órdenes</h1>
-      <div className="kds">
+    <section className="page-shell pedidos-page">
+      <header className="page-header">
+        <div>
+          <span className="page-eyebrow">Servicio actual</span>
+          <h1>Órdenes</h1>
+          <p>Revisa las cuentas abiertas y entra a una mesa para editar o continuar el servicio.</p>
+        </div>
+        <div className="pedidos-page__metricas">
+          <Badge variant="secondary"><Utensils size={14} aria-hidden="true" /> {cuentas.length} mesas</Badge>
+          <Badge><ReceiptText size={14} aria-hidden="true" /> {totalOrdenes} órdenes</Badge>
+        </div>
+      </header>
+      <div className="kds pedidos-grid">
         {cuentas.map((cuenta) => (
-          <article className="tarjeta" key={cuenta.id}>
+          <Card className="tarjeta pedido-card" key={cuenta.id}>
             <button className="pedido-cabecera" onClick={() => onAbrir(cuenta.id)}>
-              <strong>Mesa {cuenta.mesa}</strong>
-              <span className="pedido-estado">{ESTADO[cuenta.estado] ?? cuenta.estado}</span>
-              <span>
-                {cuenta.mesero} · {cuenta.hace}
-              </span>
+              <span className="pedido-card__mesa"><strong>Mesa {cuenta.mesa}</strong><Badge variant="warning">{ESTADO[cuenta.estado] ?? cuenta.estado}</Badge></span>
+              <span className="pedido-card__meta"><Clock3 size={15} aria-hidden="true" /> {cuenta.mesero} · {cuenta.hace}</span>
             </button>
-            {cuenta.ordenes.map((orden) => (
-              <p className="pedido-indicaciones" key={orden.id}>
-                Orden #{orden.numero}:{" "}
-                {orden.lineas
-                  .map((linea) => `${linea.cantidad} × ${linea.nombre}${linea.nota ? ` (${linea.nota})` : ""}`)
-                  .join(", ")}
-              </p>
-            ))}
+            <div className="pedido-card__ordenes">
+              {cuenta.ordenes.map((orden) => (
+                <div className="pedido-indicaciones" key={orden.id}>
+                  <strong>Orden #{orden.numero}</strong>
+                  <span>{orden.lineas.map((linea) => `${linea.cantidad} × ${linea.nombre}${linea.nota ? ` (${linea.nota})` : ""}`).join(", ")}</span>
+                </div>
+              ))}
+            </div>
             {cuenta.ordenes.length === 0 ? <p className="login-odoo__ayuda">Sin órdenes aún</p> : null}
-          </article>
+          </Card>
         ))}
-        {cuentas.length === 0 ? <p>No hay cuentas en curso</p> : null}
+        {cuentas.length === 0 ? <div className="empty-state"><ReceiptText size={30} aria-hidden="true" /><strong>No hay cuentas en curso</strong><span>Las nuevas órdenes aparecerán aquí.</span></div> : null}
       </div>
     </section>
   );
 }
+import { Clock3, ReceiptText, Utensils } from "lucide-react";
+import { Badge } from "@/components/ui/badge.tsx";
+import { Card } from "@/components/ui/card.tsx";

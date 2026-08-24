@@ -70,6 +70,7 @@ describe("db", () => {
       "precuentas",
       "caja_handoffs",
       "sesiones_pos",
+      "inventario_movimientos",
     ]) {
       expect(names).toContain(t);
     }

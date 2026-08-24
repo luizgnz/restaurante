@@ -25,8 +25,8 @@ function cantidad(l: Linea): string {
 
 export function Kds({ tarjetas }: { tarjetas: Tarjeta[] }) {
   return (
-    <section>
-      <h1>Cocina</h1>
+    <section className="page-shell kds-page">
+      <header className="page-header"><div><span className="page-eyebrow">Producción</span><h1>Cocina</h1><p>Comandas activas, correcciones y avisos para preparación.</p></div></header>
       <div className="kds">
         {tarjetas.map((t) => (
           <article className="tarjeta" key={t.id}>
@@ -50,7 +50,7 @@ export function Kds({ tarjetas }: { tarjetas: Tarjeta[] }) {
             </ul>
           </article>
         ))}
-        {tarjetas.length === 0 ? <p>No hay comandas</p> : null}
+        {tarjetas.length === 0 ? <div className="empty-state">No hay comandas pendientes.</div> : null}
       </div>
     </section>
   );

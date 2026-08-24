@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { ArrowLeft, Plus, Shapes } from "lucide-react";
+import { Button } from "@/components/ui/button.tsx";
+import { Card } from "@/components/ui/card.tsx";
 
 export type CategoriaUi = { id: number; nombre: string };
 
@@ -29,35 +32,38 @@ export function Categorias({ categorias, onCrear, onVolver }: Props) {
   }
 
   return (
-    <section className="form-odoo">
-      <div className="form-odoo__tarjeta">
-        <h1>Categorías</h1>
-        <p className="login-odoo__ayuda">
-          Cada producto pertenece a una categoría. Las principales son Comida y Bebida; puedes crear las que
-          necesites.
-        </p>
+    <section className="page-shell categorias-page">
+      <header className="page-header">
+        <div><span className="page-eyebrow">Organización de la carta</span><h1>Categorías</h1><p>Agrupa los productos para agilizar la toma de pedidos.</p></div>
+        <Button type="button" variant="outline" onClick={onVolver}><ArrowLeft size={18} aria-hidden="true" /> Volver</Button>
+      </header>
+      <div className="categorias-layout">
+      <Card className="form-odoo__tarjeta categorias-form">
+        <h2>Nueva categoría</h2>
         <label>
-          Nueva categoría
+          Nombre
           <input value={nombre} placeholder="Ej: Postres" onChange={(event) => setNombre(event.target.value)} />
         </label>
         <div className="form-odoo__acciones">
-          <button type="button" onClick={onVolver}>
-            Volver
-          </button>
-          <button type="button" className="primario" disabled={!nombre.trim() || creando} onClick={crear}>
+          <Button type="button" disabled={!nombre.trim() || creando} onClick={crear}>
+            <Plus size={18} aria-hidden="true" />
             {creando ? "Creando…" : "Crear"}
-          </button>
+          </Button>
         </div>
         {error ? <p role="alert">{error}</p> : null}
+      </Card>
+      <Card className="categorias-panel">
+        <h2>Categorías activas</h2>
         {categorias.length === 0 ? (
-          <p className="login-odoo__ayuda">No hay categorías.</p>
+          <div className="empty-state"><Shapes size={28} aria-hidden="true" /> No hay categorías.</div>
         ) : (
           <ul className="categorias-lista">
             {categorias.map((categoria) => (
-              <li key={categoria.id}>{categoria.nombre}</li>
+              <li key={categoria.id}><Shapes size={17} aria-hidden="true" /> {categoria.nombre}</li>
             ))}
           </ul>
         )}
+      </Card>
       </div>
     </section>
   );

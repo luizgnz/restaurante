@@ -12,6 +12,7 @@ describe("barra POS", () => {
         nombre: "Jefa",
         onMesas: () => undefined,
         onOrdenes: () => undefined,
+        onInventario: () => undefined,
         onCerrarSesion: () => undefined,
         onCrearProducto: () => undefined,
         onIr: () => undefined,
@@ -19,6 +20,7 @@ describe("barra POS", () => {
     );
     expect(html).toContain("Mesas");
     expect(html).toContain("Órdenes");
+    expect(html).toContain("Inventario");
     expect(html).not.toContain("Complementos");
     expect(html).not.toContain(">Jefa<");
     expect(html).not.toMatch(/>Cerrar</);
