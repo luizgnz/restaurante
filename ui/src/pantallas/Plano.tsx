@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { interpretarTecla } from "../../../src/modules/salon/teclado.ts";
 import type { NivelEspera } from "../../../src/modules/tiempo.ts";
-import { Armchair, Clock3, Plus, Search } from "lucide-react";
+import { Clock3, Plus, Search, Table2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 
@@ -161,7 +161,7 @@ export function Plano({
           <p>Selecciona una mesa para comenzar o continuar el servicio.</p>
         </div>
         <div className="salon-odoo__metricas" aria-label="Resumen del salón">
-          <div><Armchair size={19} aria-hidden="true" /><strong>{libres}</strong><span>libres</span></div>
+          <div><Table2 size={19} aria-hidden="true" /><strong>{libres}</strong><span>libres</span></div>
           <div><Clock3 size={19} aria-hidden="true" /><strong>{ocupadas}</strong><span>en servicio</span></div>
         </div>
       </div>
