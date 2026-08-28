@@ -23,7 +23,7 @@ describe("pantallas módulo restaurante", () => {
     expect(html).toContain("Código de producto");
     expect(html).toContain("Color del ítem");
     expect(html).toContain("Foto");
-    expect(html).toContain("checked");
+    expect(html).toContain("data-state=\"checked\"");
     expect(html).toContain("Guardar");
   });
 

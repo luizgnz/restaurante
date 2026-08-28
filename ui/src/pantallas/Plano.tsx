@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { interpretarTecla } from "../../../src/modules/salon/teclado.ts";
 import type { NivelEspera } from "../../../src/modules/tiempo.ts";
+import { Button } from "../components/ui/button.tsx";
+import { Input } from "../components/ui/input.tsx";
+import { Label } from "../components/ui/label.tsx";
 
 export type Mesa = {
   id: number;
@@ -148,65 +151,66 @@ export function Plano({
   const mesasDelPiso = mesas.filter((m) => pisoId == null || m.piso_id == null || m.piso_id === pisoId);
 
   return (
-    <section className="salon-odoo">
-      <header className="salon-odoo__pisos">
-        <div className="salon-odoo__pisos-izq">
+    <section className="salon-odoo flex min-h-[70vh] flex-1 flex-col gap-3">
+      <header className="salon-odoo__pisos grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+        <div className="salon-odoo__pisos-izq flex flex-wrap gap-2">
           {onNuevoPedido ? (
-            <button type="button" className="primario tactil" title="Nueva orden (N)" onClick={onNuevoPedido}>
+            <Button type="button" title="Nueva orden (N)" onClick={onNuevoPedido}>
               + Nueva orden
-            </button>
+            </Button>
           ) : null}
         </div>
-        <div className="salon-odoo__pisos-centro" role="tablist" aria-label="Pisos">
+        <div className="salon-odoo__pisos-centro flex flex-wrap justify-start gap-2 sm:justify-center" role="tablist" aria-label="Pisos">
           {listaPisos.map((p) => {
             const actual = (pisoId != null && p.id === pisoId) || (pisoId == null && p.nombre === piso);
             return (
-              <button
+              <Button
                 key={p.id}
                 type="button"
+                variant={actual ? "default" : "secondary"}
                 role="tab"
                 aria-selected={actual}
-                className={`salon-odoo__piso${actual ? " is-on" : ""} tactil`}
+                className={`salon-odoo__piso${actual ? " is-on" : ""}`}
                 title={actual ? `${p.nombre} (piso actual)` : p.nombre}
                 onClick={() => onPiso?.(p)}
               >
                 {p.nombre}
-              </button>
+              </Button>
             );
           })}
         </div>
-        <div className="salon-odoo__pisos-der">
-        <button type="button" className="tactil numeral" title="Elegir mesa por número (#)" onClick={abrirBuscar}>
+        <div className="salon-odoo__pisos-der flex flex-wrap justify-start gap-2 sm:justify-end">
+        <Button type="button" variant="outline" className="numeral min-w-11 text-lg font-bold" title="Elegir mesa por número (#)" onClick={abrirBuscar}>
           #
-        </button>
+        </Button>
         {onToggleUltimos ? (
-          <button
+          <Button
             type="button"
-            className={`tactil ${mostrarUltimos ? "is-on" : ""}`}
+            variant={mostrarUltimos ? "default" : "outline"}
             title="Barra últimos pedidos"
             onClick={onToggleUltimos}
           >
             Últimos
-          </button>
+          </Button>
         ) : null}
         {onToggleAtrasados ? (
-          <button
+          <Button
             type="button"
-            className={`tactil ${mostrarAtrasados ? "is-on" : ""}`}
+            variant={mostrarAtrasados ? "default" : "outline"}
             title="Barra atrasados"
             onClick={onToggleAtrasados}
           >
             Atrasados
-          </button>
+          </Button>
         ) : null}
         </div>
       </header>
-      {asignando ? <p>Toque una mesa libre para sentar el pedido</p> : null}
+      {asignando ? <p className="text-sm text-muted-foreground">Toque una mesa libre para sentar el pedido</p> : null}
       {buscando ? (
-        <div className="buscar-mesa" role="dialog" aria-label="Elegir mesa">
-          <label>
+        <div className="buscar-mesa flex flex-wrap items-end gap-2 rounded-3xl border border-border bg-card p-3 shadow-sm" role="dialog" aria-label="Elegir mesa">
+          <Label>
             Mesa
-            <input
+            <Input
               ref={inputRef}
               inputMode="numeric"
               autoFocus
@@ -219,20 +223,20 @@ export function Plano({
                 }
               }}
             />
-          </label>
-          <button type="button" className="primario tactil" onClick={() => buffer && abrirNumero(Number(buffer))}>
+          </Label>
+          <Button type="button" onClick={() => buffer && abrirNumero(Number(buffer))}>
             Abrir
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="tactil"
+            variant="outline"
             onClick={() => {
               setBuscando(false);
               setBuffer("");
             }}
           >
             Cancelar
-          </button>
+          </Button>
           {aviso ? <p role="alert">{aviso}</p> : null}
         </div>
       ) : null}
@@ -248,7 +252,7 @@ export function Plano({
           <button
             key={m.id}
             type="button"
-            className={`mesa-odoo mesa-odoo--${m.estado} mesa-odoo--${m.forma} tactil`}
+            className={`mesa-odoo mesa-odoo--${m.estado} mesa-odoo--${m.forma}`}
             style={{
               left: `${m.pos_x}%`,
               top: `${m.pos_y}%`,
@@ -268,27 +272,27 @@ export function Plano({
       </div>
       {mostrarUltimos ? (
         <aside className="barra-pedidos">
-          <h2>Últimos</h2>
-          <div className="barra-pedidos__lista">
+          <h2 className="mb-2 text-sm font-medium text-muted-foreground">Últimos</h2>
+          <div className="barra-pedidos__lista flex gap-2 overflow-x-auto pb-1">
             {ultimos.map((p) => (
-              <button key={p.id} type="button" className={`chip-pedido espera-${p.nivel} tactil`} onClick={() => onPedido?.(p.id)}>
+              <Button key={p.id} type="button" className={`chip-pedido espera-${p.nivel} text-white`} onClick={() => onPedido?.(p.id)}>
                 {p.mesa ? `Mesa ${p.mesa}` : "Sin mesa"} · {p.hace}
-              </button>
+              </Button>
             ))}
-            {ultimos.length === 0 ? <p>Sin pedidos</p> : null}
+            {ultimos.length === 0 ? <p className="text-sm text-muted-foreground">Sin pedidos</p> : null}
           </div>
         </aside>
       ) : null}
       {mostrarAtrasados ? (
         <aside className="barra-pedidos">
-          <h2>Atrasados</h2>
-          <div className="barra-pedidos__lista">
+          <h2 className="mb-2 text-sm font-medium text-muted-foreground">Atrasados</h2>
+          <div className="barra-pedidos__lista flex gap-2 overflow-x-auto pb-1">
             {atrasados.map((p) => (
-              <button key={p.id} type="button" className={`chip-pedido espera-${p.nivel} tactil`} onClick={() => onPedido?.(p.id)}>
+              <Button key={p.id} type="button" className={`chip-pedido espera-${p.nivel} text-white`} onClick={() => onPedido?.(p.id)}>
                 {p.mesa ? `Mesa ${p.mesa}` : "Sin mesa"} · {p.hace}
-              </button>
+              </Button>
             ))}
-            {atrasados.length === 0 ? <p>Sin pedidos</p> : null}
+            {atrasados.length === 0 ? <p className="text-sm text-muted-foreground">Sin pedidos</p> : null}
           </div>
         </aside>
       ) : null}

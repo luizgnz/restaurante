@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { LayoutGrid, ListOrdered, Menu, UserRound } from "lucide-react";
+import { Button } from "../components/ui/button.tsx";
+import { cn } from "../lib/utils.ts";
 
 export type Destino = "plano" | "pedido" | "pedidos" | "producto-nuevo" | "editar-mapa" | "backend" | "opciones";
 
@@ -12,23 +15,6 @@ type Props = {
   onCerrarSesion: () => void;
   onIr: (vista: Destino) => void;
 };
-
-function IconoPersona() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="8" r="3.2" fill="currentColor" />
-      <path d="M5 19c.8-3.5 3.4-5.2 7-5.2s6.2 1.7 7 5.2" fill="none" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
-}
-
-function IconoMenu() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 export function Barra({ vista, marca, logo, nombre, onMesas, onOrdenes, onCerrarSesion, onIr }: Props) {
   const [cuentaAbierta, setCuentaAbierta] = useState(false);
@@ -63,27 +49,37 @@ export function Barra({ vista, marca, logo, nombre, onMesas, onOrdenes, onCerrar
   }, [cuentaAbierta, menuAbierto]);
 
   return (
-    <nav>
-      <button type="button" className={`tactil ${vista === "plano" ? "is-on" : ""}`} title="Mesas (M)" onClick={onMesas}>
-        Mesas
-      </button>
-      <button
+    <nav className="flex items-center gap-1.5 border-b border-border bg-card/90 px-2 py-2 shadow-xs backdrop-blur-md sm:gap-2 sm:px-4">
+      <Button
         type="button"
-        className={`tactil ${vista === "pedidos" ? "is-on" : ""}`}
+        variant={vista === "plano" ? "default" : "ghost"}
+        size="sm"
+        title="Mesas (M)"
+        onClick={onMesas}
+      >
+        <LayoutGrid size={16} aria-hidden="true" />
+        <span className="hidden min-[380px]:inline">Mesas</span>
+      </Button>
+      <Button
+        type="button"
+        variant={vista === "pedidos" ? "default" : "ghost"}
+        size="sm"
         title="Órdenes (O)"
         onClick={onOrdenes}
       >
-        Órdenes
-      </button>
-      <span className="pos-odoo__marca">
-        {logo ? <img src={logo} alt="" className="pos-odoo__logo" /> : null}
+        <ListOrdered size={16} aria-hidden="true" />
+        <span className="hidden min-[380px]:inline">Órdenes</span>
+      </Button>
+      <span className="pos-odoo__marca mx-auto flex min-h-9 items-center justify-center gap-2 text-sm font-semibold tracking-tight sm:text-base">
+        {logo ? <img src={logo} alt="" className="pos-odoo__logo size-8 rounded-xl object-contain" /> : null}
         {marca}
       </span>
-      <div className="pos-odoo__iconos" ref={iconos}>
-        <div className="pos-odoo__desplegable">
-          <button
+      <div className="pos-odoo__iconos flex items-center gap-1" ref={iconos}>
+        <div className="pos-odoo__desplegable relative">
+          <Button
             type="button"
-            className="tactil icono"
+            variant="ghost"
+            size="icon"
             aria-label="Cuenta"
             aria-expanded={cuentaAbierta}
             title={`Cuenta (${nombre})`}
@@ -92,21 +88,22 @@ export function Barra({ vista, marca, logo, nombre, onMesas, onOrdenes, onCerrar
               setMenuAbierto(false);
             }}
           >
-            <IconoPersona />
-          </button>
+            <UserRound size={18} aria-hidden="true" />
+          </Button>
           {cuentaAbierta ? (
-            <div className="pos-odoo__panel" role="menu">
-              <p className="pos-odoo__panel-nombre">{nombre}</p>
-              <button type="button" className="tactil" role="menuitem" onClick={onCerrarSesion}>
+            <div className="pos-odoo__panel absolute top-[calc(100%+8px)] right-0 z-20 flex min-w-52 flex-col gap-2 rounded-2xl border border-border bg-popover p-2 shadow-lg" role="menu">
+              <p className="pos-odoo__panel-nombre px-2 py-1 text-sm text-muted-foreground">{nombre}</p>
+              <Button type="button" variant="secondary" className="w-full" role="menuitem" onClick={onCerrarSesion}>
                 Cerrar sesión
-              </button>
+              </Button>
             </div>
           ) : null}
         </div>
-        <div className="pos-odoo__desplegable">
-          <button
+        <div className="pos-odoo__desplegable relative">
+          <Button
             type="button"
-            className="tactil icono"
+            variant="ghost"
+            size="icon"
             aria-label="Menú"
             aria-expanded={menuAbierto}
             title="Menú"
@@ -115,28 +112,31 @@ export function Barra({ vista, marca, logo, nombre, onMesas, onOrdenes, onCerrar
               setCuentaAbierta(false);
             }}
           >
-            <IconoMenu />
-          </button>
+            <Menu size={18} aria-hidden="true" />
+          </Button>
           {menuAbierto ? (
-            <div className="pos-odoo__panel" role="menu">
-              <button type="button" className="tactil" role="menuitem" onClick={() => ir("plano")}>
-                Mesas
-              </button>
-              <button type="button" className="tactil" role="menuitem" onClick={() => ir("pedidos")}>
-                Órdenes
-              </button>
-              <button type="button" className="tactil" role="menuitem" onClick={() => ir("producto-nuevo")}>
-                Crear producto
-              </button>
-              <button type="button" className="tactil" role="menuitem" onClick={() => ir("editar-mapa")}>
-                Editar mapa
-              </button>
-              <button type="button" className="tactil" role="menuitem" onClick={() => ir("backend")}>
-                Backend
-              </button>
-              <button type="button" className="tactil" role="menuitem" onClick={() => ir("opciones")}>
-                Opciones
-              </button>
+            <div className="pos-odoo__panel absolute top-[calc(100%+8px)] right-0 z-20 flex min-w-52 flex-col gap-1 rounded-2xl border border-border bg-popover p-2 shadow-lg" role="menu">
+              {(
+                [
+                  ["plano", "Mesas"],
+                  ["pedidos", "Órdenes"],
+                  ["producto-nuevo", "Crear producto"],
+                  ["editar-mapa", "Editar mapa"],
+                  ["backend", "Backend"],
+                  ["opciones", "Opciones"],
+                ] as const
+              ).map(([destino, etiqueta]) => (
+                <Button
+                  key={destino}
+                  type="button"
+                  variant="ghost"
+                  className={cn("w-full justify-start", vista === destino && "bg-muted")}
+                  role="menuitem"
+                  onClick={() => ir(destino)}
+                >
+                  {etiqueta}
+                </Button>
+              ))}
             </div>
           ) : null}
         </div>

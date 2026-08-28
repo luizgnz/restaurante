@@ -1,4 +1,9 @@
 import { useState } from "react";
+import { Button } from "../components/ui/button.tsx";
+import { Dialog, DialogContent, DialogTitle } from "../components/ui/dialog.tsx";
+import { Input } from "../components/ui/input.tsx";
+import { Label } from "../components/ui/label.tsx";
+import { Textarea } from "../components/ui/textarea.tsx";
 
 type Producto = {
   id: number;
@@ -87,14 +92,14 @@ export function Pedido({
   }
 
   return (
-    <div className="con-pedido">
+    <div className="con-pedido grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
       <section>
-        <h1>{titulo}</h1>
-        <div className="carta">
+        <h1 className="mb-3 text-2xl font-semibold tracking-tight">{titulo}</h1>
+        <div className="carta grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
           {productos.map((p) => (
             <button
               key={p.id}
-              className="carta__item"
+              className="carta__item flex flex-col items-start rounded-3xl border border-border bg-card p-3 text-left shadow-sm"
               style={p.color ? { borderColor: p.color } : undefined}
               onClick={() => abrirProducto(p)}
             >
@@ -112,8 +117,8 @@ export function Pedido({
           ))}
         </div>
       </section>
-      <aside className="tarjeta">
-        <h2>{titulo}</h2>
+      <aside className="tarjeta rounded-3xl border border-border bg-card p-4 shadow-sm">
+        <h2 className="mt-0 text-lg font-semibold">{titulo}</h2>
         {lineas.map((l) => (
           <div className="pedido-linea" key={l.id}>
             {l.sePuedeEditar && l.producto_id && onCantidad ? (
@@ -131,12 +136,12 @@ export function Pedido({
               </span>
             )}
             {l.sePuedeEditar && onQuitar ? (
-              <button type="button" className="peligro" onClick={() => onQuitar(l.id)}>
+              <Button type="button" variant="destructive" size="sm" onClick={() => onQuitar(l.id)}>
                 Anular
-              </button>
+              </Button>
             ) : null}
             {onNotaLinea && l.sePuedeEditar ? (
-              <input
+              <Input
                 className="pedido-nota"
                 placeholder="Nota del producto"
                 defaultValue={l.nota ?? ""}
@@ -147,60 +152,58 @@ export function Pedido({
             ) : null}
           </div>
         ))}
-        <label>
+        <Label>
           Indicaciones del cliente
-          <textarea
+          <Textarea
             className="pedido-nota-area"
             placeholder="Opcional. Va a cocina."
             value={indicaciones}
             onChange={(e) => onIndicaciones(e.target.value)}
             onBlur={(e) => onGuardarNotas({ indicaciones: e.target.value, notaPrivada })}
           />
-        </label>
-        <label>
+        </Label>
+        <Label>
           Nota privada
-          <textarea
+          <Textarea
             className="pedido-nota-area"
             placeholder="Opcional. Solo en el POS."
             value={notaPrivada}
             onChange={(e) => onNotaPrivada(e.target.value)}
             onBlur={(e) => onGuardarNotas({ notaPrivada: e.target.value, indicaciones })}
           />
-        </label>
-        {sinMesa && onAsignarMesa ? <button onClick={onAsignarMesa}>Asignar mesa</button> : null}
-        <button className="primario" onClick={onEnviar} disabled={!hayNuevas || enviando}>
+        </Label>
+        {sinMesa && onAsignarMesa ? (
+          <Button variant="secondary" onClick={onAsignarMesa}>
+            Asignar mesa
+          </Button>
+        ) : null}
+        <Button className="mt-3 w-full" onClick={onEnviar} disabled={!hayNuevas || enviando}>
           {enviando ? "Enviando…" : "Enviar"}
-        </button>
+        </Button>
         {!hayNuevas ? <p className="login-odoo__ayuda">Agrega productos para enviar a cocina.</p> : null}
-        <button onClick={onPrecuenta}>Precuenta</button>
+        <Button variant="secondary" onClick={onPrecuenta}>
+          Precuenta
+        </Button>
       </aside>
       {producto ? (
-        <div
-          className="modal-fondo"
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Cantidad de ${producto.nombre}`}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setProductoAbierto(null);
-          }}
-        >
-          <div className="modal-caja">
+        <Dialog aria-label={`Cantidad de ${producto.nombre}`} onOverlayClick={() => setProductoAbierto(null)}>
+          <DialogContent>
             {producto.foto_data ? <img src={producto.foto_data} alt="" className="modal-foto" /> : null}
-            <h2>{producto.nombre}</h2>
-            <div className="modal-cantidad">
-              <button type="button" className="tactil" aria-label="Quitar una unidad" onClick={restar}>
+            <DialogTitle>{producto.nombre}</DialogTitle>
+            <div className="modal-cantidad flex items-center gap-3">
+              <Button type="button" variant="outline" size="icon" aria-label="Quitar una unidad" onClick={restar}>
                 −
-              </button>
-              <strong>{lineaAbierta?.cantidad ?? 0}</strong>
-              <button type="button" className="tactil" aria-label="Agregar una unidad" onClick={sumar}>
+              </Button>
+              <strong className="min-w-8 text-center text-2xl">{lineaAbierta?.cantidad ?? 0}</strong>
+              <Button type="button" variant="outline" size="icon" aria-label="Agregar una unidad" onClick={sumar}>
                 +
-              </button>
+              </Button>
             </div>
-            <button type="button" className="primario tactil" onClick={() => setProductoAbierto(null)}>
+            <Button type="button" className="w-full" onClick={() => setProductoAbierto(null)}>
               Listo
-            </button>
-          </div>
-        </div>
+            </Button>
+          </DialogContent>
+        </Dialog>
       ) : null}
     </div>
   );

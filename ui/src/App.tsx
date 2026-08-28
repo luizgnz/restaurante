@@ -375,7 +375,7 @@ export function App() {
   }
 
   return (
-    <div className="pos-odoo">
+    <div className="pos-odoo flex min-h-dvh flex-col bg-background">
       <Barra
         vista={vista}
         marca={nombreLocal}
@@ -392,8 +392,8 @@ export function App() {
         }
         onIr={ir}
       />
-      {error ? <p role="alert">{error}</p> : null}
-      <main>
+      {error ? <p className="px-4 text-sm text-destructive" role="alert">{error}</p> : null}
+      <main className="flex flex-1 flex-col gap-4 p-3 sm:p-5">
         {pinPendiente ? (
           <PinPad
             titulo={

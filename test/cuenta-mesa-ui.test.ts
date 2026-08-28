@@ -96,8 +96,8 @@ describe("constructor de orden", () => {
     );
 
     expect(html).toContain("Nueva orden");
-    expect(html).toContain("<select");
     expect(html).toContain("Selecciona una mesa");
+    expect(html).toContain("Mesa para la nueva orden");
     expect(html).toContain("Mesa #7");
     expect(html).not.toContain("Mesa #8");
   });
@@ -115,7 +115,7 @@ describe("constructor de orden", () => {
     );
 
     expect(html).toContain("Nueva orden · Mesa #7");
-    expect(html).not.toContain("<select");
+    expect(html).not.toContain("Selecciona una mesa");
     expect(html).toContain('aria-label="Quitar una unidad"');
     expect(html).toContain('aria-label="Agregar una unidad"');
   });

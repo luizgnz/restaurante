@@ -1,5 +1,9 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Badge } from "../components/ui/badge.tsx";
+import { Button } from "../components/ui/button.tsx";
+import { Label } from "../components/ui/label.tsx";
+import { Textarea } from "../components/ui/textarea.tsx";
 
 export type LineaOrdenUi = {
   lineaClave: string;
@@ -59,47 +63,51 @@ export function CuentaMesa({
   }, [cuenta.id, cuenta.notaPrivada]);
 
   return (
-    <section className="cuenta-mesa">
-      <header className="cuenta-mesa__cabecera">
+    <section className="cuenta-mesa flex flex-col gap-4">
+      <header className="cuenta-mesa__cabecera flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1>Cuenta de mesa #{cuenta.mesa.numero}</h1>
-          <p className="login-odoo__ayuda">
+          <h1 className="m-0 text-2xl font-semibold tracking-tight">Cuenta de mesa #{cuenta.mesa.numero}</h1>
+          <p className="login-odoo__ayuda text-sm text-muted-foreground">
             {cuenta.estado.replaceAll("_", " ")} · Total ${cuenta.totalCentavos}
           </p>
         </div>
         {aceptaConsumo ? (
-          <button type="button" className="primario" onClick={onNuevaOrden}>
+          <Button type="button" onClick={onNuevaOrden}>
             <Plus size={18} aria-hidden="true" /> Nueva orden
-          </button>
+          </Button>
         ) : null}
       </header>
 
-      <div className="cuenta-mesa__ordenes">
+      <div className="cuenta-mesa__ordenes grid gap-3 lg:grid-cols-2">
         {cuenta.ordenes.map((orden) => (
-          <article className="tarjeta cuenta-orden" key={orden.id}>
+          <article className="tarjeta cuenta-orden rounded-3xl border border-border bg-card p-4 shadow-sm" key={orden.id}>
             <header className="cuenta-orden__cabecera">
               <div>
                 <h2>Orden #{orden.numero}</h2>
-                <span className="pedido-estado">{orden.estado}</span>
+                <Badge className="pedido-estado">{orden.estado}</Badge>
               </div>
               {aceptaConsumo && orden.estado !== "anulada" ? (
                 <div className="cuenta-orden__acciones">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     className="icono-secundario"
                     title="Editar orden"
                     onClick={() => onEditarOrden(orden)}
                   >
                     <Pencil size={19} aria-hidden="true" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="destructive"
+                    size="icon"
                     className="icono-secundario peligro"
                     title="Anular orden"
                     onClick={() => onAnularOrden(orden)}
                   >
                     <Trash2 size={19} aria-hidden="true" />
-                  </button>
+                  </Button>
                 </div>
               ) : null}
             </header>
@@ -120,9 +128,9 @@ export function CuentaMesa({
         ))}
       </div>
 
-      <label className="tarjeta cuenta-mesa__nota">
+      <Label className="tarjeta cuenta-mesa__nota">
         Nota privada
-        <textarea
+        <Textarea
           value={notaPrivada}
           placeholder="Solo visible en el POS. No va a cocina."
           onChange={(event) => setNotaPrivada(event.target.value)}
@@ -135,18 +143,18 @@ export function CuentaMesa({
         />
         <span className="login-odoo__ayuda">Solo visible en el POS.</span>
         {errorNota ? <span role="alert">{errorNota}</span> : null}
-      </label>
+      </Label>
 
-      <footer className="cuenta-mesa__pie">
+      <footer className="cuenta-mesa__pie sticky bottom-0 flex flex-wrap items-center gap-2 rounded-3xl border border-border bg-card p-3 shadow-sm">
         <strong>Total ${cuenta.totalCentavos}</strong>
         {aceptaConsumo ? (
           <>
-            <button type="button" onClick={onPrecuenta}>
+            <Button type="button" variant="outline" onClick={onPrecuenta}>
               Precuenta
-            </button>
-            <button type="button" className="primario" onClick={onEnviarCaja}>
+            </Button>
+            <Button type="button" onClick={onEnviarCaja}>
               Enviar a caja
-            </button>
+            </Button>
           </>
         ) : null}
       </footer>

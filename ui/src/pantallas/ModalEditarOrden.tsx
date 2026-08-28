@@ -1,6 +1,12 @@
 import { Plus, Trash2 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { ejecutarAccionModal } from "../lib/flujo-cuentas.ts";
+import { Button } from "../components/ui/button.tsx";
+import { Dialog, DialogContent, DialogTitle } from "../components/ui/dialog.tsx";
+import { Input } from "../components/ui/input.tsx";
+import { Label } from "../components/ui/label.tsx";
+import { Select, SelectItem } from "../components/ui/select.tsx";
+import { Textarea } from "../components/ui/textarea.tsx";
 import { PinPad } from "./PinPad.tsx";
 import type { OrdenCuentaUi } from "./CuentaMesa.tsx";
 import type { ProductoCarta } from "./ConstructorOrden.tsx";
@@ -170,33 +176,34 @@ export function ModalEditarOrden({
 
   return (
     <>
-      <div className="modal-fondo" role="dialog" aria-modal="true" aria-label={`${modo === "anular" ? "Anular" : "Editar"} orden`}>
-        <div className="modal-caja correccion-modal">
-          <h2>{modo === "anular" ? "Anular" : "Editar"} orden #{orden.numero}</h2>
+      <Dialog aria-label={`${modo === "anular" ? "Anular" : "Editar"} orden`}>
+        <DialogContent className="correccion-modal">
+          <DialogTitle>{modo === "anular" ? "Anular" : "Editar"} orden #{orden.numero}</DialogTitle>
           <div className="correccion-modal__lineas">
             {lineas.map((linea) => (
               <div className="constructor-linea" key={linea.idUi}>
-                <select
+                <Select
                   aria-label="Producto"
-                  value={linea.productoId}
+                  value={String(linea.productoId)}
                   disabled={modo === "anular"}
-                  onChange={(event) =>
+                  onValueChange={(value) =>
                     setLineas((actuales) =>
                       actuales.map((item) =>
-                        item.idUi === linea.idUi ? { ...item, productoId: Number(event.target.value) } : item,
+                        item.idUi === linea.idUi ? { ...item, productoId: Number(value) } : item,
                       ),
                     )
                   }
                 >
                   {productos.map((producto) => (
-                    <option key={producto.id} value={producto.id}>
+                    <SelectItem key={producto.id} value={String(producto.id)}>
                       {producto.nombre}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
+                </Select>
                 <div className="modal-cantidad">
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     aria-label="Quitar una unidad"
                     disabled={modo === "anular" || linea.cantidad === 0}
                     onClick={() =>
@@ -208,10 +215,11 @@ export function ModalEditarOrden({
                     }
                   >
                     −
-                  </button>
+                  </Button>
                   <strong>{linea.cantidad}</strong>
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     aria-label="Agregar una unidad"
                     disabled={modo === "anular"}
                     onClick={() =>
@@ -223,9 +231,11 @@ export function ModalEditarOrden({
                     }
                   >
                     +
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     className="icono-secundario"
                     title="Dejar línea en cero"
                     disabled={modo === "anular"}
@@ -236,11 +246,11 @@ export function ModalEditarOrden({
                     }
                   >
                     <Trash2 size={18} aria-hidden="true" />
-                  </button>
+                  </Button>
                 </div>
-                <label>
+                <Label>
                   Nota del producto
-                  <input
+                  <Input
                     value={linea.nota}
                     disabled={modo === "anular"}
                     onChange={(event) =>
@@ -249,13 +259,14 @@ export function ModalEditarOrden({
                       )
                     }
                   />
-                </label>
+                </Label>
               </div>
             ))}
           </div>
           {modo === "editar" ? (
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={() => {
                 const producto = productos[0];
                 if (!producto) return;
@@ -278,21 +289,21 @@ export function ModalEditarOrden({
               }}
             >
               <Plus size={18} aria-hidden="true" /> Agregar producto
-            </button>
+            </Button>
           ) : null}
-          <label>
+          <Label>
             Indicaciones del cliente
-            <textarea
+            <Textarea
               value={indicaciones}
               disabled={modo === "anular"}
               onChange={(event) => setIndicaciones(event.target.value)}
             />
-          </label>
+          </Label>
           {requiereMotivo ? (
-            <label>
+            <Label>
               Justificación
-              <textarea value={motivo} onChange={(event) => setMotivo(event.target.value)} />
-            </label>
+              <Textarea value={motivo} onChange={(event) => setMotivo(event.target.value)} />
+            </Label>
           ) : null}
           <div className="correccion-diff">
             <h3>Vista previa de cambios</h3>
@@ -307,20 +318,20 @@ export function ModalEditarOrden({
             )}
           </div>
           <div className="constructor-orden__acciones">
-            <button type="button" onClick={onCancelar} disabled={guardando}>
+            <Button type="button" variant="secondary" onClick={onCancelar} disabled={guardando}>
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className={modo === "anular" ? "peligro" : "primario"}
+              variant={modo === "anular" ? "destructive" : "default"}
               disabled={diff.length === 0 || (requiereMotivo && !motivo.trim()) || guardando}
               onClick={() => setPidiendoPin(true)}
             >
               Continuar y pedir PIN
-            </button>
+            </Button>
           </div>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
       {pidiendoPin ? (
         <PinPad
           titulo={`PIN para ${modo === "anular" ? "anular" : "corregir"} orden`}
