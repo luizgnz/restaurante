@@ -4,7 +4,7 @@ import type { BorradorOrden } from "../lib/borradores.ts";
 import { Button } from "../components/ui/button.tsx";
 import { Input } from "../components/ui/input.tsx";
 import { Label } from "../components/ui/label.tsx";
-import { Select } from "../components/ui/select.tsx";
+import { Select, SelectItem } from "../components/ui/select.tsx";
 import { Textarea } from "../components/ui/textarea.tsx";
 
 export type ProductoCarta = {
@@ -102,61 +102,62 @@ export function ConstructorOrden({
     }
   }
 
+  const mesasLibres = mesasSeleccionables.filter((mesa) => mesa.estado === "libre");
+
   return (
-    <section className="constructor-orden">
-      <header className="constructor-orden__cabecera">
-        <h1>{titulo}</h1>
+    <section className="constructor-orden flex flex-col gap-4">
+      <header className="constructor-orden__cabecera flex flex-wrap items-center justify-between gap-3">
+        <h1 className="m-0 text-2xl font-semibold tracking-tight">{titulo}</h1>
         {!mesaFija ? (
-          <Label className="flex-row items-center">
+          <Label className="min-w-56">
             Mesa
             <Select
               aria-label="Mesa para la nueva orden"
-              value={borrador.mesaId ?? ""}
-              onChange={(event) => cambiar({ mesaId: Number(event.target.value) || undefined })}
+              value={borrador.mesaId ? String(borrador.mesaId) : undefined}
+              onValueChange={(value) => cambiar({ mesaId: Number(value) || undefined })}
+              placeholder="Selecciona una mesa"
             >
-              <option value="">Selecciona una mesa</option>
-              {mesasSeleccionables
-                .filter((mesa) => mesa.estado === "libre")
-                .map((mesa) => (
-                  <option key={mesa.id} value={mesa.id}>
-                    Mesa #{mesa.numero}
-                  </option>
-                ))}
+              {mesasLibres.map((mesa) => (
+                <SelectItem key={mesa.id} value={String(mesa.id)}>
+                  Mesa #{mesa.numero}
+                </SelectItem>
+              ))}
             </Select>
+            <span className="sr-only">{mesasLibres.map((mesa) => `Mesa #${mesa.numero}`).join(", ")}</span>
           </Label>
         ) : null}
       </header>
 
-      <div className="constructor-orden__cuerpo">
-        <div className="carta">
+      <div className="constructor-orden__cuerpo grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="carta grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
           {productos.map((producto) => {
             return (
               <button
                 type="button"
                 key={producto.id}
-                className="carta__item"
+                className="carta__item flex flex-col items-start gap-1 rounded-3xl border border-border bg-card p-3 text-left shadow-sm transition-transform hover:-translate-y-0.5"
                 style={producto.color ? { borderColor: producto.color } : undefined}
                 onClick={() => agregarLinea(producto.id)}
               >
-                {producto.foto_data ? <img src={producto.foto_data} alt="" className="carta__foto" /> : null}
+                {producto.foto_data ? <img src={producto.foto_data} alt="" className="carta__foto size-16 rounded-2xl object-cover" /> : null}
                 <strong>{producto.nombre}</strong>
-                {producto.codigo ? <span>{producto.codigo}</span> : null}
-                <span>${producto.precio_centavos}</span>
-                <span className="constructor-orden__agregar">
-                  <Plus size={18} aria-hidden="true" /> Agregar línea
+                {producto.codigo ? <span className="text-xs text-muted-foreground">{producto.codigo}</span> : null}
+                <span className="text-sm text-muted-foreground">${producto.precio_centavos}</span>
+                <span className="constructor-orden__agregar inline-flex items-center gap-1 text-sm font-semibold">
+                  <Plus size={16} aria-hidden="true" /> Agregar línea
                 </span>
               </button>
             );
           })}
         </div>
 
-        <aside className="tarjeta constructor-orden__resumen">
-          <h2>Orden nueva</h2>
+        <aside className="tarjeta constructor-orden__resumen flex flex-col gap-3 rounded-3xl border border-border bg-card p-4 shadow-sm">
+          <h2 className="m-0 text-lg font-semibold">Orden nueva</h2>
           {lineasUi.map((linea) => {
             const producto = productos.find((item) => item.id === linea.productoId);
             return (
-              <div className="constructor-linea" key={linea.idUi}>
-                <div className="constructor-linea__titulo">
+              <div className="constructor-linea flex flex-col gap-2 border-b border-border py-3 last:border-0" key={linea.idUi}>
+                <div className="constructor-linea__titulo flex items-center justify-between gap-2">
                   <strong>{producto?.nombre ?? `Producto ${linea.productoId}`}</strong>
                   <Button
                     type="button"
@@ -169,21 +170,21 @@ export function ConstructorOrden({
                     <Trash2 size={18} aria-hidden="true" />
                   </Button>
                 </div>
-                <div className="modal-cantidad">
+                <div className="modal-cantidad flex items-center gap-3">
                   <Button
                     type="button"
-                    variant="secondary"
-                    className="tactil"
+                    variant="outline"
+                    size="icon"
                     aria-label="Quitar una unidad"
                     onClick={() => cambiarCantidad(linea.idUi, linea.cantidad - 1)}
                   >
                     −
                   </Button>
-                  <strong>{linea.cantidad}</strong>
+                  <strong className="min-w-8 text-center text-xl">{linea.cantidad}</strong>
                   <Button
                     type="button"
-                    variant="secondary"
-                    className="tactil"
+                    variant="outline"
+                    size="icon"
                     aria-label="Agregar una unidad"
                     onClick={() => cambiarCantidad(linea.idUi, linea.cantidad + 1)}
                   >
@@ -202,7 +203,7 @@ export function ConstructorOrden({
               </div>
             );
           })}
-          {lineasUi.length === 0 ? <p className="login-odoo__ayuda">Agrega productos para enviar.</p> : null}
+          {lineasUi.length === 0 ? <p className="login-odoo__ayuda text-sm text-muted-foreground">Agrega productos para enviar.</p> : null}
           <Label>
             Indicaciones del cliente
             <Textarea
@@ -212,13 +213,12 @@ export function ConstructorOrden({
               onChange={(event) => cambiar({ indicaciones: event.target.value })}
             />
           </Label>
-          <div className="constructor-orden__acciones">
-            <Button type="button" variant="secondary" onClick={onCancelar}>
+          <div className="constructor-orden__acciones flex flex-wrap justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onCancelar}>
               Cancelar
             </Button>
             <Button
               type="button"
-              className="primario"
               disabled={!mesaId || lineasPersistibles(lineasUi).length === 0 || enviando}
               onClick={enviar}
             >

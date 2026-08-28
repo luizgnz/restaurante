@@ -10,7 +10,7 @@ type Props = {
 
 export function Backend({ onCrearProducto, onEditarMapa, onMesas }: Props) {
   return (
-    <section className="backend-odoo">
+    <section className="backend-odoo mx-auto w-full max-w-3xl">
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Backend</CardTitle>
@@ -18,16 +18,16 @@ export function Backend({ onCrearProducto, onEditarMapa, onMesas }: Props) {
             Back-office del local. Módulo restaurante: carta y pisos.
           </CardDescription>
         </CardHeader>
-        <CardContent className="backend-odoo__atajos">
-          <Button type="button" className="tactil primario" onClick={onCrearProducto}>
+        <CardContent className="backend-odoo__atajos grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Button type="button" className="h-16" onClick={onCrearProducto}>
             <Plus size={18} aria-hidden="true" />
             Crear producto
           </Button>
-          <Button type="button" className="tactil primario" onClick={onEditarMapa}>
+          <Button type="button" className="h-16" onClick={onEditarMapa}>
             <MapPinned size={18} aria-hidden="true" />
             Editar mapa
           </Button>
-          <Button type="button" variant="secondary" className="tactil" onClick={onMesas}>
+          <Button type="button" variant="outline" className="h-16" onClick={onMesas}>
             <LayoutGrid size={18} aria-hidden="true" />
             Punto de venta
           </Button>

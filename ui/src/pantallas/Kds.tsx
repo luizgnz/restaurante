@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card.tsx";
+import { Badge } from "../components/ui/badge.tsx";
 
 type Linea = {
   id: number;
@@ -26,21 +27,23 @@ function cantidad(l: Linea): string {
 
 export function Kds({ tarjetas }: { tarjetas: Tarjeta[] }) {
   return (
-    <section>
-      <h1>Cocina</h1>
-      <div className="kds">
+    <section className="flex flex-col gap-4">
+      <h1 className="m-0 text-2xl font-semibold tracking-tight">Cocina</h1>
+      <div className="kds grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {tarjetas.map((t) => (
           <Card className="tarjeta" key={t.id}>
-            <CardHeader className="p-0 pb-2">
-              <CardTitle>{t.referencia}</CardTitle>
-              <p>{t.mesero}</p>
-              {t.indicaciones ? <p>{t.indicaciones}</p> : null}
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="flex items-center justify-between gap-2">
+                {t.referencia}
+                <Badge variant="outline">{t.mesero}</Badge>
+              </CardTitle>
+              {t.indicaciones ? <p className="text-sm text-muted-foreground">{t.indicaciones}</p> : null}
             </CardHeader>
-            <CardContent className="p-0">
-              <ul>
+            <CardContent className="p-4 pt-0">
+              <ul className="m-0 flex list-none flex-col gap-2 p-0">
                 {t.lineas.map((l) => (
-                  <li key={l.id}>
-                    {cantidad(l)} {l.nombre} · {l.esAviso ? "aviso" : l.etapa}
+                  <li key={l.id} className="rounded-2xl bg-muted px-3 py-2 text-sm">
+                    <strong>{cantidad(l)}</strong> {l.nombre} · {l.esAviso ? "aviso" : l.etapa}
                     {l.nota ? ` · ${l.nota}` : ""}
                   </li>
                 ))}
@@ -48,7 +51,7 @@ export function Kds({ tarjetas }: { tarjetas: Tarjeta[] }) {
             </CardContent>
           </Card>
         ))}
-        {tarjetas.length === 0 ? <p>No hay comandas</p> : null}
+        {tarjetas.length === 0 ? <p className="text-muted-foreground">No hay comandas</p> : null}
       </div>
     </section>
   );

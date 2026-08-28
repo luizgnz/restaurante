@@ -63,24 +63,24 @@ export function CuentaMesa({
   }, [cuenta.id, cuenta.notaPrivada]);
 
   return (
-    <section className="cuenta-mesa">
-      <header className="cuenta-mesa__cabecera">
+    <section className="cuenta-mesa flex flex-col gap-4">
+      <header className="cuenta-mesa__cabecera flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1>Cuenta de mesa #{cuenta.mesa.numero}</h1>
-          <p className="login-odoo__ayuda">
+          <h1 className="m-0 text-2xl font-semibold tracking-tight">Cuenta de mesa #{cuenta.mesa.numero}</h1>
+          <p className="login-odoo__ayuda text-sm text-muted-foreground">
             {cuenta.estado.replaceAll("_", " ")} · Total ${cuenta.totalCentavos}
           </p>
         </div>
         {aceptaConsumo ? (
-          <Button type="button" className="primario" onClick={onNuevaOrden}>
+          <Button type="button" onClick={onNuevaOrden}>
             <Plus size={18} aria-hidden="true" /> Nueva orden
           </Button>
         ) : null}
       </header>
 
-      <div className="cuenta-mesa__ordenes">
+      <div className="cuenta-mesa__ordenes grid gap-3 lg:grid-cols-2">
         {cuenta.ordenes.map((orden) => (
-          <article className="tarjeta cuenta-orden" key={orden.id}>
+          <article className="tarjeta cuenta-orden rounded-3xl border border-border bg-card p-4 shadow-sm" key={orden.id}>
             <header className="cuenta-orden__cabecera">
               <div>
                 <h2>Orden #{orden.numero}</h2>
@@ -145,14 +145,14 @@ export function CuentaMesa({
         {errorNota ? <span role="alert">{errorNota}</span> : null}
       </Label>
 
-      <footer className="cuenta-mesa__pie">
+      <footer className="cuenta-mesa__pie sticky bottom-0 flex flex-wrap items-center gap-2 rounded-3xl border border-border bg-card p-3 shadow-sm">
         <strong>Total ${cuenta.totalCentavos}</strong>
         {aceptaConsumo ? (
           <>
-            <Button type="button" variant="secondary" onClick={onPrecuenta}>
+            <Button type="button" variant="outline" onClick={onPrecuenta}>
               Precuenta
             </Button>
-            <Button type="button" className="primario" onClick={onEnviarCaja}>
+            <Button type="button" onClick={onEnviarCaja}>
               Enviar a caja
             </Button>
           </>

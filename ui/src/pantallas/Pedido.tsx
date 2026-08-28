@@ -92,14 +92,14 @@ export function Pedido({
   }
 
   return (
-    <div className="con-pedido">
+    <div className="con-pedido grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
       <section>
-        <h1>{titulo}</h1>
-        <div className="carta">
+        <h1 className="mb-3 text-2xl font-semibold tracking-tight">{titulo}</h1>
+        <div className="carta grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
           {productos.map((p) => (
             <button
               key={p.id}
-              className="carta__item"
+              className="carta__item flex flex-col items-start rounded-3xl border border-border bg-card p-3 text-left shadow-sm"
               style={p.color ? { borderColor: p.color } : undefined}
               onClick={() => abrirProducto(p)}
             >
@@ -117,8 +117,8 @@ export function Pedido({
           ))}
         </div>
       </section>
-      <aside className="tarjeta">
-        <h2>{titulo}</h2>
+      <aside className="tarjeta rounded-3xl border border-border bg-card p-4 shadow-sm">
+        <h2 className="mt-0 text-lg font-semibold">{titulo}</h2>
         {lineas.map((l) => (
           <div className="pedido-linea" key={l.id}>
             {l.sePuedeEditar && l.producto_id && onCantidad ? (
@@ -136,7 +136,7 @@ export function Pedido({
               </span>
             )}
             {l.sePuedeEditar && onQuitar ? (
-              <Button type="button" variant="destructive" className="peligro" onClick={() => onQuitar(l.id)}>
+              <Button type="button" variant="destructive" size="sm" onClick={() => onQuitar(l.id)}>
                 Anular
               </Button>
             ) : null}
@@ -177,7 +177,7 @@ export function Pedido({
             Asignar mesa
           </Button>
         ) : null}
-        <Button className="primario" onClick={onEnviar} disabled={!hayNuevas || enviando}>
+        <Button className="mt-3 w-full" onClick={onEnviar} disabled={!hayNuevas || enviando}>
           {enviando ? "Enviando…" : "Enviar"}
         </Button>
         {!hayNuevas ? <p className="login-odoo__ayuda">Agrega productos para enviar a cocina.</p> : null}
@@ -190,16 +190,16 @@ export function Pedido({
           <DialogContent>
             {producto.foto_data ? <img src={producto.foto_data} alt="" className="modal-foto" /> : null}
             <DialogTitle>{producto.nombre}</DialogTitle>
-            <div className="modal-cantidad">
-              <Button type="button" variant="secondary" className="tactil" aria-label="Quitar una unidad" onClick={restar}>
+            <div className="modal-cantidad flex items-center gap-3">
+              <Button type="button" variant="outline" size="icon" aria-label="Quitar una unidad" onClick={restar}>
                 −
               </Button>
-              <strong>{lineaAbierta?.cantidad ?? 0}</strong>
-              <Button type="button" variant="secondary" className="tactil" aria-label="Agregar una unidad" onClick={sumar}>
+              <strong className="min-w-8 text-center text-2xl">{lineaAbierta?.cantidad ?? 0}</strong>
+              <Button type="button" variant="outline" size="icon" aria-label="Agregar una unidad" onClick={sumar}>
                 +
               </Button>
             </div>
-            <Button type="button" className="primario tactil" onClick={() => setProductoAbierto(null)}>
+            <Button type="button" className="w-full" onClick={() => setProductoAbierto(null)}>
               Listo
             </Button>
           </DialogContent>

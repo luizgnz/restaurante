@@ -51,7 +51,7 @@ function Boton({
     <Button
       type="button"
       variant={peligro ? "destructive" : "secondary"}
-      className={`tactil boton-herramienta${peligro ? " peligro" : ""}`}
+      className={`boton-herramienta${peligro ? " peligro" : ""}`}
       title={children}
       aria-label={children}
       onClick={onClick}
@@ -79,7 +79,7 @@ function Campo({
 }
 function SubirImagen({ children, onImagen }: { children: string; onImagen: (dataUrl: string) => void }) {
   return (
-    <label className="tactil boton-herramienta" title={children} aria-label={children}>
+    <label className="boton-herramienta inline-flex size-10 items-center justify-center rounded-full border border-border bg-secondary" title={children} aria-label={children}>
       <Imagen size={20} aria-hidden="true" />
       <input
         type="file"
@@ -290,10 +290,10 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
     (piso?.id && piso.id > 0 && piso.tiene_fondo && !piso.fondo_quitar_imagen ? `/api/pisos/${piso.id}/fondo` : undefined);
 
   return (
-    <section className="salon-odoo">
-      <header className="salon-odoo__pisos">
+    <section className="salon-odoo flex min-h-[70vh] flex-1 flex-col gap-3">
+      <header className="salon-odoo__pisos grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
         <div className="salon-odoo__pisos-izq" />
-        <div className="salon-odoo__pisos-centro" role="tablist" aria-label="Pisos">
+        <div className="salon-odoo__pisos-centro flex flex-wrap justify-start gap-2 sm:justify-center" role="tablist" aria-label="Pisos">
           {pisos.map((p) => (
             <Button
               key={p.id}
@@ -301,7 +301,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
               variant={p.id === pisoId ? "default" : "secondary"}
               role="tab"
               aria-selected={p.id === pisoId}
-              className={`salon-odoo__piso${p.id === pisoId ? " is-on" : ""} tactil`}
+              className={`salon-odoo__piso${p.id === pisoId ? " is-on" : ""}`}
               onClick={() => {
                 setPisoId(p.id);
                 setSel(null);
@@ -311,13 +311,12 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
             </Button>
           ))}
         </div>
-        <div className="salon-odoo__pisos-der">
-          <Button type="button" variant="secondary" className="tactil" onClick={onDescartar}>
+        <div className="salon-odoo__pisos-der flex flex-wrap justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onDescartar}>
             Descartar
           </Button>
           <Button
             type="button"
-            className="primario tactil"
             onClick={() => {
               const msg = avisoUnicidad();
               if (msg) {
@@ -345,8 +344,8 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
       </header>
       {aviso ? <p role="alert">{aviso}</p> : null}
 
-      <div className="editor-grupos">
-        <fieldset className="editor-grupo" disabled={Boolean(seleccion)}>
+      <div className="editor-grupos grid gap-3 lg:grid-cols-2">
+        <fieldset className="editor-grupo flex flex-wrap items-end gap-2 rounded-3xl border border-border bg-card p-3 shadow-sm" disabled={Boolean(seleccion)}>
           <legend>Opciones de piso</legend>
           <Campo icono={<Type size={20} aria-hidden="true" />} titulo="Nombre del piso">
             <Input
@@ -391,7 +390,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
           </Boton>
         </fieldset>
 
-        <fieldset className="editor-grupo" disabled={!seleccion}>
+        <fieldset className="editor-grupo flex flex-wrap items-end gap-2 rounded-3xl border border-border bg-card p-3 shadow-sm" disabled={!seleccion}>
           <legend>Opciones de mesa</legend>
           <Campo icono={<Hash size={20} aria-hidden="true" />} titulo="Número de mesa">
             <Input
@@ -469,7 +468,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
           <button
             key={m.id}
             type="button"
-            className={`mesa-odoo mesa-odoo--${m.forma} mesa-odoo--libre tactil ${sel === m.id ? "is-on" : ""}`}
+            className={`mesa-odoo mesa-odoo--${m.forma} mesa-odoo--libre ${sel === m.id ? "is-on" : ""}`}
             style={{
               left: `${m.pos_x}%`,
               top: `${m.pos_y}%`,

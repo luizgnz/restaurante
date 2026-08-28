@@ -5,7 +5,7 @@ import { Button } from "../components/ui/button.tsx";
 import { Dialog, DialogContent, DialogTitle } from "../components/ui/dialog.tsx";
 import { Input } from "../components/ui/input.tsx";
 import { Label } from "../components/ui/label.tsx";
-import { Select } from "../components/ui/select.tsx";
+import { Select, SelectItem } from "../components/ui/select.tsx";
 import { Textarea } from "../components/ui/textarea.tsx";
 import { PinPad } from "./PinPad.tsx";
 import type { OrdenCuentaUi } from "./CuentaMesa.tsx";
@@ -184,20 +184,20 @@ export function ModalEditarOrden({
               <div className="constructor-linea" key={linea.idUi}>
                 <Select
                   aria-label="Producto"
-                  value={linea.productoId}
+                  value={String(linea.productoId)}
                   disabled={modo === "anular"}
-                  onChange={(event) =>
+                  onValueChange={(value) =>
                     setLineas((actuales) =>
                       actuales.map((item) =>
-                        item.idUi === linea.idUi ? { ...item, productoId: Number(event.target.value) } : item,
+                        item.idUi === linea.idUi ? { ...item, productoId: Number(value) } : item,
                       ),
                     )
                   }
                 >
                   {productos.map((producto) => (
-                    <option key={producto.id} value={producto.id}>
+                    <SelectItem key={producto.id} value={String(producto.id)}>
                       {producto.nombre}
-                    </option>
+                    </SelectItem>
                   ))}
                 </Select>
                 <div className="modal-cantidad">
@@ -324,7 +324,6 @@ export function ModalEditarOrden({
             <Button
               type="button"
               variant={modo === "anular" ? "destructive" : "default"}
-              className={modo === "anular" ? "peligro" : "primario"}
               disabled={diff.length === 0 || (requiereMotivo && !motivo.trim()) || guardando}
               onClick={() => setPidiendoPin(true)}
             >

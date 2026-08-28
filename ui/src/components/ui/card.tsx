@@ -4,7 +4,7 @@ import { cn } from "../../lib/utils.ts";
 function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("rounded-xl border border-border bg-card text-card-foreground shadow-sm", className)}
+      className={cn("rounded-3xl border border-border bg-card text-card-foreground shadow-sm", className)}
       {...props}
     />
   );
@@ -15,7 +15,7 @@ function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
 }
 
 function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn("text-lg font-semibold leading-none tracking-tight", className)} {...props} />;
+  return <h2 className={cn("text-lg font-semibold tracking-tight", className)} {...props} />;
 }
 
 function CardDescription({ className, ...props }: HTMLAttributes<HTMLParagraphElement>) {

@@ -38,23 +38,24 @@ export function PinPad({ onPin, onCancelar, titulo, error = "" }: Props) {
   }, [pin, onPin, onCancelar]);
 
   return (
-    <Dialog aria-label={titulo} onOverlayClick={onCancelar}>
-      <DialogContent className="pin-caja">
+    <Dialog onOverlayClick={onCancelar}>
+      <DialogContent className="pin-caja w-[min(340px,92vw)]" aria-label={titulo}>
         <DialogTitle>{titulo}</DialogTitle>
-        <p className="pin-marcas">{pin.replace(/./g, "•") || "PIN"}</p>
+        <p className="pin-marcas text-center">{pin.replace(/./g, "•") || "PIN"}</p>
         {error ? (
           <p role="alert" className="pin-error">
             {error}. Vuelve a ingresar el PIN.
           </p>
         ) : null}
-        <p className="login-odoo__ayuda">Puedes escribirlo con el teclado: números, Retroceso y Enter.</p>
+        <p className="login-odoo__ayuda text-center text-sm text-muted-foreground">
+          Puedes escribirlo con el teclado: números, Retroceso y Enter.
+        </p>
         <div className="pin">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9", "←", "0", "OK"].map((k) => (
             <Button
               key={k}
               type="button"
               variant={k === "OK" ? "default" : "secondary"}
-              className={k === "OK" ? "primario tactil" : "tactil"}
               onClick={() => {
                 if (k === "←") setPin((p) => p.slice(0, -1));
                 else if (k === "OK") onPin(pin);
@@ -65,7 +66,7 @@ export function PinPad({ onPin, onCancelar, titulo, error = "" }: Props) {
             </Button>
           ))}
         </div>
-        <Button type="button" variant="outline" onClick={onCancelar}>
+        <Button type="button" variant="outline" className="w-full" onClick={onCancelar}>
           Cancelar
         </Button>
       </DialogContent>
