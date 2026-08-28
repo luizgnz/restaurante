@@ -186,7 +186,7 @@ export function Plano({
         {onToggleUltimos ? (
           <Button
             type="button"
-            variant={mostrarUltimos ? "default" : "outline"}
+            variant={mostrarUltimos ? "secondary" : "ghost"}
             title="Barra últimos pedidos"
             onClick={onToggleUltimos}
           >
@@ -196,7 +196,7 @@ export function Plano({
         {onToggleAtrasados ? (
           <Button
             type="button"
-            variant={mostrarAtrasados ? "default" : "outline"}
+            variant={mostrarAtrasados ? "secondary" : "ghost"}
             title="Barra atrasados"
             onClick={onToggleAtrasados}
           >
