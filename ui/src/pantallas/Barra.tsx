@@ -70,9 +70,9 @@ export function Barra({ vista, marca, logo, nombre, onMesas, onOrdenes, onCerrar
         <ListOrdered size={16} aria-hidden="true" />
         <span className="hidden min-[380px]:inline">Órdenes</span>
       </Button>
-      <span className="pos-odoo__marca mx-auto flex min-h-9 items-center justify-center gap-2 text-sm font-semibold tracking-tight sm:text-base">
+      <span className="pos-odoo__marca mx-auto hidden min-h-9 items-center justify-center gap-2 text-sm font-semibold tracking-tight min-[420px]:flex sm:text-base">
         {logo ? <img src={logo} alt="" className="pos-odoo__logo size-8 rounded-xl object-contain" /> : null}
-        {marca}
+        <span className="max-w-[28vw] truncate">{marca}</span>
       </span>
       <div className="pos-odoo__iconos flex items-center gap-1" ref={iconos}>
         <div className="pos-odoo__desplegable relative">
