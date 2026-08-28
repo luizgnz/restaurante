@@ -37,6 +37,7 @@ function DialogContent({ className, children, ...props }: ComponentProps<typeof 
         className,
       )}
       {...props}
+      aria-modal="true"
     >
       {children}
     </DialogPrimitive.Content>
