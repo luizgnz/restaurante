@@ -1,3 +1,9 @@
+import { Button } from "../components/ui/button.tsx";
+import { Checkbox } from "../components/ui/checkbox.tsx";
+import { Input } from "../components/ui/input.tsx";
+import { Label } from "../components/ui/label.tsx";
+import { Select } from "../components/ui/select.tsx";
+
 export type OpcionesValores = {
   nombre_local: string;
   logo_data: string | null;
@@ -27,18 +33,18 @@ export function Opciones({ valores, onCambiar }: Props) {
       <h1>Opciones</h1>
       <fieldset className="form-odoo__tarjeta">
         <legend>Identidad</legend>
-        <label>
+        <Label>
           Nombre del restaurante
-          <input
+          <Input
             maxLength={40}
             value={valores.nombre_local}
             onChange={(e) => onCambiar({ nombre_local: e.target.value })}
             onBlur={(e) => onCambiar({ nombre_local: e.target.value.trim() || "Restaurante" })}
           />
-        </label>
-        <label>
+        </Label>
+        <Label>
           Logo
-          <input
+          <Input
             type="file"
             accept="image/*"
             onChange={(e) => {
@@ -46,76 +52,73 @@ export function Opciones({ valores, onCambiar }: Props) {
               if (f) leerImagen(f, (url) => onCambiar({ logo_data: url }));
             }}
           />
-        </label>
+        </Label>
         {valores.logo_data ? (
           <>
             <img src={valores.logo_data} alt="" className="form-odoo__foto-vista" />
-            <button type="button" onClick={() => onCambiar({ logo_data: null })}>
+            <Button type="button" variant="secondary" onClick={() => onCambiar({ logo_data: null })}>
               Quitar logo
-            </button>
+            </Button>
           </>
         ) : null}
       </fieldset>
       <fieldset className="form-odoo__tarjeta">
         <legend>Apariencia</legend>
-        <label>
+        <Label>
           Tipo de letra
-          <select
+          <Select
             value={valores.tipografia}
             onChange={(e) => onCambiar({ tipografia: e.target.value as OpcionesValores["tipografia"] })}
           >
             <option value="sans">Sans</option>
             <option value="serif">Serif</option>
             <option value="redondeada">Redondeada</option>
-          </select>
-        </label>
-        <label>
+          </Select>
+        </Label>
+        <Label>
           Tamaño
-          <select
+          <Select
             value={valores.tamano_ui}
             onChange={(e) => onCambiar({ tamano_ui: e.target.value as OpcionesValores["tamano_ui"] })}
           >
             <option value="compacto">Compacto</option>
             <option value="normal">Normal</option>
             <option value="grande">Grande</option>
-          </select>
-        </label>
+          </Select>
+        </Label>
         <p className="login-odoo__ayuda">Se aplica a todo el POS en cuanto lo cambias.</p>
       </fieldset>
       <fieldset className="form-odoo__tarjeta">
         <legend>Seguridad y autorizaciones</legend>
-        <label className="switch-tablet">
-          <input
-            type="checkbox"
+        <Label className="switch-tablet flex-row items-center">
+          <Checkbox
             checked={valores.pin_habilitado}
             onChange={(e) => onCambiar({ pin_habilitado: e.target.checked })}
           />
           Solicitar contraseña
-        </label>
+        </Label>
         {valores.pin_habilitado ? (
-          <label>
+          <Label>
             Momento
-            <select
+            <Select
               value={valores.pin_momento}
               onChange={(e) => onCambiar({ pin_momento: e.target.value as OpcionesValores["pin_momento"] })}
             >
               <option value="crear_orden">Antes de crear la orden</option>
               <option value="enviar">Al hacer clic en Enviar</option>
-            </select>
-          </label>
+            </Select>
+          </Label>
         ) : null}
         <p className="login-odoo__ayuda">Anular un producto siempre pide confirmar la contraseña.</p>
-        <label className="switch-tablet">
-          <input
-            type="checkbox"
+        <Label className="switch-tablet flex-row items-center">
+          <Checkbox
             checked={valores.confirmar_comanda}
             onChange={(e) => onCambiar({ confirmar_comanda: e.target.checked })}
           />
           Confirmar comanda antes de enviar
-        </label>
-        <label className="switch-tablet">
-          <input
-            type="checkbox"
+        </Label>
+        <Label className="switch-tablet flex-row items-center">
+          <Checkbox
             checked={valores.auditoria_anulaciones}
             onChange={(e) =>
               onCambiar({
@@ -125,29 +128,28 @@ export function Opciones({ valores, onCambiar }: Props) {
             }
           />
           Guardar registro de órdenes anuladas
-        </label>
+        </Label>
         {valores.auditoria_anulaciones ? (
-          <label className="switch-tablet">
-            <input
-              type="checkbox"
+          <Label className="switch-tablet flex-row items-center">
+            <Checkbox
               checked={valores.justificacion_anulacion}
               onChange={(e) => onCambiar({ justificacion_anulacion: e.target.checked })}
             />
             Pedir justificación al anular
-          </label>
+          </Label>
         ) : null}
       </fieldset>
       <fieldset className="form-odoo__tarjeta" disabled>
         <legend>Impresoras</legend>
         <p className="login-odoo__ayuda">Configuración próximamente.</p>
-        <label>
+        <Label>
           Impresora de comanda
-          <input disabled placeholder="Sin configurar" />
-        </label>
-        <label>
+          <Input disabled placeholder="Sin configurar" />
+        </Label>
+        <Label>
           Impresora de precuenta
-          <input disabled placeholder="Sin configurar" />
-        </label>
+          <Input disabled placeholder="Sin configurar" />
+        </Label>
       </fieldset>
     </section>
   );

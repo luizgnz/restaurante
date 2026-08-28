@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { interpretarTecla } from "../../../src/modules/salon/teclado.ts";
 import type { NivelEspera } from "../../../src/modules/tiempo.ts";
+import { Button } from "../components/ui/button.tsx";
+import { Input } from "../components/ui/input.tsx";
+import { Label } from "../components/ui/label.tsx";
 
 export type Mesa = {
   id: number;
@@ -152,18 +155,19 @@ export function Plano({
       <header className="salon-odoo__pisos">
         <div className="salon-odoo__pisos-izq">
           {onNuevoPedido ? (
-            <button type="button" className="primario tactil" title="Nueva orden (N)" onClick={onNuevoPedido}>
+            <Button type="button" className="primario tactil" title="Nueva orden (N)" onClick={onNuevoPedido}>
               + Nueva orden
-            </button>
+            </Button>
           ) : null}
         </div>
         <div className="salon-odoo__pisos-centro" role="tablist" aria-label="Pisos">
           {listaPisos.map((p) => {
             const actual = (pisoId != null && p.id === pisoId) || (pisoId == null && p.nombre === piso);
             return (
-              <button
+              <Button
                 key={p.id}
                 type="button"
+                variant={actual ? "default" : "secondary"}
                 role="tab"
                 aria-selected={actual}
                 className={`salon-odoo__piso${actual ? " is-on" : ""} tactil`}
@@ -171,42 +175,44 @@ export function Plano({
                 onClick={() => onPiso?.(p)}
               >
                 {p.nombre}
-              </button>
+              </Button>
             );
           })}
         </div>
         <div className="salon-odoo__pisos-der">
-        <button type="button" className="tactil numeral" title="Elegir mesa por número (#)" onClick={abrirBuscar}>
+        <Button type="button" variant="secondary" className="tactil numeral" title="Elegir mesa por número (#)" onClick={abrirBuscar}>
           #
-        </button>
+        </Button>
         {onToggleUltimos ? (
-          <button
+          <Button
             type="button"
+            variant={mostrarUltimos ? "default" : "secondary"}
             className={`tactil ${mostrarUltimos ? "is-on" : ""}`}
             title="Barra últimos pedidos"
             onClick={onToggleUltimos}
           >
             Últimos
-          </button>
+          </Button>
         ) : null}
         {onToggleAtrasados ? (
-          <button
+          <Button
             type="button"
+            variant={mostrarAtrasados ? "default" : "secondary"}
             className={`tactil ${mostrarAtrasados ? "is-on" : ""}`}
             title="Barra atrasados"
             onClick={onToggleAtrasados}
           >
             Atrasados
-          </button>
+          </Button>
         ) : null}
         </div>
       </header>
       {asignando ? <p>Toque una mesa libre para sentar el pedido</p> : null}
       {buscando ? (
         <div className="buscar-mesa" role="dialog" aria-label="Elegir mesa">
-          <label>
+          <Label>
             Mesa
-            <input
+            <Input
               ref={inputRef}
               inputMode="numeric"
               autoFocus
@@ -219,12 +225,13 @@ export function Plano({
                 }
               }}
             />
-          </label>
-          <button type="button" className="primario tactil" onClick={() => buffer && abrirNumero(Number(buffer))}>
+          </Label>
+          <Button type="button" className="primario tactil" onClick={() => buffer && abrirNumero(Number(buffer))}>
             Abrir
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="secondary"
             className="tactil"
             onClick={() => {
               setBuscando(false);
@@ -232,7 +239,7 @@ export function Plano({
             }}
           >
             Cancelar
-          </button>
+          </Button>
           {aviso ? <p role="alert">{aviso}</p> : null}
         </div>
       ) : null}
@@ -271,9 +278,9 @@ export function Plano({
           <h2>Últimos</h2>
           <div className="barra-pedidos__lista">
             {ultimos.map((p) => (
-              <button key={p.id} type="button" className={`chip-pedido espera-${p.nivel} tactil`} onClick={() => onPedido?.(p.id)}>
+              <Button key={p.id} type="button" className={`chip-pedido espera-${p.nivel} tactil`} onClick={() => onPedido?.(p.id)}>
                 {p.mesa ? `Mesa ${p.mesa}` : "Sin mesa"} · {p.hace}
-              </button>
+              </Button>
             ))}
             {ultimos.length === 0 ? <p>Sin pedidos</p> : null}
           </div>
@@ -284,9 +291,9 @@ export function Plano({
           <h2>Atrasados</h2>
           <div className="barra-pedidos__lista">
             {atrasados.map((p) => (
-              <button key={p.id} type="button" className={`chip-pedido espera-${p.nivel} tactil`} onClick={() => onPedido?.(p.id)}>
+              <Button key={p.id} type="button" className={`chip-pedido espera-${p.nivel} tactil`} onClick={() => onPedido?.(p.id)}>
                 {p.mesa ? `Mesa ${p.mesa}` : "Sin mesa"} · {p.hace}
-              </button>
+              </Button>
             ))}
             {atrasados.length === 0 ? <p>Sin pedidos</p> : null}
           </div>

@@ -1,5 +1,9 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Badge } from "../components/ui/badge.tsx";
+import { Button } from "../components/ui/button.tsx";
+import { Label } from "../components/ui/label.tsx";
+import { Textarea } from "../components/ui/textarea.tsx";
 
 export type LineaOrdenUi = {
   lineaClave: string;
@@ -68,9 +72,9 @@ export function CuentaMesa({
           </p>
         </div>
         {aceptaConsumo ? (
-          <button type="button" className="primario" onClick={onNuevaOrden}>
+          <Button type="button" className="primario" onClick={onNuevaOrden}>
             <Plus size={18} aria-hidden="true" /> Nueva orden
-          </button>
+          </Button>
         ) : null}
       </header>
 
@@ -80,26 +84,30 @@ export function CuentaMesa({
             <header className="cuenta-orden__cabecera">
               <div>
                 <h2>Orden #{orden.numero}</h2>
-                <span className="pedido-estado">{orden.estado}</span>
+                <Badge className="pedido-estado">{orden.estado}</Badge>
               </div>
               {aceptaConsumo && orden.estado !== "anulada" ? (
                 <div className="cuenta-orden__acciones">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     className="icono-secundario"
                     title="Editar orden"
                     onClick={() => onEditarOrden(orden)}
                   >
                     <Pencil size={19} aria-hidden="true" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="destructive"
+                    size="icon"
                     className="icono-secundario peligro"
                     title="Anular orden"
                     onClick={() => onAnularOrden(orden)}
                   >
                     <Trash2 size={19} aria-hidden="true" />
-                  </button>
+                  </Button>
                 </div>
               ) : null}
             </header>
@@ -120,9 +128,9 @@ export function CuentaMesa({
         ))}
       </div>
 
-      <label className="tarjeta cuenta-mesa__nota">
+      <Label className="tarjeta cuenta-mesa__nota">
         Nota privada
-        <textarea
+        <Textarea
           value={notaPrivada}
           placeholder="Solo visible en el POS. No va a cocina."
           onChange={(event) => setNotaPrivada(event.target.value)}
@@ -135,18 +143,18 @@ export function CuentaMesa({
         />
         <span className="login-odoo__ayuda">Solo visible en el POS.</span>
         {errorNota ? <span role="alert">{errorNota}</span> : null}
-      </label>
+      </Label>
 
       <footer className="cuenta-mesa__pie">
         <strong>Total ${cuenta.totalCentavos}</strong>
         {aceptaConsumo ? (
           <>
-            <button type="button" onClick={onPrecuenta}>
+            <Button type="button" variant="secondary" onClick={onPrecuenta}>
               Precuenta
-            </button>
-            <button type="button" className="primario" onClick={onEnviarCaja}>
+            </Button>
+            <Button type="button" className="primario" onClick={onEnviarCaja}>
               Enviar a caja
-            </button>
+            </Button>
           </>
         ) : null}
       </footer>

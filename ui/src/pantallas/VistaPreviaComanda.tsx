@@ -1,3 +1,6 @@
+import { Button } from "../components/ui/button.tsx";
+import { Dialog, DialogContent, DialogFooter, DialogTitle } from "../components/ui/dialog.tsx";
+
 type Props = {
   texto: string;
   onVolver: () => void;
@@ -6,27 +9,19 @@ type Props = {
 
 export function VistaPreviaComanda({ texto, onVolver, onContinuar }: Props) {
   return (
-    <div
-      className="modal-fondo"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Confirmar comanda"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onVolver();
-      }}
-    >
-      <div className="modal-caja ticket-preview">
-        <h2>Confirmar comanda</h2>
+    <Dialog aria-label="Confirmar comanda" onOverlayClick={onVolver}>
+      <DialogContent className="ticket-preview">
+        <DialogTitle>Confirmar comanda</DialogTitle>
         <pre className="ticket-preview__cuerpo">{texto}</pre>
-        <div className="form-odoo__acciones">
-          <button type="button" onClick={onVolver}>
+        <DialogFooter className="form-odoo__acciones">
+          <Button type="button" variant="secondary" onClick={onVolver}>
             Volver
-          </button>
-          <button type="button" className="primario" onClick={onContinuar}>
+          </Button>
+          <Button type="button" className="primario" onClick={onContinuar}>
             Continuar
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

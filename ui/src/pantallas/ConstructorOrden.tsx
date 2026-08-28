@@ -1,6 +1,11 @@
 import { Plus, Send, Trash2 } from "lucide-react";
 import { useState } from "react";
 import type { BorradorOrden } from "../lib/borradores.ts";
+import { Button } from "../components/ui/button.tsx";
+import { Input } from "../components/ui/input.tsx";
+import { Label } from "../components/ui/label.tsx";
+import { Select } from "../components/ui/select.tsx";
+import { Textarea } from "../components/ui/textarea.tsx";
 
 export type ProductoCarta = {
   id: number;
@@ -102,9 +107,9 @@ export function ConstructorOrden({
       <header className="constructor-orden__cabecera">
         <h1>{titulo}</h1>
         {!mesaFija ? (
-          <label>
+          <Label className="flex-row items-center">
             Mesa
-            <select
+            <Select
               aria-label="Mesa para la nueva orden"
               value={borrador.mesaId ?? ""}
               onChange={(event) => cambiar({ mesaId: Number(event.target.value) || undefined })}
@@ -117,8 +122,8 @@ export function ConstructorOrden({
                     Mesa #{mesa.numero}
                   </option>
                 ))}
-            </select>
-          </label>
+            </Select>
+          </Label>
         ) : null}
       </header>
 
@@ -153,68 +158,72 @@ export function ConstructorOrden({
               <div className="constructor-linea" key={linea.idUi}>
                 <div className="constructor-linea__titulo">
                   <strong>{producto?.nombre ?? `Producto ${linea.productoId}`}</strong>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     className="icono-secundario"
                     title="Quitar producto"
                     onClick={() => cambiarCantidad(linea.idUi, 0)}
                   >
                     <Trash2 size={18} aria-hidden="true" />
-                  </button>
+                  </Button>
                 </div>
                 <div className="modal-cantidad">
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     className="tactil"
                     aria-label="Quitar una unidad"
                     onClick={() => cambiarCantidad(linea.idUi, linea.cantidad - 1)}
                   >
                     −
-                  </button>
+                  </Button>
                   <strong>{linea.cantidad}</strong>
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     className="tactil"
                     aria-label="Agregar una unidad"
                     onClick={() => cambiarCantidad(linea.idUi, linea.cantidad + 1)}
                   >
                     +
-                  </button>
+                  </Button>
                 </div>
-                <label>
+                <Label>
                   Nota del producto
-                  <input
+                  <Input
                     value={linea.nota}
                     onChange={(event) =>
                       cambiarLineas(actualizarLineaConstructor(lineasUi, linea.idUi, { nota: event.target.value }))
                     }
                   />
-                </label>
+                </Label>
               </div>
             );
           })}
           {lineasUi.length === 0 ? <p className="login-odoo__ayuda">Agrega productos para enviar.</p> : null}
-          <label>
+          <Label>
             Indicaciones del cliente
-            <textarea
+            <Textarea
               className="pedido-nota-area"
               placeholder="Opcional. Va a cocina."
               value={borrador.indicaciones}
               onChange={(event) => cambiar({ indicaciones: event.target.value })}
             />
-          </label>
+          </Label>
           <div className="constructor-orden__acciones">
-            <button type="button" onClick={onCancelar}>
+            <Button type="button" variant="secondary" onClick={onCancelar}>
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               className="primario"
               disabled={!mesaId || lineasPersistibles(lineasUi).length === 0 || enviando}
               onClick={enviar}
             >
               <Send size={18} aria-hidden="true" /> {enviando ? "Enviando…" : "Enviar"}
-            </button>
+            </Button>
           </div>
         </aside>
       </div>

@@ -1,3 +1,5 @@
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card.tsx";
+
 type Linea = {
   id: number;
   etapa: string;
@@ -28,19 +30,23 @@ export function Kds({ tarjetas }: { tarjetas: Tarjeta[] }) {
       <h1>Cocina</h1>
       <div className="kds">
         {tarjetas.map((t) => (
-          <article className="tarjeta" key={t.id}>
-            <strong>{t.referencia}</strong>
-            <p>{t.mesero}</p>
-            {t.indicaciones ? <p>{t.indicaciones}</p> : null}
-            <ul>
-              {t.lineas.map((l) => (
-                <li key={l.id}>
-                  {cantidad(l)} {l.nombre} · {l.esAviso ? "aviso" : l.etapa}
-                  {l.nota ? ` · ${l.nota}` : ""}
-                </li>
-              ))}
-            </ul>
-          </article>
+          <Card className="tarjeta" key={t.id}>
+            <CardHeader className="p-0 pb-2">
+              <CardTitle>{t.referencia}</CardTitle>
+              <p>{t.mesero}</p>
+              {t.indicaciones ? <p>{t.indicaciones}</p> : null}
+            </CardHeader>
+            <CardContent className="p-0">
+              <ul>
+                {t.lineas.map((l) => (
+                  <li key={l.id}>
+                    {cantidad(l)} {l.nombre} · {l.esAviso ? "aviso" : l.etapa}
+                    {l.nota ? ` · ${l.nota}` : ""}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
         ))}
         {tarjetas.length === 0 ? <p>No hay comandas</p> : null}
       </div>

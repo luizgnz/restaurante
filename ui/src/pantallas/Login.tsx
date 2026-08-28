@@ -1,4 +1,8 @@
 import { useState, type FormEvent } from "react";
+import { UtensilsCrossed } from "lucide-react";
+import { Button } from "../components/ui/button.tsx";
+import { Input } from "../components/ui/input.tsx";
+import { Label } from "../components/ui/label.tsx";
 
 type Props = {
   error: string;
@@ -17,31 +21,36 @@ export function Login({ error, onEntrar }: Props) {
   return (
     <section className="login-odoo">
       <form className="login-odoo__tarjeta" onSubmit={enviar}>
-        <h1>Restaurante</h1>
+        <div className="flex flex-col items-center gap-2 text-center">
+          <span className="flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <UtensilsCrossed size={22} aria-hidden="true" />
+          </span>
+          <h1>Restaurante</h1>
+        </div>
         <p className="login-odoo__ayuda">Inicie sesión como administrador</p>
-        <label>
+        <Label>
           Usuario
-          <input
+          <Input
             name="usuario"
             autoComplete="username"
             autoFocus
             value={usuario}
             onChange={(e) => setUsuario(e.target.value)}
           />
-        </label>
-        <label>
+        </Label>
+        <Label>
           Contraseña
-          <input
+          <Input
             name="contraseña"
             type="password"
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-        </label>
-        <button className="primario" type="submit">
+        </Label>
+        <Button className="primario w-full" type="submit">
           Iniciar sesión
-        </button>
+        </Button>
         {error ? <p role="alert">{error}</p> : null}
       </form>
     </section>

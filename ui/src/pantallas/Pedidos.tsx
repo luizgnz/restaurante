@@ -1,3 +1,7 @@
+import { Badge } from "../components/ui/badge.tsx";
+import { Button } from "../components/ui/button.tsx";
+import { Card, CardContent } from "../components/ui/card.tsx";
+
 export type LineaPedido = {
   id: number;
   nombre: string;
@@ -39,28 +43,32 @@ export function Pedidos({ pedidos, onAbrir, onEnProceso, mostrarEnProceso }: Pro
       <h1>Órdenes</h1>
       <div className="kds">
         {pedidos.map((p) => (
-          <article className="tarjeta" key={p.id}>
-            <button className="pedido-cabecera" onClick={() => onAbrir(p.id)}>
-              <strong>{p.mesa ? `Mesa ${p.mesa}` : "Sin mesa asignada"}</strong>
-              <span className="pedido-estado">{p.estado ? (ESTADO[p.estado] ?? p.estado) : "Sin completar"}</span>
-              <span>
-                {p.mesero} · {p.hace}
-              </span>
-            </button>
-            {p.indicaciones ? <p className="pedido-indicaciones">{p.indicaciones}</p> : null}
-            {p.lineas.map((l) => (
-              <div className="pedido-linea" key={l.id}>
+          <Card className="tarjeta" key={p.id}>
+            <CardContent className="p-0">
+              <Button variant="ghost" className="pedido-cabecera h-auto justify-between" onClick={() => onAbrir(p.id)}>
+                <strong>{p.mesa ? `Mesa ${p.mesa}` : "Sin mesa asignada"}</strong>
+                <Badge className="pedido-estado">{p.estado ? (ESTADO[p.estado] ?? p.estado) : "Sin completar"}</Badge>
                 <span>
-                  {l.cantidad} × {l.nombre}
-                  {l.nota ? ` (${l.nota})` : ""}
+                  {p.mesero} · {p.hace}
                 </span>
-                {mostrarEnProceso && l.estado === "enviada" ? (
-                  <button onClick={() => onEnProceso(l.id)}>En proceso</button>
-                ) : null}
-              </div>
-            ))}
-            {p.lineas.length === 0 ? <p className="login-odoo__ayuda">Sin productos aún</p> : null}
-          </article>
+              </Button>
+              {p.indicaciones ? <p className="pedido-indicaciones">{p.indicaciones}</p> : null}
+              {p.lineas.map((l) => (
+                <div className="pedido-linea" key={l.id}>
+                  <span>
+                    {l.cantidad} × {l.nombre}
+                    {l.nota ? ` (${l.nota})` : ""}
+                  </span>
+                  {mostrarEnProceso && l.estado === "enviada" ? (
+                    <Button variant="secondary" onClick={() => onEnProceso(l.id)}>
+                      En proceso
+                    </Button>
+                  ) : null}
+                </div>
+              ))}
+              {p.lineas.length === 0 ? <p className="login-odoo__ayuda">Sin productos aún</p> : null}
+            </CardContent>
+          </Card>
         ))}
         {pedidos.length === 0 ? <p>No hay pedidos en curso</p> : null}
       </div>

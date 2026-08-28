@@ -1,4 +1,9 @@
 import { useState, type FormEvent } from "react";
+import { Button } from "../components/ui/button.tsx";
+import { Checkbox } from "../components/ui/checkbox.tsx";
+import { Input } from "../components/ui/input.tsx";
+import { Label } from "../components/ui/label.tsx";
+import { Select } from "../components/ui/select.tsx";
 
 export type Categoria = { id: number; nombre: string };
 
@@ -33,7 +38,7 @@ export function CrearProducto({ categorias, error, onGuardar, onCancelar }: Prop
   const [enPos, setEnPos] = useState(true);
   const [rastrear, setRastrear] = useState(true);
   const [codigo, setCodigo] = useState("");
-  const [color, setColor] = useState("#714b67");
+  const [color, setColor] = useState("#2f7a4f");
   const [foto, setFoto] = useState<string | null>(null);
 
   function enviar(e: FormEvent) {
@@ -56,10 +61,10 @@ export function CrearProducto({ categorias, error, onGuardar, onCancelar }: Prop
       <form className="form-odoo__tarjeta" onSubmit={enviar}>
         <h1>Nuevo producto</h1>
         <p className="login-odoo__ayuda">Nombre, precio, foto, código y si se rastrea en inventario.</p>
-        <label className="form-odoo__foto">
+        <Label className="form-odoo__foto">
           Foto
           {foto ? <img src={foto} alt="" className="form-odoo__foto-vista" /> : null}
-          <input
+          <Input
             type="file"
             accept="image/*"
             onChange={(e) => {
@@ -67,62 +72,62 @@ export function CrearProducto({ categorias, error, onGuardar, onCancelar }: Prop
               if (f) leerImagen(f, setFoto);
             }}
           />
-        </label>
+        </Label>
         {foto ? (
-          <button type="button" className="tactil" onClick={() => setFoto(null)}>
+          <Button type="button" variant="secondary" className="tactil" onClick={() => setFoto(null)}>
             Quitar foto
-          </button>
+          </Button>
         ) : null}
-        <label>
+        <Label>
           Nombre
-          <input value={nombre} onChange={(e) => setNombre(e.target.value)} autoFocus required />
-        </label>
-        <label>
+          <Input value={nombre} onChange={(e) => setNombre(e.target.value)} autoFocus required />
+        </Label>
+        <Label>
           Código de producto
-          <input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Opcional" />
-        </label>
-        <label>
+          <Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Opcional" />
+        </Label>
+        <Label>
           Precio de venta
-          <input inputMode="numeric" value={precio} onChange={(e) => setPrecio(e.target.value)} />
-        </label>
-        <label>
+          <Input inputMode="numeric" value={precio} onChange={(e) => setPrecio(e.target.value)} />
+        </Label>
+        <Label>
           Color del ítem
-          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
-        </label>
-        <label>
+          <Input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
+        </Label>
+        <Label>
           Categoría POS
-          <select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
+          <Select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
             <option value="">Sin categoría</option>
             {categorias.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nombre}
               </option>
             ))}
-          </select>
-        </label>
-        <label>
+          </Select>
+        </Label>
+        <Label>
           Tipo
-          <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
+          <Select value={tipo} onChange={(e) => setTipo(e.target.value)}>
             <option value="no_almacenable">Consumible</option>
             <option value="almacenable_unitario">Almacenable</option>
             <option value="receta_kit">Receta</option>
-          </select>
-        </label>
-        <label className="switch-tablet">
-          <input type="checkbox" checked={rastrear} onChange={(e) => setRastrear(e.target.checked)} />
+          </Select>
+        </Label>
+        <Label className="switch-tablet flex-row items-center">
+          <Checkbox checked={rastrear} onChange={(e) => setRastrear(e.target.checked)} />
           Rastrear en el inventario
-        </label>
-        <label className="switch-tablet">
-          <input type="checkbox" checked={enPos} onChange={(e) => setEnPos(e.target.checked)} />
+        </Label>
+        <Label className="switch-tablet flex-row items-center">
+          <Checkbox checked={enPos} onChange={(e) => setEnPos(e.target.checked)} />
           Disponible en el PdV
-        </label>
+        </Label>
         <div className="form-odoo__acciones">
-          <button type="button" className="tactil" onClick={onCancelar}>
+          <Button type="button" variant="secondary" className="tactil" onClick={onCancelar}>
             Descartar
-          </button>
-          <button className="primario tactil" type="submit">
+          </Button>
+          <Button className="primario tactil" type="submit">
             Guardar
-          </button>
+          </Button>
         </div>
         {error ? <p role="alert">{error}</p> : null}
       </form>
