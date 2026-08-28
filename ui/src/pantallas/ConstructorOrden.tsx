@@ -1,9 +1,12 @@
-import { ChevronDown, Send, ShoppingBag, Trash2, X } from "lucide-react";
+import { ChevronDown, Search, Send, ShoppingBag, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import type { CSSProperties } from "react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import { Select } from "@/components/ui/select.tsx";
+import { Textarea } from "@/components/ui/textarea.tsx";
 import type { BorradorOrden } from "../lib/borradores.ts";
 import { ModalArmadoPlato, type SeleccionArmado, type SlotArmadoUi, type VarianteArmadoUi } from "./ModalArmadoPlato.tsx";
 
@@ -13,6 +16,8 @@ export type ProductoCarta = {
   precio_centavos: number;
   armable: number;
   configurable?: boolean;
+  categoria_id?: number | null;
+  categoria_nombre?: string | null;
   codigo?: string | null;
   color?: string | null;
   foto_data?: string | null;
@@ -99,9 +104,17 @@ export function ConstructorOrden({
   const [lineasUi, setLineasUi] = useState(() => crearLineasConstructor(borrador.lineas));
   const [armado, setArmado] = useState<{ producto: ProductoCarta; slots: SlotArmadoUi[] } | null>(null);
   const [resumenMovilAbierto, setResumenMovilAbierto] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [categoria, setCategoria] = useState<string | "todas">("todas");
   const titulo = mesaFija ? `Nueva orden · Mesa #${mesaFija.numero}` : "Nueva orden";
   const mesaId = mesaFija?.id ?? borrador.mesaId;
   const cantidadProductos = lineasUi.reduce((total, linea) => total + Math.max(0, linea.cantidad), 0);
+  const categorias = [...new Set(productos.map((producto) => producto.categoria_nombre?.trim()).filter((nombre): nombre is string => Boolean(nombre)))].sort((a, b) => a.localeCompare(b, "es"));
+  const termino = busqueda.trim().toLocaleLowerCase("es");
+  const productosVisibles = productos.filter((producto) => {
+    if (categoria !== "todas" && producto.categoria_nombre?.trim() !== categoria) return false;
+    return !termino || producto.nombre.toLocaleLowerCase("es").includes(termino) || producto.codigo?.toLocaleLowerCase("es").includes(termino);
+  });
 
   function cambiar(patch: Partial<BorradorOrden>) {
     onCambiar({ ...borrador, ...patch, actualizadoEn: new Date().toISOString() });
@@ -185,7 +198,7 @@ export function ConstructorOrden({
         {!mesaFija ? (
           <label>
             Mesa
-            <select
+            <Select
               aria-label="Mesa para la nueva orden"
               value={borrador.mesaId ?? ""}
               onChange={(event) => cambiar({ mesaId: Number(event.target.value) || undefined })}
@@ -198,7 +211,7 @@ export function ConstructorOrden({
                     Mesa #{mesa.numero}
                   </option>
                 ))}
-            </select>
+            </Select>
           </label>
         ) : null}
       </header>
@@ -250,7 +263,7 @@ export function ConstructorOrden({
           ) : null}
           <label>
             Indicaciones del cliente
-            <textarea
+            <Textarea
               className="pedido-nota-area"
               placeholder="Opcional. Va a cocina."
               value={borrador.indicaciones}
@@ -280,8 +293,19 @@ export function ConstructorOrden({
             </div>
             <Badge variant="secondary">{productos.length} disponibles</Badge>
           </div>
+          <div className="constructor-catalogo__herramientas">
+            <label className="inventario-busqueda">
+              <Search size={18} aria-hidden="true" />
+              <span className="sr-only">Buscar producto</span>
+              <Input type="search" value={busqueda} placeholder="Buscar producto" onChange={(event) => setBusqueda(event.target.value)} />
+            </label>
+            <div className="constructor-categorias" role="tablist" aria-label="Categorías de la carta">
+              <Button type="button" size="sm" variant={categoria === "todas" ? "secondary" : "ghost"} onClick={() => setCategoria("todas")}>Todas</Button>
+              {categorias.map((nombre) => <Button key={nombre} type="button" size="sm" variant={categoria === nombre ? "secondary" : "ghost"} onClick={() => setCategoria(nombre)}>{nombre}</Button>)}
+            </div>
+          </div>
           <div className="carta constructor-orden__carta">
-          {productos.map((producto) => {
+          {productosVisibles.map((producto) => {
             const linea = lineasUi.find((item) => item.productoId === producto.id);
             return (
               <div
@@ -307,27 +331,34 @@ export function ConstructorOrden({
                 </span>
                 {linea ? (
                   <span className="carta__cantidad" onClick={(event) => event.stopPropagation()}>
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="icon"
+                      className="size-9 rounded-full text-base"
                       aria-label={`Quitar una unidad de ${producto.nombre}`}
                       onClick={() => restarProducto(producto.id)}
                     >
                       −
-                    </button>
+                    </Button>
                     <strong>{linea.cantidad}</strong>
-                    <button
+                    <Button
                       type="button"
+                      variant="default"
+                      size="icon"
+                      className="size-9 rounded-full text-base"
                       aria-label={`Agregar una unidad de ${producto.nombre}`}
                       onClick={() => sumarProducto(producto.id)}
                     >
                       +
-                    </button>
+                    </Button>
                   </span>
                 ) : null}
               </div>
             );
           })}
           </div>
+          {productosVisibles.length === 0 ? <div className="empty-state">No hay productos en esta categoría o búsqueda.</div> : null}
         </div>
       </div>
       <Button
@@ -341,8 +372,9 @@ export function ConstructorOrden({
         <ChevronDown size={18} aria-hidden="true" />
       </Button>
       {resumenMovilAbierto ? (
-        <button
+        <Button
           type="button"
+          variant="ghost"
           className="constructor-orden__velo"
           aria-label="Cerrar resumen"
           onClick={() => setResumenMovilAbierto(false)}

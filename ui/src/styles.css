@@ -2,24 +2,83 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ==========================================================================
+   Sistema visual · dirección "Turno"
+   Única fuente de verdad del aspecto. Cambiar un valor aquí cambia toda la app.
+   No agregar otro bloque :root: si hay dos, el segundo pisa al primero en
+   silencio y nada de esto vuelve a ser predecible.
+   ========================================================================== */
+
+@font-face {
+  font-family: "Archivo Variable";
+  src: url("./fonts/archivo-latin.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --background: oklch(0.975 0.009 77);
-  --foreground: oklch(0.23 0.018 55);
-  --card: oklch(1 0 0);
-  --card-foreground: var(--foreground);
-  --primary: oklch(0.46 0.11 166);
-  --primary-foreground: oklch(0.99 0.005 95);
-  --secondary: oklch(0.94 0.018 75);
-  --secondary-foreground: oklch(0.3 0.025 55);
-  --muted: oklch(0.94 0.012 75);
-  --muted-foreground: oklch(0.51 0.02 55);
-  --accent: oklch(0.91 0.04 157);
-  --accent-foreground: oklch(0.3 0.07 166);
-  --destructive: oklch(0.56 0.2 27);
-  --border: oklch(0.87 0.018 75);
-  --input: var(--border);
-  --ring: var(--primary);
-  --radius: 0.875rem;
+  /* -- neutros: fríos apenas, elegidos, no heredados -- */
+  --background: #f7f7f8;
+  --foreground: #16181c;
+  --card: #ffffff;
+  --card-foreground: #16181c;
+  --secondary: #f1f2f4;
+  --secondary-foreground: #2b2f36;
+  --muted: #f1f2f4;
+  --muted-foreground: #63696f;
+  --accent: #ecedf0;
+  --accent-foreground: #16181c;
+  --border: #e3e5e8;
+  --input: #dcdfe3;
+
+  /* -- acción: negro. Deja el color libre para significar estado -- */
+  --primary: #17191d;
+  --primary-foreground: #ffffff;
+  --ring: #16181c;
+
+  /* -- estado: el color aquí SIEMPRE quiere decir algo -- */
+  --success: #2f8a55;
+  --success-foreground: #ffffff;
+  --success-soft: #eaf4ee;
+  --warning: #b5761a;
+  --warning-foreground: #ffffff;
+  --warning-soft: #fbf1e2;
+  --info: #2c6b9e;
+  --info-foreground: #ffffff;
+  --info-soft: #eaf1f8;
+  --destructive: #c0392f;
+  --destructive-foreground: #ffffff;
+  --destructive-soft: #fbecea;
+
+  /* -- forma -- */
+  --radius: 0.625rem;
+
+  /* -- altura de control: densa con puntero, táctil con dedo --
+     44 px es el mínimo recomendado para tocar con el dedo; en escritorio
+     esa altura solo desperdicia pantalla. Ver @media (pointer: coarse). */
+  --control-h: 40px;
+  --control-h-sm: 34px;
+
+  /* -- tipografía -- */
+  --font-sans: "Archivo Variable", Archivo, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", "Cascadia Code", "Courier New", monospace;
+
+  /* -- profundidad: casi nula. La jerarquía la hace el borde, no la sombra -- */
+  --shadow-soft: 0 1px 2px rgb(16 18 22 / 0.04);
+  --shadow-lifted: 0 4px 16px rgb(16 18 22 / 0.08);
+
+  /* -- alias heredados por el CSS antiguo (no quitar hasta migrar todo) -- */
+  --panel: var(--card);
+  --linea: var(--border);
+  --verde: var(--success);
+}
+
+@media (pointer: coarse) {
+  :root {
+    --control-h: 46px;
+    --control-h-sm: 40px;
+  }
 }
 
 @theme inline {
@@ -39,11 +98,30 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
+/* ==========================================================================
+   CSS heredado, dentro de la capa `components`.
+   Motivo: en Tailwind v4 las utilidades viven en la capa `utilities`, y una
+   regla SIN capa le gana a cualquier regla con capa, sin importar la
+   especificidad. Con estas ~4.000 líneas sueltas, `bg-primary` perdía contra
+   `button { background:#3a3a3a }` y ninguna clase de Tailwind tenía efecto:
+   por eso migrar pantallas no cambiaba nada.
+   `components` va antes que `utilities`, así que ahora las utilidades ganan.
+   A medida que una pantalla se migre, borrar sus reglas de aquí.
+   ========================================================================== */
+@layer components {
+
 
 * {
   box-sizing: border-box;
@@ -54,9 +132,9 @@ body,
   margin: 0;
   min-height: 100%;
   height: 100%;
-  font-family: "Lucida Grande", "Segoe UI", system-ui, sans-serif;
-  background: #1f1f1f;
-  color: #f4f4f4;
+  font-family: var(--font-sans);
+  background: var(--background);
+  color: var(--foreground);
 }
 html[data-tamano="compacto"] {
   font-size: 14.4px;
@@ -71,7 +149,7 @@ html[data-tipografia="redondeada"] {
   font-family: ui-rounded, "Trebuchet MS", "Segoe UI", sans-serif;
 }
 button {
-  min-height: 48px;
+  min-height: var(--control-h);
   min-width: 48px;
   font-size: 1rem;
   border: 0;
@@ -190,13 +268,6 @@ button.icono {
   padding: 4px;
 }
 .form-odoo__foto-vista,
-.carta__foto {
-  width: 72px;
-  height: 72px;
-  object-fit: cover;
-  border-radius: 8px;
-  align-self: center;
-}
 .pedido-nota {
   min-height: 40px;
   width: 100%;
@@ -377,7 +448,7 @@ button.icono {
   padding: 16px;
   background: #f4efe4;
   color: #1a1a1a;
-  font-family: ui-monospace, "Cascadia Code", "Courier New", monospace;
+  font-family: var(--font-mono);
   font-size: 0.95rem;
   line-height: 1.4;
   white-space: pre-wrap;
@@ -397,42 +468,6 @@ button.icono {
   opacity: 0.8;
   font-size: 0.9rem;
   margin: 0 0 8px;
-}
-.carta__item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  border: 3px solid transparent;
-  min-height: 48px;
-  font-size: 1rem;
-  border-radius: 8px;
-  padding: 0.6rem 0.9rem;
-  background: #3a3a3a;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-.carta__item.is-on {
-  background: #714b67;
-}
-.carta__cantidad {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  margin-top: 4px;
-}
-.carta__cantidad button {
-  min-width: 44px;
-  min-height: 44px;
-  font-size: 1.2rem;
-}
-.carta__cantidad strong {
-  min-width: 32px;
-  text-align: center;
-  font-size: 1.1rem;
 }
 .form-odoo__acciones {
   display: flex;
@@ -601,18 +636,6 @@ button.icono {
   flex: 0 0 auto;
   white-space: nowrap;
 }
-.espera-ok {
-  background: #2d5a3d;
-}
-.espera-medio {
-  background: #6b5a1f;
-}
-.espera-alto {
-  background: #7a4420;
-}
-.espera-critico {
-  background: #7a2e2e;
-}
 
 main {
   padding: 12px;
@@ -620,51 +643,6 @@ main {
   flex-direction: column;
   gap: 12px;
   flex: 1;
-}
-.login-odoo {
-  min-height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #714b67;
-  padding: 24px;
-}
-.login-odoo__tarjeta {
-  width: min(420px, 100%);
-  background: #fff;
-  color: #1f1f1f;
-  border-radius: 4px;
-  padding: 28px 24px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 8px 32px #0004;
-}
-.login-odoo__tarjeta h1 {
-  margin: 0;
-  color: #714b67;
-}
-.login-odoo__ayuda {
-  margin: 0 0 8px;
-  opacity: 0.7;
-}
-.login-odoo__tarjeta label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.9rem;
-}
-.login-odoo__tarjeta input {
-  min-height: 48px;
-  border: 1px solid #c9c9c9;
-  border-radius: 4px;
-  padding: 0 12px;
-  font-size: 1rem;
-}
-.login-odoo__tarjeta .primario {
-  background: #714b67;
-  color: #fff;
-  width: 100%;
 }
 .pin {
   display: grid;
@@ -771,64 +749,6 @@ main {
 }
 .salon-odoo__piso {
   background: #3a3a3a;
-}
-.plano-mapa {
-  position: relative;
-  flex: 1;
-  min-height: 62vh;
-  background:
-    radial-gradient(circle at 20% 20%, #6e6a5c 0, transparent 40%),
-    #5c584c;
-  border-radius: 12px;
-  overflow: hidden;
-}
-.mesa-odoo {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 6px;
-  min-width: 64px;
-  min-height: 64px;
-  background: #ece7dc;
-  color: #1f1f1f;
-  border: 3px solid #c9c2b3;
-  box-shadow: 0 2px 0 #0003;
-}
-.mesa-odoo--round {
-  border-radius: 999px;
-}
-.mesa-odoo--square {
-  border-radius: 14px;
-}
-.mesa-odoo--libre {
-  background: #d7ead2;
-  border-color: #7aa86d;
-}
-.mesa-odoo--ocupada {
-  background: #f3d7a6;
-  border-color: #c48a2a;
-}
-.mesa-odoo--en_cocina {
-  background: #f0c2b8;
-  border-color: #b85c4a;
-}
-.mesa-odoo--precuenta {
-  background: #cfe4f5;
-  border-color: #4a7eab;
-}
-.mesa-odoo--en_caja {
-  background: #ddd;
-  border-color: #888;
-}
-.mesa-odoo__num {
-  font-weight: 700;
-}
-.mesa-odoo__meta {
-  font-size: 0.8rem;
-  opacity: 0.8;
 }
 .carta {
   display: grid;
@@ -993,12 +913,6 @@ main {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (max-width: 720px) {
-  .login-odoo__tarjeta {
-    width: 100%;
-  }
-}
-
 .contornos-admin {
   padding: 1.25rem;
 }
@@ -1042,6 +956,343 @@ main {
 }
 
 /* --------------------------------------------------------------------------
+   Acabado visual moderno: sistema de restaurante, móvil primero
+   -------------------------------------------------------------------------- */
+
+
+html,
+body,
+#root {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+body {
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+button {
+  border: 1px solid transparent;
+  border-radius: 0.8rem;
+  font-weight: 650;
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+input,
+select,
+textarea {
+  border-radius: 0.8rem;
+  box-shadow: 0 1px 2px rgb(24 37 33 / 0.03);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #91a09a;
+}
+
+.pos-odoo {
+  min-height: 100svh;
+  background:
+    radial-gradient(circle at 88% -8%, rgb(200 240 224 / 0.55), transparent 23rem),
+    var(--background);
+}
+
+.pos-odoo > main {
+  width: min(1480px, 100%);
+  padding: clamp(0.85rem, 2vw, 1.75rem);
+}
+
+.pos-nav {
+  min-height: 70px;
+  gap: 0.35rem;
+  padding: 0.7rem clamp(0.85rem, 2.5vw, 2rem);
+  border-bottom: 1px solid rgb(216 227 222 / 0.85);
+  background: rgb(255 255 255 / 0.88);
+  box-shadow: 0 7px 24px rgb(30 64 54 / 0.07);
+}
+
+.pos-nav__item {
+  min-height: 44px;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid transparent;
+  color: #66756f;
+  font-size: 0.86rem;
+}
+
+.pos-nav__item:hover,
+.pos-nav__item:focus-visible {
+  border-color: var(--border);
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.pos-nav__item.is-on {
+  border-color: #c4e8dc;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  box-shadow: inset 0 0 0 1px rgb(8 127 106 / 0.05);
+}
+
+.pos-odoo__marca {
+  justify-content: flex-start;
+  margin-inline: auto;
+  color: var(--foreground);
+  font-size: 1rem;
+  letter-spacing: -0.015em;
+}
+
+.pos-odoo__logo {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+}
+
+button.icono {
+  width: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  border: 1px solid var(--border);
+  background: #f5f8f6;
+  color: #42625a;
+}
+
+button.icono:hover,
+button.icono:focus-visible {
+  border-color: #b9d9ce;
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.pos-odoo__panel {
+  min-width: 220px;
+  padding: 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 0.98);
+  box-shadow: 0 20px 44px rgb(22 57 47 / 0.16);
+}
+
+.pos-odoo__panel button {
+  min-height: 42px;
+  border-radius: 0.7rem;
+}
+
+.mobile-view-context {
+  border-color: var(--border);
+  background: rgb(255 255 255 / 0.85);
+}
+
+main > [role="alert"] {
+  width: min(1480px, calc(100% - 2rem));
+  margin: 0.75rem auto -0.25rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #f0c7c7;
+  border-radius: 0.8rem;
+  background: #fff3f3;
+  color: #9c3333;
+}
+
+.tarjeta,
+.cuenta-orden,
+.backend-odoo__atajos .tactil,
+.cuenta-mesa__nota,
+
+.tarjeta {
+  padding: 1rem;
+  border-radius: 1rem;
+}
+
+.backend-odoo,
+.contornos-admin {
+  padding: clamp(0.9rem, 2vw, 1.4rem);
+}
+
+.backend-odoo__atajos .tactil {
+  min-height: 82px;
+  padding: 0.85rem;
+  border-radius: 1rem;
+  color: var(--foreground);
+}
+
+.backend-odoo__atajos .tactil:hover,
+.backend-odoo__atajos .tactil:focus-visible {
+  border-color: #b9d9ce;
+  background: var(--accent);
+}
+
+.salon-odoo__resumen h1,
+.constructor-orden__cabecera h1,
+.cuenta-mesa__cabecera h1 {
+  color: var(--foreground);
+  font-weight: 750;
+}
+
+.salon-odoo__metricas > div {
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.salon-odoo__metricas strong {
+  color: var(--primary);
+}
+
+.salon-odoo__pisos {
+  border-color: var(--border);
+  box-shadow: 0 4px 14px rgb(32 71 60 / 0.04);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+.cuenta-orden {
+  border-radius: 1rem;
+}
+
+.cuenta-mesa__pie {
+  border-color: var(--border);
+  box-shadow: 0 18px 44px rgb(32 71 60 / 0.16);
+}
+
+
+.cocina-indicaciones {
+  border-color: color-mix(in oklab, var(--warning) 35%, var(--border));
+  background: var(--warning-soft);
+}
+
+.pos-nav__areas {
+  border-color: var(--border);
+  background: var(--muted);
+}
+
+.pos-nav__areas button.is-on {
+  color: var(--primary);
+}
+
+.modal-fondo {
+  background: rgb(18 36 30 / 0.52);
+  backdrop-filter: blur(4px);
+}
+
+.modal-caja,
+.armado-plato,
+.correccion-modal {
+  border: 1px solid var(--border);
+  background: var(--background);
+  box-shadow: 0 28px 80px rgb(18 36 30 / 0.25);
+}
+
+@media (max-width: 767px) {
+  .pos-nav {
+    min-height: calc(70px + env(safe-area-inset-bottom));
+    padding: 0.45rem 0.5rem calc(0.4rem + env(safe-area-inset-bottom));
+    background: rgb(255 255 255 / 0.96);
+    box-shadow: 0 -8px 28px rgb(29 73 58 / 0.1);
+  }
+
+  .pos-nav__item,
+  .pos-nav .icono {
+    min-height: 54px;
+    border-radius: 0.85rem;
+  }
+
+  .pos-nav__item.is-on,
+  .pos-nav .icono:focus-visible {
+    background: var(--accent);
+  }
+
+  .mobile-view-context {
+    margin-top: 0.8rem;
+    border-radius: 0.9rem;
+  }
+
+  .salon-odoo__resumen h1 {
+    font-size: 1.55rem;
+  }
+
+  .salon-odoo__metricas {
+    gap: 0.4rem;
+  }
+
+  .salon-odoo__metricas > div {
+    padding: 0.5rem;
+    border-radius: 0.8rem;
+  }
+
+  .plano-mapa {
+    border-radius: 1.15rem;
+    padding: 0.65rem;
+  }
+
+  .mesa-odoo {
+    /* Solo la altura: el radio lo decide la forma de la mesa
+       (.mesa-odoo--round / --square). Antes un `border-radius !important`
+       aquí volvía cuadradas las mesas redondas en pantalla chica. */
+    height: 98px !important;
+  }
+
+  .carta__item {
+    min-height: 204px;
+    border-radius: 0.95rem;
+  }
+
+  .carta__foto {
+    height: 100px;
+  }
+
+  .backend-odoo__atajos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  .backend-odoo__atajos .tactil {
+    min-height: 72px;
+    font-size: 0.82rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
    Prototipo responsive del POS
    -------------------------------------------------------------------------- */
 html,
@@ -1049,7 +1300,7 @@ body,
 #root {
   background: var(--background);
   color: var(--foreground);
-  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
 }
 body {
   overscroll-behavior: none;
@@ -1198,9 +1449,9 @@ button.icono {
 .constructor-orden__eyebrow,
 .cuenta-mesa__eyebrow,
 .armado-plato__eyebrow {
-  color: var(--primary);
+  color: var(--muted-foreground);
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }
@@ -1244,55 +1495,6 @@ button.icono {
   color: var(--accent-foreground);
   box-shadow: none;
 }
-.plano-mapa {
-  min-height: clamp(31rem, 63vh, 52rem);
-  border: 1px solid color-mix(in oklab, var(--primary) 16%, var(--border));
-  border-radius: 1.5rem;
-  background:
-    linear-gradient(rgb(250 247 239 / 0.78), rgb(250 247 239 / 0.78)),
-    linear-gradient(90deg, rgb(78 116 96 / 0.07) 1px, transparent 1px),
-    linear-gradient(rgb(78 116 96 / 0.07) 1px, transparent 1px),
-    #f5f0e5;
-  background-size: auto, 24px 24px, 24px 24px, auto;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.7), 0 14px 36px rgb(67 48 29 / 0.07);
-}
-.mesa-odoo {
-  gap: 0.35rem;
-  padding: 0.65rem;
-  border-width: 2px;
-  color: var(--foreground);
-  box-shadow: 0 8px 18px rgb(46 37 27 / 0.12);
-  transition: transform 160ms ease, box-shadow 160ms ease;
-}
-.mesa-odoo:hover,
-.mesa-odoo:focus-visible {
-  z-index: 2;
-  transform: translateY(-2px);
-  box-shadow: 0 13px 24px rgb(46 37 27 / 0.17);
-}
-.mesa-odoo--libre {
-  border-color: #86b49a;
-  background: #f2fbf5;
-}
-.mesa-odoo--ocupada,
-.mesa-odoo--en_cocina {
-  border-color: #d4a251;
-  background: #fff8e9;
-}
-.mesa-odoo--precuenta {
-  border-color: #bc8a44;
-  background: #fff3d9;
-}
-.mesa-odoo__num {
-  font-size: 0.96rem;
-}
-.mesa-odoo__meta {
-  font-size: 0.67rem;
-}
-.mesa-odoo__asientos {
-  color: var(--muted-foreground);
-  font-size: 0.7rem;
-}
 .barra-pedidos {
   padding: 0.8rem 1rem;
   border: 1px solid var(--border);
@@ -1303,10 +1505,10 @@ button.icono {
   border: 1px solid var(--border);
   color: var(--foreground);
 }
-.espera-ok { background: #eef9f1; }
-.espera-medio { background: #fff8df; }
-.espera-alto { background: #fff0dd; }
-.espera-critico { background: #ffe8e6; }
+.espera-ok { background: var(--success-soft); }
+.espera-medio { background: var(--warning-soft); }
+.espera-alto { background: color-mix(in oklab, var(--warning) 22%, var(--card)); }
+.espera-critico { background: var(--destructive-soft); }
 
 /* Constructor de órdenes */
 .constructor-orden {
@@ -1383,73 +1585,6 @@ button.icono {
   max-height: calc(100svh - 210px);
   overflow-y: auto;
   padding: 0.15rem 0.4rem 1rem 0.15rem;
-}
-.carta__item {
-  position: relative;
-  min-height: 224px;
-  overflow: hidden;
-  gap: 0;
-  padding: 0;
-  border: 1px solid var(--border) !important;
-  box-shadow: inset 0 4px 0 var(--product-color, var(--border)), 0 6px 20px rgb(67 48 29 / 0.06);
-  border-radius: 1.15rem;
-  background: var(--card);
-  color: var(--foreground);
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
-}
-.carta__item:hover,
-.carta__item:focus-visible {
-  transform: translateY(-2px);
-  border-color: color-mix(in oklab, var(--primary) 42%, var(--border)) !important;
-  box-shadow: 0 14px 28px rgb(67 48 29 / 0.1);
-}
-.carta__item.is-on {
-  border-color: var(--primary) !important;
-  background: color-mix(in oklab, var(--accent) 24%, var(--card));
-}
-.carta__foto {
-  width: 100%;
-  height: 118px;
-  border-radius: 0;
-  object-fit: cover;
-}
-.carta__contenido {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
-  width: 100%;
-  padding: 0.8rem;
-}
-.carta__contenido strong {
-  line-height: 1.2;
-}
-.carta__precio {
-  color: var(--primary);
-  font-size: 1.02rem;
-  font-weight: 800;
-}
-.carta__cantidad {
-  position: absolute;
-  inset: auto auto 0.55rem 50%;
-  transform: translateX(-50%);
-  width: auto;
-  margin: 0;
-  gap: 0.25rem;
-  padding: 0.2rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--card);
-  box-shadow: 0 5px 16px rgb(37 28 19 / 0.14);
-}
-.carta__cantidad button {
-  min-width: 38px;
-  min-height: 38px;
-  padding: 0;
-  border-radius: 999px;
-  background: var(--secondary);
-  color: var(--secondary-foreground);
 }
 .pedido-nota-area {
   border-color: var(--border);
@@ -1798,7 +1933,6 @@ button.icono {
     width: 100% !important;
     height: 104px !important;
     min-width: 0;
-    border-radius: 1rem !important;
   }
   .constructor-orden {
     padding-bottom: 4.5rem;
@@ -2008,10 +2142,6 @@ button.icono {
   align-items: start;
   gap: 1rem;
 }
-.cocina-tarjeta {
-  overflow: hidden;
-  padding: 0 !important;
-}
 .cocina-tarjeta__cabecera {
   display: flex;
   align-items: flex-start;
@@ -2036,8 +2166,8 @@ button.icono {
   margin: 0;
   padding: 0.7rem 1rem;
   border-bottom: 1px solid var(--border);
-  background: #fff8dc;
-  color: #67500f;
+  background: var(--warning-soft);
+  color: var(--warning);
   font-size: 0.88rem;
   font-weight: 650;
 }
@@ -2053,9 +2183,9 @@ button.icono {
   border-bottom: 1px solid var(--border);
   border-left: 4px solid var(--border);
 }
-.cocina-linea.etapa-por_preparar { border-left-color: #7593a6; }
-.cocina-linea.etapa-en_proceso { border-left-color: #d39b33; }
-.cocina-linea.etapa-listo { border-left-color: #3b9a69; }
+.cocina-linea.etapa-por_preparar { border-left-color: var(--info); }
+.cocina-linea.etapa-en_proceso { border-left-color: var(--warning); }
+.cocina-linea.etapa-listo { border-left-color: var(--success); }
 .cocina-linea.etapa-cancelado { opacity: 0.62; }
 .cocina-linea__principal {
   display: flex;
@@ -2085,8 +2215,8 @@ button.icono {
 }
 .cocina-accion-icono.is-start,
 .cocina-accion-icono.is-ready {
-  background: var(--primary);
-  color: var(--primary-foreground);
+  background: var(--success);
+  color: var(--success-foreground);
 }
 .cocina-accion-icono.is-suggest {
   background: var(--card);
@@ -2113,18 +2243,18 @@ button.icono {
   gap: 0.55rem;
   margin: 0.75rem 1rem;
   padding: 0.75rem;
-  border: 1px solid #e8c76a;
-  border-radius: 0.85rem;
-  background: #fff8dc;
-  color: #67500f;
+  border: 1px solid color-mix(in oklab, var(--warning) 40%, var(--border));
+  border-radius: var(--radius);
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 .cocina-linea .cocina-incidencia {
   margin: 0;
 }
 .cocina-incidencia.is-aceptada {
-  border-color: #83c69f;
-  background: #eaf8ef;
-  color: #235f3f;
+  border-color: color-mix(in oklab, var(--success) 40%, var(--border));
+  background: var(--success-soft);
+  color: var(--success);
 }
 .cocina-incidencia > div {
   display: flex;
@@ -2148,9 +2278,9 @@ button.icono {
   align-items: center;
   gap: 0.75rem;
   padding: 1rem;
-  border-color: #e8c76a;
-  background: #fff8dc;
-  color: #67500f;
+  border-color: color-mix(in oklab, var(--warning) 40%, var(--border));
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 .mesero-notificacion > div {
   display: flex;
@@ -2170,10 +2300,10 @@ button.icono {
   gap: 0.6rem;
   margin-top: 0.65rem;
   padding: 0.75rem;
-  border: 1px solid #e8c76a;
-  border-radius: 0.85rem;
-  background: #fff8dc;
-  color: #67500f;
+  border: 1px solid color-mix(in oklab, var(--warning) 40%, var(--border));
+  border-radius: var(--radius);
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 .mesero-incidencia.is-rechazo {
   border-color: #e7a49d;
@@ -2348,6 +2478,8 @@ button.icono {
   box-shadow: 0 8px 28px rgb(67 48 29 / 0.06);
 }
 .login-odoo__ayuda {
+  margin: 0 0 8px;
+  opacity: 0.7;
   color: var(--muted-foreground);
 }
 .empty-state {
@@ -2827,7 +2959,7 @@ button.icono {
   color: var(--muted-foreground);
   font-size: 0.78rem;
 }
-.settings-status.is-ok { color: var(--primary); }
+.settings-status.is-ok { color: var(--success); }
 .settings-status.is-error { color: var(--destructive); }
 .template-editor {
   border-top: 1px solid var(--border);
@@ -2883,8 +3015,8 @@ button.icono {
 .settings-callout svg { flex: 0 0 auto; }
 .settings-callout.is-warning {
   border-color: #e2c370;
-  background: #fff8dc;
-  color: #67500f;
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 .users-list {
   display: flex;
@@ -2928,7 +3060,7 @@ button.icono {
   font-size: 0.75rem;
   font-weight: 800;
 }
-.user-row__state.is-active { color: var(--primary); }
+.user-row__state.is-active { color: var(--success); }
 .user-editor {
   display: flex;
   flex-direction: column;
@@ -2956,7 +3088,7 @@ button.icono {
 .role-picker label span { display: flex; flex-direction: column; }
 .role-picker small { color: var(--muted-foreground); font-size: 0.7rem; line-height: 1.3; }
 .user-editor__actions { justify-content: flex-end; }
-.settings-feedback { margin: 0; color: var(--primary); font-weight: 700; }
+.settings-feedback { margin: 0; color: var(--success); font-weight: 500; }
 .network-status {
   padding: 0.85rem;
   border: 1px solid var(--border);
@@ -2964,7 +3096,7 @@ button.icono {
   background: var(--background);
 }
 .network-status__icon { background: var(--muted); color: var(--muted-foreground); }
-.network-status__icon.is-online { background: var(--accent); color: var(--accent-foreground); }
+.network-status__icon.is-online { background: var(--success-soft); color: var(--success); }
 .network-status > div { display: flex; flex-direction: column; }
 .network-status span { color: var(--muted-foreground); font-size: 0.78rem; }
 .network-addresses {
@@ -2994,19 +3126,6 @@ button.icono {
 .kds-page .tarjeta {
   padding: 1rem;
 }
-.login-odoo {
-  background:
-    radial-gradient(circle at 15% 10%, color-mix(in oklab, var(--accent) 55%, transparent), transparent 28rem),
-    var(--background);
-}
-.login-odoo__tarjeta {
-  border: 1px solid var(--border);
-  border-radius: 1.25rem;
-  background: var(--card);
-  color: var(--foreground);
-  box-shadow: 0 24px 70px rgb(42 32 22 / 0.16);
-}
-
 @media (max-width: 900px) {
   .inventario-resumen {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3196,4 +3315,656 @@ button.icono {
     top: 0;
     z-index: 5;
   }
+}
+.constructor-catalogo__herramientas {
+  display: grid;
+  gap: .65rem;
+  margin-bottom: .8rem;
+}
+
+.constructor-categorias {
+  display: flex;
+  gap: .35rem;
+  overflow-x: auto;
+  padding-bottom: .2rem;
+}
+
+.constructor-categorias button { flex: 0 0 auto; }
+
+.recipe-editor {
+  display: grid;
+  gap: .7rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1rem;
+}
+
+.recipe-editor__line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(100px, .35fr) auto;
+  gap: .55rem;
+  align-items: end;
+}
+
+.print-queue { display: grid; gap: .8rem; padding: 1rem; }
+.print-queue__list { display: grid; gap: .55rem; }
+.print-queue__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: .65rem;
+  padding: .7rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.print-queue__row div { display: grid; gap: .1rem; }
+.print-queue__row span, .print-queue__row em { font-size: .82rem; }
+.print-queue__row em { color: var(--destructive); }
+
+.recipes-editor {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid var(--linea);
+  border-radius: 1.25rem;
+  background: var(--panel);
+}
+.recipes-editor label { display: grid; gap: .45rem; font-weight: 700; }
+.recipes-editor select, .recipes-editor input { min-height: 2.75rem; }
+.recipes-editor__line { display: grid; grid-template-columns: minmax(12rem, 1fr) minmax(7rem, .35fr) auto; gap: .75rem; align-items: end; }
+.recipes-editor__actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .75rem; }
+.recipes-editor__message { margin: 0; color: var(--success); font-weight: 500; }
+
+@media (max-width: 640px) {
+  .print-queue__row { grid-template-columns: auto minmax(0, 1fr); }
+  .print-queue__row > .settings-status, .print-queue__row > button { grid-column: 2; justify-self: start; }
+}
+
+@media (max-width: 640px) {
+  .recipe-editor__line { grid-template-columns: 1fr; }
+  .recipes-editor__line { grid-template-columns: 1fr; }
+  .recipes-editor__line > button { justify-self: end; }
+}
+
+/* --------------------------------------------------------------------------
+   Pulido visual final
+
+   Esta capa vive al final de la hoja para mantener coherentes las pantallas
+   nuevas y las heredadas mientras se retiran gradualmente sus reglas antiguas.
+   -------------------------------------------------------------------------- */
+
+
+html,
+body,
+#root {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+body {
+  min-width: 320px;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  min-height: var(--control-h);
+  min-width: var(--control-h);
+  border-radius: var(--radius);
+  font-weight: 500;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ring) 55%, transparent);
+  outline-offset: 2px;
+}
+
+button.primario,
+button.is-on,
+button[data-variant="default"] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 5px 14px rgb(8 125 104 / 0.16);
+}
+
+button.primario:hover:not(:disabled),
+button[data-variant="default"]:hover:not(:disabled) {
+  background: #066d5b;
+  box-shadow: 0 8px 18px rgb(8 125 104 / 0.22);
+}
+
+button[data-variant="outline"]:hover:not(:disabled),
+button[data-variant="secondary"]:hover:not(:disabled) {
+  border-color: #b6ccc3;
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+input,
+select,
+textarea {
+  min-height: 42px;
+  border: 1px solid var(--input);
+  border-radius: 0.78rem;
+  background: var(--card);
+  color: var(--foreground);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 16%, transparent);
+}
+
+.pos-odoo {
+  min-height: 100svh;
+  background:
+    radial-gradient(circle at 96% -6%, rgb(197 237 222 / 0.52), transparent 25rem),
+    radial-gradient(circle at -8% 34%, rgb(224 238 231 / 0.65), transparent 22rem),
+    var(--background);
+}
+
+.pos-odoo > main {
+  width: min(1480px, 100%);
+  margin-inline: auto;
+}
+
+.pos-nav {
+  min-height: 68px;
+  gap: 0.4rem;
+  border-color: color-mix(in oklab, var(--border) 86%, transparent);
+  background: rgb(255 255 255 / 0.9);
+  box-shadow: 0 8px 28px rgb(29 66 55 / 0.07);
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+
+.pos-nav__item {
+  min-height: 44px;
+  padding: 0.5rem 0.72rem;
+  border: 1px solid transparent;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+}
+
+.pos-nav__item:hover,
+.pos-nav__item:focus-visible {
+  border-color: var(--border);
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.pos-nav__item.is-on {
+  border-color: #c2e4d8;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  box-shadow: none;
+}
+
+.pos-odoo__marca {
+  color: var(--foreground);
+  font-size: 0.96rem;
+  letter-spacing: -0.015em;
+}
+
+button.icono {
+  width: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  border: 1px solid var(--border);
+  background: #f7faf8;
+  color: #3f6057;
+  box-shadow: none;
+}
+
+button.icono:hover,
+button.icono:focus-visible {
+  border-color: #b9d8cd;
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.pos-odoo__panel {
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 0.98);
+  color: var(--foreground);
+  box-shadow: var(--shadow-lifted);
+}
+
+.page-shell,
+.salon-odoo,
+.constructor-orden {
+  animation: ui-enter 220ms ease-out both;
+}
+
+.page-header h1,
+.salon-odoo__resumen h1,
+.constructor-orden__cabecera h1,
+.cuenta-mesa__cabecera h1 {
+  color: var(--foreground);
+  font-weight: 780;
+  letter-spacing: -0.04em;
+}
+
+.page-header p,
+.salon-odoo__resumen p,
+.constructor-orden__cabecera p {
+  color: var(--muted-foreground);
+}
+
+.page-eyebrow,
+.salon-odoo__eyebrow,
+.constructor-orden__eyebrow,
+.cuenta-mesa__eyebrow,
+.armado-plato__eyebrow {
+  color: var(--primary);
+  font-size: 0.69rem;
+  letter-spacing: 0.14em;
+}
+
+.tarjeta,
+.form-odoo__tarjeta,
+.settings-card,
+.inventario-panel,
+.pedido-card,
+.backend-odoo__atajos .backend-atajo,
+.recipes-editor,
+.recipe-editor {
+  border: 1px solid var(--border);
+  border-radius: 1.05rem;
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--shadow-soft);
+}
+
+.inventario-resumen > div,
+.salon-odoo__metricas > div {
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: 0 5px 18px rgb(30 67 56 / 0.055);
+}
+
+.backend-odoo__atajos .backend-atajo,
+.pedido-card,
+.settings-nav {
+  border-color: var(--border);
+  background: rgb(255 255 255 / 0.92);
+  box-shadow: var(--shadow-soft);
+}
+
+.settings-nav a:hover,
+.settings-nav a:focus-visible {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.settings-card legend,
+.editor-grupo legend {
+  color: var(--primary);
+}
+
+.modal-fondo {
+  background: rgb(17 38 32 / 0.52);
+  backdrop-filter: blur(5px);
+}
+
+.modal-caja,
+.armado-plato,
+.correccion-modal,
+.inventario-modal {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 28px 80px rgb(17 38 32 / 0.26);
+}
+
+@keyframes ui-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 767px) {
+  .pos-odoo > main {
+    padding: 0.75rem 0.7rem calc(5.75rem + env(safe-area-inset-bottom));
+  }
+
+  .pos-nav {
+    min-height: calc(66px + env(safe-area-inset-bottom));
+    gap: 0.18rem;
+    padding: 0.4rem 0.42rem calc(0.34rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: rgb(255 255 255 / 0.97);
+    box-shadow: 0 -8px 28px rgb(29 66 55 / 0.1);
+  }
+
+  .pos-nav__item,
+  .pos-nav .icono {
+    min-width: 0;
+    min-height: 54px;
+    padding: 0.35rem;
+    border-radius: 0.82rem;
+  }
+
+  .pos-nav__item svg,
+  .pos-nav .icono svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .mobile-view-context {
+    min-height: 44px;
+    margin: 0.65rem 0.7rem 0;
+    padding: 0.5rem 0.65rem;
+    border-color: var(--border);
+    border-radius: 0.85rem;
+    background: rgb(255 255 255 / 0.9);
+    box-shadow: 0 5px 18px rgb(30 67 56 / 0.055);
+  }
+
+  .page-shell {
+    gap: 0.85rem;
+  }
+
+  .page-header h1,
+  .salon-odoo__resumen h1,
+  .constructor-orden__cabecera h1 {
+    font-size: 1.45rem;
+  }
+
+  .page-header p {
+    font-size: 0.84rem;
+    line-height: 1.42;
+  }
+
+  .inventario-resumen,
+  .pedidos-grid,
+  .backend-odoo__atajos {
+    gap: 0.65rem;
+  }
+
+  .inventario-resumen > div,
+  .salon-odoo__metricas > div {
+    padding: 0.7rem;
+    border-radius: 0.9rem;
+  }
+
+  .plano-mapa {
+    gap: 0.65rem;
+    padding: 0.65rem;
+    border-radius: 1.05rem;
+  }
+
+  .mesa-odoo {
+    /* Solo la altura: el radio lo decide la forma de la mesa
+       (.mesa-odoo--round / --square). Antes un `border-radius !important`
+       aquí volvía cuadradas las mesas redondas en pantalla chica. */
+    height: 98px !important;
+  }
+
+  .settings-nav {
+    gap: 0.2rem;
+    padding: 0.3rem;
+    border-radius: 0.85rem;
+  }
+
+  .settings-nav a {
+    min-height: 42px;
+    padding: 0.35rem;
+  }
+
+  .opciones-page .settings-card,
+  .inventario-fila,
+  .pedido-card,
+  .cocina-tarjeta {
+    border-radius: 0.95rem;
+  }
+
+  .opciones-page .settings-card {
+    padding: 0.85rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .pos-nav {
+    padding-inline: 0.25rem;
+  }
+
+  .pos-nav__item,
+  .pos-nav .icono {
+    min-height: 52px;
+    padding-inline: 0.25rem;
+  }
+
+  .salon-odoo__metricas {
+    gap: 0.3rem;
+  }
+
+  .salon-odoo__metricas > div {
+    padding-inline: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-shell,
+  .salon-odoo,
+  .constructor-orden {
+    animation: none;
+  }
+}
+
+
+/* --------------------------------------------------------------------------
+   Mesa del plano · UNA sola definición.
+   Antes había cuatro generaciones apiladas de `.mesa-odoo` con colores
+   cableados (#ece7dc, #d7ead2, #f2fbf6...). Ganaba la última y las otras tres
+   eran ruido. Ahora el estado sale de los tokens: si cambia `--success`,
+   cambia "libre" en toda la app.
+   -------------------------------------------------------------------------- */
+.mesa-odoo {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-width: 64px;
+  min-height: 64px;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: none;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
+}
+.mesa-odoo:hover,
+.mesa-odoo:focus-visible {
+  z-index: 2;
+  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--foreground) 30%, var(--border));
+}
+.mesa-odoo--round {
+  border-radius: 999px;
+}
+.mesa-odoo--square {
+  border-radius: var(--radius);
+}
+.mesa-odoo--libre {
+  border-color: color-mix(in oklab, var(--success) 45%, var(--border));
+  background: var(--success-soft);
+}
+.mesa-odoo--ocupada,
+.mesa-odoo--en_cocina {
+  border-color: color-mix(in oklab, var(--warning) 45%, var(--border));
+  background: var(--warning-soft);
+}
+.mesa-odoo--precuenta {
+  border-color: color-mix(in oklab, var(--info) 45%, var(--border));
+  background: var(--info-soft);
+}
+.mesa-odoo--en_caja {
+  border-color: var(--border);
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+.mesa-odoo__num {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+.mesa-odoo__meta {
+  font-size: 0.7rem;
+}
+.mesa-odoo__asientos {
+  font-size: 0.68rem;
+  color: var(--muted-foreground);
+}
+
+
+/* Lienzo del plano · una sola definición. Antes eran cuatro, con la cuadrícula
+   teñida de verde (rgb(55 117 95)) heredada del tema anterior. Ahora es
+   neutra: el único color del plano debe venir del estado de las mesas. */
+.plano-mapa {
+  position: relative;
+  flex: 1;
+  min-height: clamp(31rem, 63vh, 52rem);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(90deg, color-mix(in oklab, var(--foreground) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in oklab, var(--foreground) 5%, transparent) 1px, transparent 1px),
+    var(--card);
+  background-size: 24px 24px, 24px 24px, auto;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+
+/* --------------------------------------------------------------------------
+   Tarjeta de plato (carta) · UNA sola definición por regla.
+   Antes: 5 definiciones de .carta__item, 3 de :hover, 2 de .is-on, y restos
+   de temas anteriores — un morado #714b67 de Odoo en el estado seleccionado
+   y bordes verdes #9bcdbd / #b9d4ca en hover, invisibles porque los pisaba
+   la última generación.
+   -------------------------------------------------------------------------- */
+.carta__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  min-height: 210px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--foreground);
+  text-align: left;
+  cursor: pointer;
+  /* la franja superior es el color del producto, no decoración */
+  box-shadow: inset 0 3px 0 var(--product-color, transparent);
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
+}
+.carta__item:hover,
+.carta__item:focus-visible {
+  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--foreground) 30%, var(--border));
+}
+.carta__item.is-on {
+  border-color: var(--primary);
+  background: var(--secondary);
+}
+.carta__foto {
+  width: 100%;
+  height: 118px;
+  border-radius: 0;
+  object-fit: cover;
+}
+.carta__contenido {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 0.7rem 0.75rem 0.9rem;
+}
+/* La píldora de cantidad flota sobre la tarjeta: hay que reservarle el hueco
+   o tapa el nombre y el precio. Solo aparece cuando el producto está en la
+   orden, así que solo esas tarjetas pagan el espacio extra. */
+.carta__item:has(.carta__cantidad) .carta__contenido {
+  padding-bottom: 3.2rem;
+}
+.carta__contenido strong {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.carta__precio {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+.carta__cantidad {
+  position: absolute;
+  inset: auto auto 0.55rem 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  width: auto;
+  margin: 0;
+  padding: 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: var(--shadow-lifted);
+}
+/* Los botones +/- son componentes <Button>: su forma y color salen de las
+   utilidades de Tailwind, que ganan a cualquier regla de esta capa. Definirlos
+   aquí sería código muerto. */
+.carta__cantidad strong {
+  min-width: 28px;
+  text-align: center;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* Tarjeta de comanda · una sola definición. Antes eran cuatro, y una de ellas
+   tenía el selector partido por siete líneas en blanco (`.cocina-tarjeta,
+   <vacío> .settings-nav`), resto de una edición a medias. */
+.cocina-tarjeta {
+  overflow: hidden;
+  padding: 0 !important;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: none;
+}
 }
