@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button.tsx";
-import { DialogContent, DialogDescription, DialogOverlay, DialogTitle } from "@/components/ui/dialog.tsx";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog.tsx";
 
 type Props = { onPin: (pin: string) => void; onCancelar: () => void; titulo: string; error?: string };
 
@@ -38,14 +38,7 @@ export function PinPad({ onPin, onCancelar, titulo, error = "" }: Props) {
   }, [pin, onPin, onCancelar]);
 
   return (
-    <DialogOverlay
-      role="dialog"
-      aria-modal="true"
-      aria-label={titulo}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onCancelar();
-      }}
-    >
+    <Dialog aria-label={titulo} onOverlayClick={onCancelar}>
       <DialogContent className="pin-caja">
         <DialogTitle>{titulo}</DialogTitle>
         <p className="pin-marcas">{pin.replace(/./g, "•") || "PIN"}</p>
@@ -75,6 +68,6 @@ export function PinPad({ onPin, onCancelar, titulo, error = "" }: Props) {
           Cancelar
         </Button>
       </DialogContent>
-    </DialogOverlay>
+    </Dialog>
   );
 }

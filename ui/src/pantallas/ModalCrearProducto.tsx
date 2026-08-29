@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button.tsx";
-import { DialogContent, DialogDescription, DialogFooter, DialogOverlay, DialogTitle } from "@/components/ui/dialog.tsx";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "@/components/ui/dialog.tsx";
 import { CrearProducto, type Categoria, type CrearProductoProps } from "./CrearProducto.tsx";
 
 export type ModalCrearProductoProps = {
@@ -23,32 +23,16 @@ export function ModalCrearProducto({ abierto, categorias, ingredientesDisponible
     }
   }, [abierto]);
 
-  useEffect(() => {
-    if (!abierto) return;
-    function intentarCerrar() {
-      if (sucio) setConfirmando(true);
-      else onCerrar();
-    }
-    function puntero(e: PointerEvent) {
-      if ((e.target as HTMLElement).closest(".crear-producto-modal, .confirmar-descarte")) return;
-      intentarCerrar();
-    }
-    function tecla(e: KeyboardEvent) {
-      if (e.key === "Escape") intentarCerrar();
-    }
-    document.addEventListener("pointerdown", puntero);
-    document.addEventListener("keydown", tecla);
-    return () => {
-      document.removeEventListener("pointerdown", puntero);
-      document.removeEventListener("keydown", tecla);
-    };
-  }, [abierto, sucio, onCerrar]);
+  function intentarCerrar() {
+    if (sucio) setConfirmando(true);
+    else onCerrar();
+  }
 
   if (!abierto) return null;
 
   return (
     <>
-      <DialogOverlay role="dialog" aria-modal="true" aria-label="Crear producto">
+      <Dialog aria-label="Crear producto" onOverlayClick={intentarCerrar}>
         <DialogContent className="crear-producto-modal">
           <DialogTitle>Crear producto</DialogTitle>
           <CrearProducto
@@ -63,10 +47,10 @@ export function ModalCrearProducto({ abierto, categorias, ingredientesDisponible
             onDirtyChange={setSucio}
           />
         </DialogContent>
-      </DialogOverlay>
+      </Dialog>
       {confirmando ? (
-        <DialogOverlay className="confirmar-descarte" role="alertdialog" aria-modal="true" aria-label="Confirmar descarte">
-          <DialogContent>
+        <Dialog aria-label="Confirmar descarte">
+          <DialogContent className="confirmar-descarte" role="alertdialog">
             <DialogTitle>¿Descartar el producto?</DialogTitle>
             <DialogDescription>Se perderán los datos capturados.</DialogDescription>
             <DialogFooter>
@@ -78,7 +62,7 @@ export function ModalCrearProducto({ abierto, categorias, ingredientesDisponible
               </Button>
             </DialogFooter>
           </DialogContent>
-        </DialogOverlay>
+        </Dialog>
       ) : null}
     </>
   );

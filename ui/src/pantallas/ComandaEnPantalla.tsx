@@ -14,14 +14,7 @@ type Props = {
 
 export function ComandaEnPantalla({ restaurante, comanda, onCerrar }: Props) {
   return (
-    <DialogOverlay
-      role="dialog"
-      aria-modal="true"
-      aria-label="Comanda enviada"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onCerrar();
-      }}
-    >
+    <Dialog aria-label="Comanda enviada" onOverlayClick={onCerrar}>
       <DialogContent className="ticket-papel">
         <p className="ticket-papel__local">{restaurante}</p>
         <h2 className="ticket-papel__tipo">COMANDA</h2>
@@ -51,8 +44,8 @@ export function ComandaEnPantalla({ restaurante, comanda, onCerrar }: Props) {
           Listo
         </Button>
       </DialogContent>
-    </DialogOverlay>
+    </Dialog>
   );
 }
 import { Button } from "@/components/ui/button.tsx";
-import { DialogContent, DialogOverlay } from "@/components/ui/dialog.tsx";
+import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";

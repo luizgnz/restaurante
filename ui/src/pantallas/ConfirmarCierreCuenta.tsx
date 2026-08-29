@@ -7,14 +7,7 @@ type Props = {
 
 export function ConfirmarCierreCuenta({ mesaNumero, totalCentavos, onConfirmar, onCancelar }: Props) {
   return (
-    <DialogOverlay
-      role="dialog"
-      aria-modal="true"
-      aria-label="Confirmar cierre de cuenta"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onCancelar();
-      }}
-    >
+    <Dialog aria-label="Confirmar cierre de cuenta" onOverlayClick={onCancelar}>
       <DialogContent>
         <DialogTitle>¿Cerrar cuenta?</DialogTitle>
         <DialogDescription>
@@ -29,8 +22,8 @@ export function ConfirmarCierreCuenta({ mesaNumero, totalCentavos, onConfirmar, 
           </Button>
         </DialogFooter>
       </DialogContent>
-    </DialogOverlay>
+    </Dialog>
   );
 }
 import { Button } from "@/components/ui/button.tsx";
-import { DialogContent, DialogDescription, DialogFooter, DialogOverlay, DialogTitle } from "@/components/ui/dialog.tsx";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "@/components/ui/dialog.tsx";

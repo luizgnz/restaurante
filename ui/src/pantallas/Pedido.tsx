@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
-import { DialogContent, DialogOverlay, DialogTitle } from "@/components/ui/dialog.tsx";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 
@@ -183,14 +183,7 @@ export function Pedido({
         <Button type="button" variant="outline" onClick={onPrecuenta}>Precuenta</Button>
       </Card>
       {producto ? (
-        <DialogOverlay
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Cantidad de ${producto.nombre}`}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setProductoAbierto(null);
-          }}
-        >
+        <Dialog aria-label={`Cantidad de ${producto.nombre}`} onOverlayClick={() => setProductoAbierto(null)}>
           <DialogContent>
             {producto.foto_data ? <img src={producto.foto_data} alt="" className="modal-foto" /> : null}
             <DialogTitle>{producto.nombre}</DialogTitle>
@@ -207,7 +200,7 @@ export function Pedido({
               Listo
             </Button>
           </DialogContent>
-        </DialogOverlay>
+        </Dialog>
       ) : null}
     </div>
   );

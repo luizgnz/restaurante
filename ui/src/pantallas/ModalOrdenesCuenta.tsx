@@ -1,6 +1,6 @@
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
-import { DialogContent, DialogOverlay, DialogTitle } from "@/components/ui/dialog.tsx";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog.tsx";
 import type { CuentaDetalleUi, OrdenCuentaUi } from "./CuentaMesa.tsx";
 
 type Props = {
@@ -15,13 +15,9 @@ export function ModalOrdenesCuenta({ cuenta, ordenId = null, onEditarOrden, onAn
   const ordenes = ordenId == null ? cuenta.ordenes : cuenta.ordenes.filter((orden) => orden.id === ordenId);
   const ordenSeleccionada = ordenId == null ? null : ordenes[0] ?? null;
   return (
-    <DialogOverlay
-      role="dialog"
-      aria-modal="true"
+    <Dialog
       aria-label={ordenSeleccionada ? `Acciones para Orden #${ordenSeleccionada.numero}` : `Órdenes de mesa #${cuenta.mesa.numero}`}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onCerrar();
-      }}
+      onOverlayClick={onCerrar}
     >
       <DialogContent className="ordenes-cuenta-modal">
         <DialogTitle>{ordenSeleccionada ? `Orden #${ordenSeleccionada.numero} · Mesa ${cuenta.mesa.numero}` : `Cuenta de mesa #${cuenta.mesa.numero}`}</DialogTitle>
@@ -74,6 +70,6 @@ export function ModalOrdenesCuenta({ cuenta, ordenId = null, onEditarOrden, onAn
           Cerrar
         </Button>
       </DialogContent>
-    </DialogOverlay>
+    </Dialog>
   );
 }

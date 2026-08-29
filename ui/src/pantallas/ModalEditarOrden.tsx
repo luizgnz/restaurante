@@ -2,7 +2,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { ejecutarAccionModal } from "../lib/flujo-cuentas.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { DialogContent, DialogFooter, DialogOverlay, DialogTitle } from "@/components/ui/dialog.tsx";
+import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Select } from "@/components/ui/select.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
@@ -175,7 +175,7 @@ export function ModalEditarOrden({
 
   return (
     <>
-      <DialogOverlay role="dialog" aria-modal="true" aria-label={`${modo === "anular" ? "Anular" : "Editar"} orden`}>
+      <Dialog aria-label={`${modo === "anular" ? "Anular" : "Editar"} orden`}>
         <DialogContent className="correccion-modal">
           <DialogTitle>{modo === "anular" ? "Anular" : "Editar"} orden #{orden.numero}</DialogTitle>
           <div className="correccion-modal__lineas">
@@ -342,7 +342,7 @@ export function ModalEditarOrden({
             </Button>
           </DialogFooter>
         </DialogContent>
-      </DialogOverlay>
+      </Dialog>
       {pidiendoPin ? (
         <PinPad
           titulo={`PIN para ${modo === "anular" ? "anular" : "corregir"} orden`}

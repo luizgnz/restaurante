@@ -6,14 +6,7 @@ type Props = {
 
 export function VistaPreviaComanda({ texto, onVolver, onContinuar }: Props) {
   return (
-    <DialogOverlay
-      role="dialog"
-      aria-modal="true"
-      aria-label="Confirmar comanda"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onVolver();
-      }}
-    >
+    <Dialog aria-label="Confirmar comanda" onOverlayClick={onVolver}>
       <DialogContent className="ticket-preview">
         <DialogTitle>Confirmar comanda</DialogTitle>
         <pre className="ticket-preview__cuerpo">{texto}</pre>
@@ -26,8 +19,8 @@ export function VistaPreviaComanda({ texto, onVolver, onContinuar }: Props) {
           </Button>
         </DialogFooter>
       </DialogContent>
-    </DialogOverlay>
+    </Dialog>
   );
 }
 import { Button } from "@/components/ui/button.tsx";
-import { DialogContent, DialogFooter, DialogOverlay, DialogTitle } from "@/components/ui/dialog.tsx";
+import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog.tsx";
