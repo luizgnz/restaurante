@@ -175,6 +175,7 @@ describe("calcularDiferencias", () => {
     cantidad: 2,
     precioCentavos: 8900,
     nota: null,
+    contornos: [],
   };
 
   it("informa el delta negativo de una reducción", () => {

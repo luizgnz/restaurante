@@ -3,10 +3,7 @@ import type { CuentaDetalleUi } from "../ui/src/pantallas/CuentaMesa.tsx";
 import {
   completarEnvioBorrador,
   contextoNuevaOrdenDeCuenta,
-  cuentaConocidaDeMesa,
   ejecutarAccionModal,
-  estadoMesaConCuentas,
-  registrarCuentaConocida,
   vistaTrasAccionCuenta,
 } from "../ui/src/lib/flujo-cuentas.ts";
 
@@ -21,7 +18,7 @@ function cuenta(id: number, mesaId: number, numero: number, estado: CuentaDetall
   };
 }
 
-describe("flujo UI de cuentas conocidas", () => {
+describe("flujo UI de cuentas", () => {
   it("Nueva orden de una cuenta produce contexto fijo de esa cuenta y mesa", () => {
     expect(contextoNuevaOrdenDeCuenta(cuenta(8, 3, 7))).toEqual({
       tipo: "cuenta",
@@ -31,24 +28,9 @@ describe("flujo UI de cuentas conocidas", () => {
     });
   });
 
-  it("conserva varias cuentas conocidas indexadas por mesa", () => {
-    const conocidas = registrarCuentaConocida(
-      registrarCuentaConocida({}, cuenta(8, 3, 7)),
-      cuenta(9, 4, 8, "precuenta_emitida"),
-    );
-
-    expect(cuentaConocidaDeMesa(conocidas, 3)?.id).toBe(8);
-    expect(cuentaConocidaDeMesa(conocidas, 4)?.id).toBe(9);
-    expect(estadoMesaConCuentas("libre", conocidas, 3)).toBe("en_cocina");
-    expect(estadoMesaConCuentas("libre", conocidas, 4)).toBe("precuenta");
-  });
-
-  it("mantiene en caja una mesa conocida y vuelve al plano tras handoff", () => {
-    const conocidas = registrarCuentaConocida({}, cuenta(8, 3, 7, "en_caja"));
-
-    expect(estadoMesaConCuentas("libre", conocidas, 3)).toBe("en_caja");
+  it("tras el handoff a caja se vuelve al plano", () => {
     expect(vistaTrasAccionCuenta("enviar-caja")).toBe("plano");
-    expect(cuentaConocidaDeMesa(conocidas, 3)?.estado).toBe("en_caja");
+    expect(vistaTrasAccionCuenta("precuenta")).toBe("pedido");
   });
 });
 

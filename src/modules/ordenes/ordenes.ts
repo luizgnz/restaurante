@@ -4,6 +4,7 @@ export type NuevaLineaOrden = {
   productoId: number;
   cantidad: number;
   nota?: string | null;
+  contornos?: Array<{ slotPosicion: number; varianteId: number }>;
 };
 
 export type NuevaOrden = {
@@ -22,6 +23,8 @@ export type LineaEfectiva = {
   cantidad: number;
   precioCentavos: number;
   nota: string | null;
+  /** Selecciones de contorno snapshot ("Proteína: Pollo", "EXTRA: Pollo"). */
+  contornos: string[];
 };
 
 type OrdenLineaRow = {
@@ -55,6 +58,24 @@ export function versionEfectivaOrden(db: Database.Database, ordenId: number): Li
     )
     .all(ordenId) as OrdenLineaRow[];
 
+  const contornosPorLinea = new Map<number, string[]>();
+  const contornosRows = db
+    .prepare(
+      `SELECT olc.orden_linea_id, olc.slot_nombre, olc.variante_nombre, olc.es_extra
+       FROM orden_linea_contornos olc
+       JOIN orden_lineas ol ON ol.id = olc.orden_linea_id
+       WHERE ol.orden_id = ?
+       ORDER BY olc.id`,
+    )
+    .all(ordenId) as Array<{ orden_linea_id: number; slot_nombre: string; variante_nombre: string; es_extra: number }>;
+  for (const contorno of contornosRows) {
+    const lista = contornosPorLinea.get(contorno.orden_linea_id) ?? [];
+    lista.push(
+      contorno.es_extra ? `EXTRA: ${contorno.variante_nombre}` : `${contorno.slot_nombre}: ${contorno.variante_nombre}`,
+    );
+    contornosPorLinea.set(contorno.orden_linea_id, lista);
+  }
+
   const porClave = new Map<string, LineaEfectiva>();
   for (const row of originales) {
     porClave.set(row.linea_clave, {
@@ -65,6 +86,7 @@ export function versionEfectivaOrden(db: Database.Database, ordenId: number): Li
       cantidad: row.cantidad,
       precioCentavos: row.precio_centavos,
       nota: row.nota,
+      contornos: contornosPorLinea.get(row.id) ?? [],
     });
   }
 
@@ -101,6 +123,7 @@ export function versionEfectivaOrden(db: Database.Database, ordenId: number): Li
       // posterior no puede reescribir el total de la cuenta.
       precioCentavos: cambio.precio_centavos,
       nota: cambio.nota_nueva,
+      contornos: [],
     });
   }
 

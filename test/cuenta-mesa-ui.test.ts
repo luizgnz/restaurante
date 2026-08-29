@@ -6,9 +6,11 @@ import {
   actualizarLineaConstructor,
   crearLineasConstructor,
   lineasPersistibles,
+  revelarProducto,
   type ProductoCarta,
 } from "../ui/src/pantallas/ConstructorOrden.tsx";
 import { CuentaMesa, type CuentaDetalleUi } from "../ui/src/pantallas/CuentaMesa.tsx";
+import { ConfirmarCierreCuenta } from "../ui/src/pantallas/ConfirmarCierreCuenta.tsx";
 import {
   ModalEditarOrden,
   crearLineasEditables,
@@ -96,8 +98,8 @@ describe("constructor de orden", () => {
     );
 
     expect(html).toContain("Nueva orden");
+    expect(html).toContain("<select");
     expect(html).toContain("Selecciona una mesa");
-    expect(html).toContain("Mesa para la nueva orden");
     expect(html).toContain("Mesa #7");
     expect(html).not.toContain("Mesa #8");
   });
@@ -115,9 +117,60 @@ describe("constructor de orden", () => {
     );
 
     expect(html).toContain("Nueva orden · Mesa #7");
-    expect(html).not.toContain("Selecciona una mesa");
-    expect(html).toContain('aria-label="Quitar una unidad"');
-    expect(html).toContain('aria-label="Agregar una unidad"');
+    expect(html).not.toContain("<select");
+    // La cantidad se controla en la propia tarjeta del menú, sin popup.
+    expect(html).toContain("2 × Hamburguesa");
+    expect(html).toContain('aria-label="Agregar una unidad de Hamburguesa"');
+    expect(html).toContain('aria-label="Quitar una unidad de Hamburguesa"');
+    expect(html).not.toContain('role="dialog"');
+    expect(html).not.toContain("Agregar línea");
+    // Un producto sin línea no muestra controles todavía.
+    expect(html).not.toContain('aria-label="Agregar una unidad de Jugo"');
+    // Sin notas por producto: solo indicaciones generales de la orden.
+    expect(html).not.toContain("Nota del producto");
+    expect(html).toContain("Indicaciones del cliente");
+  });
+
+  it("revelar un producto muestra el control en cero sin sumarlo a la orden", () => {
+    const html = renderToStaticMarkup(
+      createElement(ConstructorOrden, {
+        mesaFija: { id: 3, numero: 7 },
+        productos,
+        borrador: { ...borrador, mesaId: 3, lineas: [{ productoId: 2, cantidad: 0, nota: "" }] },
+        onCambiar: () => undefined,
+        onEnviar: async () => undefined,
+        onCancelar: () => undefined,
+      }),
+    );
+
+    expect(html).toContain('aria-label="Agregar una unidad de Jugo"');
+    expect(html).toContain('aria-label="Quitar una unidad de Jugo"');
+    expect(html).toContain(">0<");
+    // En cero no aparece en la orden ni habilita el envío.
+    expect(html).not.toContain("0 × Jugo");
+    expect(html).toContain("Toca un producto del menú para agregarlo");
+    expect(html).toContain("disabled");
+  });
+
+  it("revelar otro producto desactiva el revelado anterior que quedó en cero", () => {
+    const revelada = revelarProducto([], 1, () => "ui-a");
+
+    expect(revelada).toEqual([{ idUi: "ui-a", productoId: 1, cantidad: 0, nota: "" }]);
+
+    // Quedó en cero: al tocar otro producto se descarta.
+    const cambio = revelarProducto(revelada, 2, () => "ui-b");
+    expect(cambio).toEqual([{ idUi: "ui-b", productoId: 2, cantidad: 0, nota: "" }]);
+
+    // Con unidades se conserva junto al nuevo revelado.
+    const conUnidades = actualizarLineaConstructor(cambio, "ui-b", { cantidad: 3 });
+    const tercero = revelarProducto(conUnidades, 1, () => "ui-c");
+    expect(tercero.map((linea) => [linea.productoId, linea.cantidad])).toEqual([
+      [2, 3],
+      [1, 0],
+    ]);
+
+    // Tocar el mismo producto no lo duplica.
+    expect(revelarProducto(tercero, 1, () => "ui-d")).toBe(tercero);
   });
 
   it("restaura duplicados y cambia solo la línea elegida", () => {
@@ -147,8 +200,9 @@ describe("constructor de orden", () => {
         onCancelar: () => undefined,
       }),
     );
-    expect(html).toContain('value="sin cebolla"');
-    expect(html).toContain('value="sin queso"');
+    expect(html).toContain("2 × Hamburguesa");
+    expect(html).toContain("3 × Hamburguesa");
+    expect(html).not.toContain("Nota del producto");
   });
 });
 
@@ -157,11 +211,12 @@ describe("cuenta de mesa", () => {
     const html = renderToStaticMarkup(
       createElement(CuentaMesa, {
         cuenta,
+        puedeCerrar: false,
         onNuevaOrden: () => undefined,
         onEditarOrden: () => undefined,
         onAnularOrden: () => undefined,
         onPrecuenta: () => undefined,
-        onEnviarCaja: () => undefined,
+        onCerrarCuenta: () => undefined,
         onNotaPrivada: async () => undefined,
       }),
     );
@@ -178,7 +233,29 @@ describe("cuenta de mesa", () => {
     expect(html).not.toContain('aria-label="Agregar una unidad"');
     expect(html).not.toContain('aria-label="Quitar una unidad"');
     expect(html).toContain("Nota privada");
-    expect(html).toContain("Solo visible en el POS");
+    expect(html).toContain("Solo visible en el sistema");
+    // Sin precuenta emitida (y exigida) no se ofrece cerrar la cuenta.
+    expect(html).toContain("Precuenta");
+    expect(html).not.toContain("Cerrar cuenta");
+    expect(html).not.toContain("Enviar a caja");
+  });
+
+  it("ofrece cerrar la cuenta cuando la precuenta ya está emitida", () => {
+    const html = renderToStaticMarkup(
+      createElement(CuentaMesa, {
+        cuenta: { ...cuenta, estado: "precuenta_emitida" },
+        puedeCerrar: true,
+        onNuevaOrden: () => undefined,
+        onEditarOrden: () => undefined,
+        onAnularOrden: () => undefined,
+        onPrecuenta: () => undefined,
+        onCerrarCuenta: () => undefined,
+        onNotaPrivada: async () => undefined,
+      }),
+    );
+
+    expect(html).toContain("Precuenta");
+    expect(html).toContain("Cerrar cuenta");
   });
 
   it("oculta líneas efectivas en cero como consumo", () => {
@@ -204,16 +281,38 @@ describe("cuenta de mesa", () => {
             },
           ],
         },
+        puedeCerrar: false,
         onNuevaOrden: () => undefined,
         onEditarOrden: () => undefined,
         onAnularOrden: () => undefined,
         onPrecuenta: () => undefined,
-        onEnviarCaja: () => undefined,
+        onCerrarCuenta: () => undefined,
         onNotaPrivada: async () => undefined,
       }),
     );
 
     expect(html).not.toContain("Producto cancelado");
+  });
+});
+
+describe("confirmación de cierre de cuenta", () => {
+  it("pide confirmar con mesa y total antes de cerrar", () => {
+    const html = renderToStaticMarkup(
+      createElement(ConfirmarCierreCuenta, {
+        mesaNumero: 7,
+        totalCentavos: 21300,
+        onConfirmar: () => undefined,
+        onCancelar: () => undefined,
+      }),
+    );
+
+    expect(html).toContain('role="dialog"');
+    expect(html).toContain('aria-modal="true"');
+    expect(html).toContain("¿Cerrar cuenta?");
+    expect(html).toContain("Mesa #7");
+    expect(html).toContain("$21300");
+    expect(html).toContain("Cancelar");
+    expect(html).toContain("Cerrar cuenta");
   });
 });
 
@@ -233,6 +332,9 @@ describe("corrección de orden", () => {
     expect(html).toContain("Vista previa de cambios");
     expect(html).toContain("Sin cambios");
     expect(html).toContain("Continuar y pedir PIN");
+    expect(html).toContain("Indicaciones para Hamburguesa");
+    expect(html).toContain('value="sin cebolla"');
+    expect(html).toContain("Indicaciones generales para cocina");
   });
 
   it("no incluye líneas históricas en cero ni permite resucitarlas", () => {

@@ -7,3 +7,6 @@ ui/dist/
 .env
 .superpowers/
 .worktrees/
+
+# macOS junk
+.DS_Store

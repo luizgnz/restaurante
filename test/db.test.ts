@@ -4,7 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { migrate } from "../src/db/migrate.ts";
 import { openSalonDb } from "../src/db/open.ts";
-import { openTestDb } from "./helpers.ts";
+import { migrateUpTo, openEmptySalonDb, openTestDb } from "./helpers.ts";
 
 describe("db", () => {
   it("abre con WAL y synchronous FULL", () => {
@@ -70,6 +70,8 @@ describe("db", () => {
       "precuentas",
       "caja_handoffs",
       "sesiones_pos",
+      "inventario_movimientos",
+      "cocina_incidencias",
     ]) {
       expect(names).toContain(t);
     }
@@ -301,6 +303,40 @@ describe("db", () => {
     migrate(db);
     const n = db.prepare("SELECT count(*) AS c FROM schema_migrations").get() as { c: number };
     expect(n.c).toBeGreaterThanOrEqual(4);
+    db.close();
+  });
+
+  it("013: las categorías principales quedan como Comida y Bebida, conservando ids", () => {
+    const db = openEmptySalonDb();
+    migrateUpTo(db, "012_migracion_legacy");
+    db.prepare("INSERT INTO categorias_pos (nombre, estacion) VALUES ('Principales', 'cocina'), ('Bebidas', 'cocina')").run();
+    const principalId = (db.prepare("SELECT id FROM categorias_pos WHERE nombre = 'Principales'").get() as { id: number }).id;
+    db.prepare(
+      "INSERT INTO productos (nombre, precio_centavos, categoria_id, tipo_consumo, disponible_en_pos, activo) VALUES ('Sin categoría', 1000, NULL, 'no_almacenable', 1, 1)",
+    ).run();
+
+    migrate(db);
+
+    const nombres = (db.prepare("SELECT nombre FROM categorias_pos ORDER BY nombre").all() as { nombre: string }[]).map(
+      (fila) => fila.nombre,
+    );
+    expect(nombres).toContain("Comida");
+    expect(nombres).toContain("Bebida");
+    expect(nombres).not.toContain("Principales");
+    expect(nombres).not.toContain("Bebidas");
+    expect((db.prepare("SELECT nombre FROM categorias_pos WHERE id = ?").get(principalId) as { nombre: string }).nombre).toBe(
+      "Comida",
+    );
+    const comidaId = (db.prepare("SELECT id FROM categorias_pos WHERE nombre = 'Comida'").get() as { id: number }).id;
+    const producto = db.prepare("SELECT categoria_id FROM productos WHERE nombre = 'Sin categoría'").get() as {
+      categoria_id: number | null;
+    };
+    expect(producto.categoria_id).toBe(comidaId);
+
+    // Idempotencia: correrla de nuevo no duplica categorías.
+    db.prepare("DELETE FROM schema_migrations WHERE id = '013_categorias_comida_bebida'").run();
+    migrate(db);
+    expect((db.prepare("SELECT count(*) AS c FROM categorias_pos").get() as { c: number }).c).toBe(2);
     db.close();
   });
 });

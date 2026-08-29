@@ -1,28 +1,42 @@
-import { Plus, Send, Trash2 } from "lucide-react";
+import { ChevronDown, MessageSquarePlus, Search, Send, ShoppingBag, Trash2, X } from "lucide-react";
 import { useState } from "react";
+import type { CSSProperties } from "react";
+import { Badge } from "@/components/ui/badge.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Card } from "@/components/ui/card.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import { Select } from "@/components/ui/select.tsx";
+import { Textarea } from "@/components/ui/textarea.tsx";
 import type { BorradorOrden } from "../lib/borradores.ts";
-import { Button } from "../components/ui/button.tsx";
-import { Input } from "../components/ui/input.tsx";
-import { Label } from "../components/ui/label.tsx";
-import { Select, SelectItem } from "../components/ui/select.tsx";
-import { Textarea } from "../components/ui/textarea.tsx";
+import { ModalArmadoPlato, type SeleccionArmado, type SlotArmadoUi, type VarianteArmadoUi } from "./ModalArmadoPlato.tsx";
 
 export type ProductoCarta = {
   id: number;
   nombre: string;
   precio_centavos: number;
   armable: number;
+  configurable?: boolean;
+  categoria_id?: number | null;
+  categoria_nombre?: string | null;
   codigo?: string | null;
   color?: string | null;
   foto_data?: string | null;
 };
 
+export type ConfigContornosUi = {
+  grupos: Array<{ id: number; nombre: string; variantes: VarianteArmadoUi[] }>;
+  variantes: VarianteArmadoUi[];
+};
+
 export type ConstructorOrdenProps = {
+  uiVersion?: "actual" | "nueva";
   mesaFija?: { id: number; numero: number };
   cuentaId?: number;
   mesasSeleccionables?: Array<{ id: number; numero: number; estado: "libre" | "ocupada" }>;
   productos: ProductoCarta[];
   borrador: BorradorOrden;
+  contornos?: ConfigContornosUi | null;
+  onSlotsDeProducto?: (productoId: number) => Promise<SlotArmadoUi[]>;
   onCambiar: (borrador: BorradorOrden) => void;
   onEnviar: (borrador: BorradorOrden) => Promise<void>;
   onCancelar: () => void;
@@ -52,23 +66,59 @@ export function actualizarLineaConstructor(
 export function lineasPersistibles(lineas: LineaConstructorUi[]): BorradorOrden["lineas"] {
   return lineas
     .filter((linea) => linea.cantidad > 0)
-    .map(({ productoId, cantidad, nota }) => ({ productoId, cantidad, nota }));
+    .map(({ productoId, cantidad, nota, contornos, contornosTexto }) => ({
+      productoId,
+      cantidad,
+      nota,
+      ...(contornos ? { contornos } : {}),
+      ...(contornosTexto ? { contornosTexto } : {}),
+    }));
+}
+
+/**
+ * Revela el control de un producto sin sumar unidades. Descarta los revelados
+ * anteriores que quedaron en cero: solo siguen activos los que tienen unidades
+ * y el último que se tocó.
+ */
+export function revelarProducto(
+  lineas: LineaConstructorUi[],
+  productoId: number,
+  generarId: () => string = uuid,
+): LineaConstructorUi[] {
+  if (lineas.some((linea) => linea.productoId === productoId)) return lineas;
+  return [...lineas.filter((linea) => linea.cantidad > 0), { idUi: generarId(), productoId, cantidad: 0, nota: "" }];
 }
 
 export function ConstructorOrden({
+  uiVersion = "actual",
   mesaFija,
   cuentaId,
   mesasSeleccionables = [],
   productos,
   borrador,
+  contornos,
+  onSlotsDeProducto,
   onCambiar,
   onEnviar,
   onCancelar,
 }: ConstructorOrdenProps) {
   const [enviando, setEnviando] = useState(false);
   const [lineasUi, setLineasUi] = useState(() => crearLineasConstructor(borrador.lineas));
+  const [armado, setArmado] = useState<{ producto: ProductoCarta; slots: SlotArmadoUi[] } | null>(null);
+  const [resumenMovilAbierto, setResumenMovilAbierto] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [busquedaAbierta, setBusquedaAbierta] = useState(false);
+  const [indicacionesAbiertas, setIndicacionesAbiertas] = useState(Boolean(borrador.indicaciones));
+  const [categoria, setCategoria] = useState<string | "todas">("todas");
   const titulo = mesaFija ? `Nueva orden · Mesa #${mesaFija.numero}` : "Nueva orden";
   const mesaId = mesaFija?.id ?? borrador.mesaId;
+  const cantidadProductos = lineasUi.reduce((total, linea) => total + Math.max(0, linea.cantidad), 0);
+  const categorias = [...new Set(productos.map((producto) => producto.categoria_nombre?.trim()).filter((nombre): nombre is string => Boolean(nombre)))].sort((a, b) => a.localeCompare(b, "es"));
+  const termino = busqueda.trim().toLocaleLowerCase("es");
+  const productosVisibles = productos.filter((producto) => {
+    if (categoria !== "todas" && producto.categoria_nombre?.trim() !== categoria) return false;
+    return !termino || producto.nombre.toLocaleLowerCase("es").includes(termino) || producto.codigo?.toLocaleLowerCase("es").includes(termino);
+  });
 
   function cambiar(patch: Partial<BorradorOrden>) {
     onCambiar({ ...borrador, ...patch, actualizadoEn: new Date().toISOString() });
@@ -79,16 +129,55 @@ export function ConstructorOrden({
     cambiar({ lineas: lineasPersistibles(lineas) });
   }
 
-  function agregarLinea(productoId: number) {
+  function mostrarProducto(productoId: number) {
+    cambiarLineas(revelarProducto(lineasUi, productoId));
+  }
+
+  function sumarProducto(productoId: number) {
+    const linea = lineasUi.find((item) => item.productoId === productoId);
+    if (linea) {
+      cambiarLineas(actualizarLineaConstructor(lineasUi, linea.idUi, { cantidad: linea.cantidad + 1 }));
+      return;
+    }
     cambiarLineas([...lineasUi, { idUi: uuid(), productoId, cantidad: 1, nota: "" }]);
   }
 
-  function cambiarCantidad(idUi: string, cantidad: number) {
+  function restarProducto(productoId: number) {
+    const linea = lineasUi.find((item) => item.productoId === productoId);
+    if (!linea) return;
     cambiarLineas(
-      cantidad > 0
-        ? actualizarLineaConstructor(lineasUi, idUi, { cantidad })
-        : lineasUi.filter((linea) => linea.idUi !== idUi),
+      linea.cantidad > 1
+        ? actualizarLineaConstructor(lineasUi, linea.idUi, { cantidad: linea.cantidad - 1 })
+        : lineasUi.filter((item) => item.idUi !== linea.idUi),
     );
+  }
+
+  async function tocarProducto(producto: ProductoCarta) {
+    if (producto.configurable && contornos && onSlotsDeProducto) {
+      const slots = await onSlotsDeProducto(producto.id);
+      if (slots.length > 0) {
+        setArmado({ producto, slots });
+        return;
+      }
+    }
+    if (uiVersion === "nueva") sumarProducto(producto.id);
+    else mostrarProducto(producto.id);
+  }
+
+  function confirmarArmado(selecciones: SeleccionArmado[], resumen: string) {
+    if (!armado) return;
+    cambiarLineas([
+      ...lineasUi,
+      {
+        idUi: uuid(),
+        productoId: armado.producto.id,
+        cantidad: 1,
+        nota: "",
+        contornos: selecciones,
+        contornosTexto: resumen,
+      },
+    ]);
+    setArmado(null);
   }
 
   async function enviar() {
@@ -102,118 +191,100 @@ export function ConstructorOrden({
     }
   }
 
-  const mesasLibres = mesasSeleccionables.filter((mesa) => mesa.estado === "libre");
-
   return (
-    <section className="constructor-orden flex flex-col gap-4">
-      <header className="constructor-orden__cabecera flex flex-wrap items-center justify-between gap-3">
-        <h1 className="m-0 text-2xl font-semibold tracking-tight">{titulo}</h1>
+    <>
+    <section className="constructor-orden">
+      <header className="constructor-orden__cabecera">
+        <div>
+          <span className="constructor-orden__eyebrow">Toma de pedido</span>
+          <h1>{titulo}</h1>
+          <p>Selecciona productos y revisa la orden antes de enviarla.</p>
+        </div>
         {!mesaFija ? (
-          <Label className="min-w-56">
+          <label>
             Mesa
             <Select
               aria-label="Mesa para la nueva orden"
-              value={borrador.mesaId ? String(borrador.mesaId) : undefined}
-              onValueChange={(value) => cambiar({ mesaId: Number(value) || undefined })}
-              placeholder="Selecciona una mesa"
+              value={borrador.mesaId ?? ""}
+              onChange={(event) => cambiar({ mesaId: Number(event.target.value) || undefined })}
             >
-              {mesasLibres.map((mesa) => (
-                <SelectItem key={mesa.id} value={String(mesa.id)}>
-                  Mesa #{mesa.numero}
-                </SelectItem>
-              ))}
+              <option value="">Selecciona una mesa</option>
+              {mesasSeleccionables
+                .filter((mesa) => mesa.estado === "libre")
+                .map((mesa) => (
+                  <option key={mesa.id} value={mesa.id}>
+                    Mesa #{mesa.numero}
+                  </option>
+                ))}
             </Select>
-            <span className="sr-only">{mesasLibres.map((mesa) => `Mesa #${mesa.numero}`).join(", ")}</span>
-          </Label>
+          </label>
         ) : null}
       </header>
 
-      <div className="constructor-orden__cuerpo grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="carta grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
-          {productos.map((producto) => {
-            return (
-              <button
-                type="button"
-                key={producto.id}
-                className="carta__item flex flex-col items-start gap-1 rounded-3xl border border-border bg-card p-3 text-left shadow-sm transition-transform hover:-translate-y-0.5"
-                style={producto.color ? { borderColor: producto.color } : undefined}
-                onClick={() => agregarLinea(producto.id)}
-              >
-                {producto.foto_data ? <img src={producto.foto_data} alt="" className="carta__foto size-16 rounded-2xl object-cover" /> : null}
-                <strong>{producto.nombre}</strong>
-                {producto.codigo ? <span className="text-xs text-muted-foreground">{producto.codigo}</span> : null}
-                <span className="text-sm text-muted-foreground">${producto.precio_centavos}</span>
-                <span className="constructor-orden__agregar inline-flex items-center gap-1 text-sm font-semibold">
-                  <Plus size={16} aria-hidden="true" /> Agregar línea
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <aside className="tarjeta constructor-orden__resumen flex flex-col gap-3 rounded-3xl border border-border bg-card p-4 shadow-sm">
-          <h2 className="m-0 text-lg font-semibold">Orden nueva</h2>
-          {lineasUi.map((linea) => {
-            const producto = productos.find((item) => item.id === linea.productoId);
-            return (
-              <div className="constructor-linea flex flex-col gap-2 border-b border-border py-3 last:border-0" key={linea.idUi}>
-                <div className="constructor-linea__titulo flex items-center justify-between gap-2">
-                  <strong>{producto?.nombre ?? `Producto ${linea.productoId}`}</strong>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="icono-secundario"
-                    title="Quitar producto"
-                    onClick={() => cambiarCantidad(linea.idUi, 0)}
-                  >
-                    <Trash2 size={18} aria-hidden="true" />
-                  </Button>
+      <div className="constructor-orden__cuerpo">
+        <Card className={`tarjeta constructor-orden__resumen${resumenMovilAbierto ? " is-mobile-open" : ""}`}>
+          <div className="constructor-orden__resumen-cabecera">
+            <div>
+              <span className="constructor-orden__eyebrow">Resumen</span>
+              <h2>Orden nueva</h2>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={`constructor-orden__cerrar-movil${uiVersion === "nueva" ? " md:hidden" : ""}`}
+              aria-label="Cerrar orden"
+              onClick={() => setResumenMovilAbierto(false)}
+            >
+              <X size={20} aria-hidden="true" />
+            </Button>
+          </div>
+          {lineasUi
+            .filter((linea) => linea.cantidad > 0)
+            .map((linea) => {
+              const producto = productos.find((item) => item.id === linea.productoId);
+              return (
+                <div className="constructor-linea" key={linea.idUi}>
+                  <div className="constructor-linea__titulo">
+                    <strong>
+                      {linea.cantidad} × {producto?.nombre ?? `Producto ${linea.productoId}`}
+                    </strong>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="icono-secundario"
+                      title="Quitar producto"
+                      onClick={() => cambiarLineas(lineasUi.filter((item) => item.idUi !== linea.idUi))}
+                    >
+                      <Trash2 size={18} aria-hidden="true" />
+                    </Button>
+                  </div>
+                  {linea.contornosTexto ? <span className="pedido-nota-fija">{linea.contornosTexto}</span> : null}
                 </div>
-                <div className="modal-cantidad flex items-center gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    aria-label="Quitar una unidad"
-                    onClick={() => cambiarCantidad(linea.idUi, linea.cantidad - 1)}
-                  >
-                    −
-                  </Button>
-                  <strong className="min-w-8 text-center text-xl">{linea.cantidad}</strong>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    aria-label="Agregar una unidad"
-                    onClick={() => cambiarCantidad(linea.idUi, linea.cantidad + 1)}
-                  >
-                    +
-                  </Button>
-                </div>
-                <Label>
-                  Nota del producto
-                  <Input
-                    value={linea.nota}
-                    onChange={(event) =>
-                      cambiarLineas(actualizarLineaConstructor(lineasUi, linea.idUi, { nota: event.target.value }))
-                    }
-                  />
-                </Label>
-              </div>
-            );
-          })}
-          {lineasUi.length === 0 ? <p className="login-odoo__ayuda text-sm text-muted-foreground">Agrega productos para enviar.</p> : null}
-          <Label>
-            Indicaciones del cliente
-            <Textarea
-              className="pedido-nota-area"
-              placeholder="Opcional. Va a cocina."
-              value={borrador.indicaciones}
-              onChange={(event) => cambiar({ indicaciones: event.target.value })}
-            />
-          </Label>
-          <div className="constructor-orden__acciones flex flex-wrap justify-end gap-2">
+              );
+            })}
+          {lineasPersistibles(lineasUi).length === 0 ? (
+            <p className="login-odoo__ayuda">Toca un producto del menú para agregarlo.</p>
+          ) : null}
+          {uiVersion === "nueva" && !indicacionesAbiertas ? (
+            <Button type="button" variant="ghost" size="sm" className="constructor-orden__agregar-nota" onClick={() => setIndicacionesAbiertas(true)}>
+              <MessageSquarePlus size={17} aria-hidden="true" /> Agregar indicaciones
+            </Button>
+          ) : (
+            <label className="constructor-orden__indicaciones">
+              {uiVersion === "nueva" ? "Indicaciones para cocina" : "Indicaciones del cliente"}
+              <Textarea
+                className="pedido-nota-area"
+                placeholder={uiVersion === "nueva" ? "Ej.: sin sal, alergia o preparación especial" : "Opcional. Va a cocina."}
+                value={borrador.indicaciones}
+                onChange={(event) => cambiar({ indicaciones: event.target.value })}
+              />
+              {uiVersion === "nueva" && !borrador.indicaciones ? (
+                <Button type="button" variant="ghost" size="sm" onClick={() => setIndicacionesAbiertas(false)}>Ocultar</Button>
+              ) : null}
+            </label>
+          )}
+          <div className="constructor-orden__acciones">
             <Button type="button" variant="outline" onClick={onCancelar}>
               Cancelar
             </Button>
@@ -225,8 +296,124 @@ export function ConstructorOrden({
               <Send size={18} aria-hidden="true" /> {enviando ? "Enviando…" : "Enviar"}
             </Button>
           </div>
-        </aside>
+        </Card>
+
+        <div className="constructor-orden__catalogo">
+          <div className="constructor-orden__catalogo-cabecera">
+            <div>
+              <span className="constructor-orden__eyebrow">Carta</span>
+              <h2>Productos</h2>
+            </div>
+            <Badge variant="secondary">{productos.length} disponibles</Badge>
+          </div>
+          <div className="constructor-catalogo__herramientas">
+            {uiVersion === "nueva" && !busquedaAbierta ? (
+              <Button type="button" variant="outline" size="icon" aria-label="Buscar producto" title="Buscar producto" onClick={() => setBusquedaAbierta(true)}>
+                <Search size={18} aria-hidden="true" />
+              </Button>
+            ) : (
+              <label className="inventario-busqueda">
+                <Search size={18} aria-hidden="true" />
+                <span className="sr-only">Buscar producto</span>
+                <Input autoFocus={uiVersion === "nueva"} type="search" value={busqueda} placeholder="Buscar producto" onChange={(event) => setBusqueda(event.target.value)} />
+                {uiVersion === "nueva" ? (
+                  <Button type="button" variant="ghost" size="icon" aria-label="Cerrar búsqueda" onClick={() => { setBusqueda(""); setBusquedaAbierta(false); }}>
+                    <X size={17} aria-hidden="true" />
+                  </Button>
+                ) : null}
+              </label>
+            )}
+            <div className="constructor-categorias" role="tablist" aria-label="Categorías de la carta">
+              <Button type="button" size="sm" variant={categoria === "todas" ? "secondary" : "ghost"} onClick={() => setCategoria("todas")}>Todas</Button>
+              {categorias.map((nombre) => <Button key={nombre} type="button" size="sm" variant={categoria === nombre ? "secondary" : "ghost"} onClick={() => setCategoria(nombre)}>{nombre}</Button>)}
+            </div>
+          </div>
+          <div className="carta constructor-orden__carta">
+          {productosVisibles.map((producto) => {
+            const linea = lineasUi.find((item) => item.productoId === producto.id);
+            return (
+              <div
+                key={producto.id}
+                role="button"
+                tabIndex={0}
+                className={`carta__item${linea ? " is-on" : ""}`}
+                style={producto.color ? ({ "--product-color": producto.color } as CSSProperties) : undefined}
+                onClick={() => tocarProducto(producto)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    tocarProducto(producto);
+                  }
+                }}
+              >
+                {producto.foto_data ? <img src={producto.foto_data} alt="" className="carta__foto" /> : null}
+                <span className="carta__contenido">
+                  <strong>{producto.nombre}</strong>
+                  {producto.codigo ? <span>{producto.codigo}</span> : null}
+                  <span className="carta__precio">${producto.precio_centavos}</span>
+                  {producto.configurable ? <Badge>Personalizable</Badge> : null}
+                </span>
+                {linea ? (
+                  <span className="carta__cantidad" onClick={(event) => event.stopPropagation()}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="size-9 rounded-full text-base"
+                      aria-label={`Quitar una unidad de ${producto.nombre}`}
+                      onClick={() => restarProducto(producto.id)}
+                    >
+                      −
+                    </Button>
+                    <strong>{linea.cantidad}</strong>
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="icon"
+                      className="size-9 rounded-full text-base"
+                      aria-label={`Agregar una unidad de ${producto.nombre}`}
+                      onClick={() => sumarProducto(producto.id)}
+                    >
+                      +
+                    </Button>
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+          </div>
+          {productosVisibles.length === 0 ? <div className="empty-state">No hay productos en esta categoría o búsqueda.</div> : null}
+        </div>
       </div>
+      <Button
+        type="button"
+        size="lg"
+        className={`constructor-orden__abrir-resumen${uiVersion === "nueva" ? " md:hidden" : ""}`}
+        onClick={() => setResumenMovilAbierto(true)}
+      >
+        <ShoppingBag size={20} aria-hidden="true" />
+        Ver orden · {cantidadProductos} {cantidadProductos === 1 ? "producto" : "productos"}
+        <ChevronDown size={18} aria-hidden="true" />
+      </Button>
+      {resumenMovilAbierto ? (
+        <Button
+          type="button"
+          variant="ghost"
+          className="constructor-orden__velo"
+          aria-label="Cerrar resumen"
+          onClick={() => setResumenMovilAbierto(false)}
+        />
+      ) : null}
     </section>
+    {armado && contornos ? (
+      <ModalArmadoPlato
+        productoNombre={armado.producto.nombre}
+        slots={armado.slots}
+        variantes={contornos.variantes}
+        onConfirmar={confirmarArmado}
+        onCancelar={() => setArmado(null)}
+      />
+    ) : null}
+    </>
   );
 }

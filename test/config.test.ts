@@ -15,7 +15,7 @@ describe("config", () => {
     expect(c.pin_al_emitir_precuenta).toBe(true);
     expect(c.pin_al_enviar_caja).toBe(true);
     expect(c.tablet_cocina).toBe(false);
-    expect(c.enviar_a_caja_requiere_avanzado).toBe(true);
+    expect(c.enviar_a_caja_requiere_avanzado).toBe(false);
     expect(c.precuenta_obligatoria_antes_de_caja).toBe(true);
     expect(c.liberar_mesa_cuando).toBe("al_enviar_a_caja");
     expect(c.bloqueo_inactividad_seg).toBe(60);

@@ -30,6 +30,36 @@ describe("opciones API", () => {
     db.close();
   });
 
+  it("precuenta obligatoria antes de caja se guarda y se expone", async () => {
+    const db = openTestDb();
+    const config = defaultConfig();
+    const app = createApp({ db, config, printer: new MemoryPrinter() });
+    expect(((await (await app.request("/api/config")).json()) as { precuenta_obligatoria_antes_de_caja: boolean })
+      .precuenta_obligatoria_antes_de_caja).toBe(true);
+    const res = await app.request("/api/config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ precuenta_obligatoria_antes_de_caja: false }),
+    });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { precuenta_obligatoria_antes_de_caja: boolean }).precuenta_obligatoria_antes_de_caja).toBe(false);
+    db.close();
+  });
+
+  it("cerrar cuenta con permiso básico se puede habilitar", async () => {
+    const db = openTestDb();
+    const config = defaultConfig();
+    const app = createApp({ db, config, printer: new MemoryPrinter() });
+    const res = await app.request("/api/config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enviar_a_caja_requiere_avanzado: false }),
+    });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { enviar_a_caja_requiere_avanzado: boolean }).enviar_a_caja_requiere_avanzado).toBe(false);
+    db.close();
+  });
+
   it("preview de comanda no incluye nota privada; anular sin PIN falla", async () => {
     const db = openTestDb();
     const ids = seedCartaDemo(db);
@@ -91,6 +121,30 @@ describe("opciones API", () => {
     expect(body2.justificacion_anulacion).toBe(false);
     db.close();
   });
+
+  it("guarda impresoras, plantillas y servidor local", async () => {
+    const db = openTestDb();
+    const config = defaultConfig();
+    const app = createApp({ db, config, printer: new MemoryPrinter() });
+    const res = await app.request("/api/config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        impresora_comanda: { habilitada: true, nombre: "Cocina", host: "192.168.1.50", puerto: 9100, ancho_mm: 80 },
+        plantilla_comanda: { titulo: "COCINA", encabezado: "Local", pie: "Listo" },
+        servidor_red_habilitado: true,
+        nombre_servidor: "POS Principal",
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as AppConfig;
+    expect(body.impresora_comanda.host).toBe("192.168.1.50");
+    expect(body.plantilla_comanda.titulo).toBe("COCINA");
+    expect(body.nombre_servidor).toBe("POS Principal");
+    const red = await app.request("http://localhost:8080/api/red/estado");
+    expect((await red.json()) as object).toMatchObject({ habilitado: true, puerto: 8080, salud: "operativo" });
+    db.close();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -140,7 +194,7 @@ describe("opciones y API de órdenes", () => {
   });
 
   it("enviar_a_caja_requiere_avanzado decide qué PIN cierra el servicio", async () => {
-    const exigente = await entornoApi();
+    const exigente = await entornoApi({ ...defaultConfig(), enviar_a_caja_requiere_avanzado: true });
     const orden = await crearOrden(exigente);
     await post(exigente.app, `/api/cuentas/${orden.cuentaId}/precuenta`, { pin: "1234" });
     const negado = await post(exigente.app, `/api/cuentas/${orden.cuentaId}/enviar-caja`, { pin: "1234" });

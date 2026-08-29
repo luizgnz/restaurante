@@ -1,12 +1,12 @@
 # Relaciones del dominio y de la base
 
-**Fecha:** 2026-08-22  
+**Fecha:** 2026-08-23
 **Fuente:** migraciones en `src/db/migrations/` y reglas de `salon`, `pedidos`, `kds`, `precuenta`, `caja`, `inventario`.  
 **Persistencia extra:** identidad del local, PIN y apariencia viven en `config.json`, no en SQLite.
 
 Este documento confirma las reglas que pediste, marca lo que **ya se cumple** frente a lo que **aún no está modelado**, y completa el resto de relaciones.
 
-> **Corrección aprobada del modelo:** una mesa se asocia a una **cuenta** y la cuenta a una o varias **órdenes**. El esquema SQLite actual todavía usa `pedidos` como mezcla de ambos conceptos; debe migrarse según `docs/superpowers/specs/2026-08-22-cuentas-ordenes-design.md`.
+> **Corrección del modelo (implementada):** una mesa se asocia a una **cuenta** y la cuenta a una o varias **órdenes**. Las tablas `cuentas`, `ordenes`, `orden_lineas`, `orden_correcciones` y comandas por orden están en producción (migraciones 008–012); la ocupación de la mesa se deriva de la cuenta activa. El modelo anterior (`pedidos`, `pedido_lineas`) queda solo como respaldo y adaptador deprecado; se retirará en una migración posterior, no en este despliegue. Diseño: `docs/superpowers/specs/2026-08-22-cuentas-ordenes-design.md`.
 
 ---
 
@@ -15,8 +15,8 @@ Este documento confirma las reglas que pediste, marca lo que **ya se cumple** fr
 | Regla | Estado | Cómo está hoy |
 | --- | --- | --- |
 | El restaurante donde está instalado el sistema debe tener **al menos un piso** | **Intención de producto.** Seed crea el piso “Salón”. **No hay CHECK** en SQLite que impida un local sin pisos. | `pisos` 1—N `mesas`. El editor no debería dejar el salón vacío; falta constraint de instalación. |
-| **1 mesa ocupada** tiene **exactamente una cuenta activa** | **Modelo objetivo aprobado; migración pendiente.** | La cuenta nace al enviar la primera orden, no al entrar a la mesa ni al crear un borrador. |
-| **1 cuenta** tiene **una o varias órdenes enviadas** | **Modelo objetivo aprobado; migración pendiente.** | Cada nuevo pedido del cliente crea `Orden #N`; cocina recibe solamente los productos de esa orden. |
+| **1 mesa ocupada** tiene **exactamente una cuenta activa** | **Implementado.** Índice único parcial `cuenta_activa_mesa_unica` y `estadoMesa` derivado de la cuenta activa. | La cuenta nace al enviar la primera orden, no al entrar a la mesa ni al crear un borrador. |
+| **1 cuenta** tiene **una o varias órdenes enviadas** | **Implementado.** `enviarOrden` resuelve la cuenta activa por mesa dentro de la transacción. | Cada nuevo pedido del cliente crea `Orden #N`; cocina recibe solamente los productos de esa orden. |
 | **1 mesa desocupada** no tiene cuenta activa | **Regla confirmada.** | Puede tener cuentas históricas cerradas. Un borrador en cache no ocupa la mesa. |
 | **1 mesero atiende una o más mesas** | **Confirmado.** Lo usual: el mismo mesero sigue la mesa. | Un empleado puede actuar sobre varias cuentas activas. |
 | **Otra persona puede tomar, entregar o “cobrar” esa mesa** | **Regla de producto: sin restricción de titular.** | Lo excepcional: el mesero no aparece, está en otro piso, o el cliente llama al más cercano. Ese acto es **momentáneo**. Quien pone el PIN (con el derecho de la acción) opera. No se exige que coincida con el empleado de referencia de la cuenta. |
@@ -127,6 +127,21 @@ usuario único si no es NULL
 PIN / password en hash; el PIN identifica **quién hace este acto** (enviar, precuenta, caja, anular, …), no “dueño exclusivo de la mesa”. Cualquier empleado con el derecho de esa acción puede operarla.
 ```
 
+### 3.6 Contornos y armado de platos
+
+```text
+producto plato       1 ── 0..N  plato_slots
+plato_slot           N ── N     contorno_grupos       (plato_slot_grupos)
+contorno_grupo       1 ── N     contorno_variantes
+orden_linea          1 ── 0..N  orden_linea_contornos (snapshot)
+```
+
+Un producto sin slots conserva el flujo normal. Un producto con slots exige una selección válida por cada posición antes de enviarse. Cada slot declara qué grupos acepta y si permite extras. Las selecciones enviadas guardan nombre y precio como snapshot, por lo que un cambio posterior de configuración no altera cuentas históricas.
+
+El precio guardado en `orden_lineas.precio_centavos` ya incorpora los suplementos y extras seleccionados por unidad; por eso precuenta, cuenta y caja usan el mismo total efectivo. El inventario por variante y la corrección directa de contornos permanecen diferidos.
+
+El seed incluye `Menú del día`, con proteína y dos contornos, y el producto independiente `Extra`, que abre un selector de Pollo, Carne o Longaniza.
+
 ---
 
 ## 4. Diagrama compacto
@@ -139,8 +154,9 @@ empleados ─┬─ sesiones_pos
            └─ caja_handoffs ── precuentas
 
 mesas ── cuentas ── ordenes ── orden_lineas ── productos ── categorias_pos
-                       ├─ correcciones              ├─ receta_lineas
-                       └─ comandas                  └─ stock
+                       ├─ correcciones       │      ├─ receta_lineas
+                       ├─ comandas           │      └─ stock
+                       └─ contornos          └─ plato_slots ── grupos ── variantes
 
 print_jobs  (payload JSON; sin FK)
 config.json (nombre_local, logo, PIN, tipografía, confirmar_comanda, auditoría/justificación de anulaciones, …)
@@ -152,11 +168,22 @@ config.json (nombre_local, logo, PIN, tipografía, confirmar_comanda, auditoría
 
 1. Constraint “al menos un piso activo” al arrancar o al borrar el último piso.  
 2. Índice UNIQUE de `mesas.numero` (hoy solo validación en `guardarPlano`).  
-3. Migrar `pedidos` a `cuentas` + `ordenes` + `correcciones`, conservando historial.  
+3. ~~Migrar `pedidos` a `cuentas` + `ordenes` + `correcciones`, conservando historial.~~ **Hecho** (migraciones 008–012 + `migrarPedidosACuentas` al arranque).  
 4. Tabla o config de **modo de impresión** (`pantalla` | `impresora` | `ambas`) y, más adelante, impresoras por estación (`categorias_pos.estacion`).  
-5. FK de `print_jobs` a orden/corrección/precuenta si se quiere auditoría relacional.  
-6. Cuenta activa única por mesa mediante índice UNIQUE parcial.
+5. FK de `print_jobs` a orden/corrección/precuenta si se quiere auditoría relacional.
+6. ~~Cuenta activa única por mesa mediante índice UNIQUE parcial.~~ **Hecho** (`cuenta_activa_mesa_unica`).
 7. **No** añadir candado mesa↔mesero: cada acto registra al empleado que realmente lo hizo.
+
+---
+
+## 5.1 Legado pendiente de retiro
+
+Lo que queda del modelo anterior y su condición de retiro:
+
+- **Tablas:** `pedidos`, `pedido_lineas` y las FK legacy de `precuentas`/`caja_handoffs`. Tras la conversión del arranque quedan como respaldo; se retiran en una migración posterior, nunca en el mismo despliegue que la conversión.
+- **Funciones de salón:** `abrirMesa`, `abrirTab`, `asignarMesa`, `borradorSinMesa`, `limpiarPedidosSinMesa`, `pedidoIdAbierto`, `liberarMesa`. Solo las llaman los adaptadores legacy; ninguna ruta nueva ni la UI las usa.
+- **Rutas HTTP:** `GET /api/pedidos`, `GET /api/pedidos/:id`, `GET /api/pedidos/:id/comanda-preview` (lecturas sin aviso) y las mutaciones `POST /api/pedidos…`, `POST /api/mesas/:id/abrir`, `POST /api/lineas/:id/…` (responden `Deprecation: true` + `Link` al sucesor). La UI ya no las llama; el circuito nuevo usa `/api/ordenes`, `/api/cuentas` y `/api/kds`.
+- **Condición de retiro:** retirar cuando no queden instalaciones con datos sin convertir (el arranque convierte y lanza si algo falla) y el adaptador `en-proceso` deje de usarse en tablets de cocina antiguas.
 
 ---
 

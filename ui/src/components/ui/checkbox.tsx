@@ -1,23 +1,20 @@
-import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
-import { Check } from "lucide-react";
-import type { ComponentProps } from "react";
-import { cn } from "../../lib/utils.ts";
+import type * as React from "react";
+import { cn } from "@/lib/utils.ts";
 
-function Checkbox({ className, checked, onCheckedChange, ...props }: ComponentProps<typeof CheckboxPrimitive.Root>) {
+function Checkbox({ className, ...props }: Omit<React.ComponentProps<"input">, "type">) {
   return (
-    <CheckboxPrimitive.Root
-      checked={checked}
-      onCheckedChange={onCheckedChange}
+    <input
+      type="checkbox"
       className={cn(
-        "peer size-5 shrink-0 rounded-md border border-input bg-card shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
+        "size-[18px] min-h-[18px] min-w-[18px] shrink-0 cursor-pointer appearance-none rounded-[5px] border border-input bg-card outline-none transition-colors",
+        "checked:border-primary checked:bg-primary",
+        "focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "disabled:cursor-not-allowed disabled:opacity-45",
+        "after:hidden checked:after:block checked:after:h-2 checked:after:w-[5px] checked:after:translate-x-[5.5px] checked:after:translate-y-[2px] checked:after:rotate-45 checked:after:border-r-2 checked:after:border-b-2 checked:after:border-primary-foreground",
         className,
       )}
       {...props}
-    >
-      <CheckboxPrimitive.Indicator className="flex items-center justify-center text-current">
-        <Check className="size-3.5" strokeWidth={3} />
-      </CheckboxPrimitive.Indicator>
-    </CheckboxPrimitive.Root>
+    />
   );
 }
 

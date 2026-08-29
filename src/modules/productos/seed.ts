@@ -9,6 +9,8 @@ export type SeedIds = {
   hamburguesa: number;
   jugo: number;
   agua: number;
+  menuDia: number;
+  extra: number;
   mesa7: number;
 };
 
@@ -34,10 +36,10 @@ function setStock(db: Database.Database, productoId: number, onHand: number): vo
 
 export function seedCartaDemo(db: Database.Database): SeedIds {
   const comida = Number(
-    db.prepare("INSERT INTO categorias_pos (nombre, estacion) VALUES (?, ?)").run("Principales", "cocina").lastInsertRowid,
+    db.prepare("INSERT INTO categorias_pos (nombre, estacion) VALUES (?, ?)").run("Comida", "cocina").lastInsertRowid,
   );
   const bebidas = Number(
-    db.prepare("INSERT INTO categorias_pos (nombre, estacion) VALUES (?, ?)").run("Bebidas", "cocina").lastInsertRowid,
+    db.prepare("INSERT INTO categorias_pos (nombre, estacion) VALUES (?, ?)").run("Bebida", "cocina").lastInsertRowid,
   );
 
   const pan = insertProducto(db, "Pan", 0, null, "almacenable_unitario", 0);
@@ -66,8 +68,10 @@ export function seedCartaDemo(db: Database.Database): SeedIds {
   const piso = Number(db.prepare("INSERT INTO pisos (nombre) VALUES (?)").run("Salón").lastInsertRowid);
   const mesa7 = asegurarPlanoDemo(db, piso);
   asegurarProductosDemo(db);
+  const menuDia = (db.prepare("SELECT id FROM productos WHERE nombre = 'Menú del día'").get() as { id: number }).id;
+  const extra = (db.prepare("SELECT id FROM productos WHERE lower(nombre) = 'extra'").get() as { id: number }).id;
 
-  return { pan, carne, queso, lechuga, hamburguesa, jugo, agua, mesa7 };
+  return { pan, carne, queso, lechuga, hamburguesa, jugo, agua, menuDia, extra, mesa7 };
 }
 
 const LAYOUT = ordenarMesas([
@@ -119,8 +123,8 @@ export function asegurarProductosDemo(db: Database.Database): void {
     if (row) return row.id;
     return Number(db.prepare("INSERT INTO categorias_pos (nombre, estacion) VALUES (?, ?)").run(nombre, estacion).lastInsertRowid);
   }
-  const principales = categoria("Principales", "cocina");
-  const bebidas = categoria("Bebidas", "cocina");
+  const principales = categoria("Comida", "cocina");
+  const bebidas = categoria("Bebida", "cocina");
   const postres = categoria("Postres", "cocina");
   const carta = [
     { nombre: "Hamburguesa", precio: 8900, categoria: principales, letra: "H", color: "#8b4513" },
@@ -130,6 +134,8 @@ export function asegurarProductosDemo(db: Database.Database): void {
     { nombre: "Ensalada César", precio: 5200, categoria: principales, letra: "S", color: "#3d7a3d" },
     { nombre: "Pizza margarita", precio: 8900, categoria: principales, letra: "Z", color: "#b33c3c" },
     { nombre: "Sopa del día", precio: 3200, categoria: principales, letra: "O", color: "#b56b2a" },
+    { nombre: "Menú del día", precio: 8900, categoria: principales, letra: "M", color: "#9b5d32" },
+    { nombre: "Extra", precio: 0, categoria: principales, letra: "+", color: "#6f4a8e" },
     { nombre: "Jugo", precio: 2500, categoria: bebidas, letra: "J", color: "#e07a2f" },
     { nombre: "Agua con gas", precio: 1500, categoria: bebidas, letra: "A", color: "#3d8ea8" },
     { nombre: "Café", precio: 1800, categoria: bebidas, letra: "F", color: "#4a2c1a" },
@@ -146,4 +152,86 @@ export function asegurarProductosDemo(db: Database.Database): void {
     if (existing) update.run(foto, p.color, existing.id);
     else insert.run(p.nombre, p.precio, p.categoria, p.color, foto);
   }
+  asegurarContornosDemo(db);
+}
+
+/** Agrega el ejemplo sin reemplazar configuraciones que el administrador ya haya guardado. */
+export function asegurarContornosDemo(db: Database.Database): void {
+  function grupo(nombre: string): number {
+    const existente = db.prepare("SELECT id FROM contorno_grupos WHERE lower(nombre) = lower(?)").get(nombre) as
+      | { id: number }
+      | undefined;
+    if (existente) return existente.id;
+    return Number(db.prepare("INSERT INTO contorno_grupos (nombre) VALUES (?)").run(nombre).lastInsertRowid);
+  }
+
+  function variante(
+    grupoId: number,
+    nombre: string,
+    suplementoCentavos: number,
+    extraCentavos: number,
+  ): number {
+    const existente = db
+      .prepare("SELECT id FROM contorno_variantes WHERE grupo_id = ? AND lower(nombre) = lower(?)")
+      .get(grupoId, nombre) as { id: number } | undefined;
+    if (existente) return existente.id;
+    return Number(
+      db
+        .prepare(
+          "INSERT INTO contorno_variantes (grupo_id, nombre, suplemento_centavos, extra_centavos, activo) VALUES (?, ?, ?, ?, 1)",
+        )
+        .run(grupoId, nombre, suplementoCentavos, extraCentavos).lastInsertRowid,
+    );
+  }
+
+  function producto(nombre: string): number | null {
+    return (db.prepare("SELECT id FROM productos WHERE lower(nombre) = lower(?)").get(nombre) as { id: number } | undefined)?.id ?? null;
+  }
+
+  function configurarSiVacio(
+    productoId: number | null,
+    slots: Array<{ posicion: number; nombre: string; permiteExtra: boolean; grupoIds: number[] }>,
+  ) {
+    if (!productoId) return;
+    const cantidad = db.prepare("SELECT count(*) AS c FROM plato_slots WHERE producto_id = ?").get(productoId) as { c: number };
+    if (cantidad.c > 0) return;
+    const insertSlot = db.prepare(
+      "INSERT INTO plato_slots (producto_id, posicion, nombre, permite_extra) VALUES (?, ?, ?, ?)",
+    );
+    const insertGrupo = db.prepare("INSERT INTO plato_slot_grupos (slot_id, grupo_id) VALUES (?, ?)");
+    for (const slot of slots) {
+      const slotId = Number(
+        insertSlot.run(productoId, slot.posicion, slot.nombre, slot.permiteExtra ? 1 : 0).lastInsertRowid,
+      );
+      for (const grupoId of slot.grupoIds) insertGrupo.run(slotId, grupoId);
+    }
+  }
+
+  db.transaction(() => {
+    const proteina = grupo("Proteína");
+    const carbohidrato = grupo("Carbohidrato");
+    const ensalada = grupo("Ensalada");
+    const tipoExtra = grupo("Tipo de extra");
+
+    variante(proteina, "Pollo", 0, 1500);
+    variante(proteina, "Carne", 500, 2000);
+    variante(proteina, "Longaniza", 300, 1800);
+    variante(carbohidrato, "Papas fritas", 0, 1000);
+    variante(carbohidrato, "Arroz", 0, 800);
+    variante(carbohidrato, "Puré", 0, 800);
+    variante(ensalada, "Ensalada rusa", 0, 700);
+    variante(ensalada, "Ensalada rallada", 0, 700);
+    variante(tipoExtra, "Pollo", 1500, 0);
+    variante(tipoExtra, "Carne", 2000, 0);
+    variante(tipoExtra, "Longaniza", 1800, 0);
+
+    configurarSiVacio(producto("Menú del día"), [
+      { posicion: 1, nombre: "Proteína", permiteExtra: true, grupoIds: [proteina] },
+      { posicion: 2, nombre: "Contorno", permiteExtra: false, grupoIds: [carbohidrato] },
+      { posicion: 3, nombre: "Segundo contorno", permiteExtra: true, grupoIds: [carbohidrato, ensalada] },
+    ]);
+    configurarSiVacio(producto("Extra"), [
+      { posicion: 1, nombre: "Tipo de extra", permiteExtra: false, grupoIds: [tipoExtra] },
+    ]);
+  })();
 }

@@ -3,7 +3,13 @@ export type BorradorOrden = {
   mesaId?: number;
   cuentaId?: number;
   claveIdempotencia: string;
-  lineas: Array<{ productoId: number; cantidad: number; nota: string }>;
+  lineas: Array<{
+    productoId: number;
+    cantidad: number;
+    nota: string;
+    contornos?: Array<{ slotPosicion: number; varianteId: number }>;
+    contornosTexto?: string;
+  }>;
   indicaciones: string;
   actualizadoEn: string;
 };
@@ -60,7 +66,23 @@ function parsearBorrador(raw: unknown): BorradorOrden | null {
     if (!esEnteroPositivo(l.productoId)) return null;
     if (!esCantidadValida(l.cantidad)) return null;
     if (typeof l.nota !== "string") return null;
-    lineas.push({ productoId: l.productoId, cantidad: l.cantidad, nota: l.nota });
+    const linea: BorradorOrden["lineas"][number] = { productoId: l.productoId, cantidad: l.cantidad, nota: l.nota };
+    if (l.contornos !== undefined) {
+      if (!Array.isArray(l.contornos)) return null;
+      const contornos: Array<{ slotPosicion: number; varianteId: number }> = [];
+      for (const seleccion of l.contornos) {
+        if (typeof seleccion !== "object" || seleccion === null) return null;
+        const s = seleccion as Record<string, unknown>;
+        if (!esEnteroPositivo(s.slotPosicion) || !esEnteroPositivo(s.varianteId)) return null;
+        contornos.push({ slotPosicion: s.slotPosicion, varianteId: s.varianteId });
+      }
+      linea.contornos = contornos;
+    }
+    if (l.contornosTexto !== undefined) {
+      if (typeof l.contornosTexto !== "string") return null;
+      linea.contornosTexto = l.contornosTexto;
+    }
+    lineas.push(linea);
   }
 
   const borrador: BorradorOrden = {

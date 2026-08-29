@@ -1,12 +1,11 @@
 import { Plus, Trash2 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { ejecutarAccionModal } from "../lib/flujo-cuentas.ts";
-import { Button } from "../components/ui/button.tsx";
-import { Dialog, DialogContent, DialogTitle } from "../components/ui/dialog.tsx";
-import { Input } from "../components/ui/input.tsx";
-import { Label } from "../components/ui/label.tsx";
-import { Select, SelectItem } from "../components/ui/select.tsx";
-import { Textarea } from "../components/ui/textarea.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import { Select } from "@/components/ui/select.tsx";
+import { Textarea } from "@/components/ui/textarea.tsx";
 import { PinPad } from "./PinPad.tsx";
 import type { OrdenCuentaUi } from "./CuentaMesa.tsx";
 import type { ProductoCarta } from "./ConstructorOrden.tsx";
@@ -180,93 +179,105 @@ export function ModalEditarOrden({
         <DialogContent className="correccion-modal">
           <DialogTitle>{modo === "anular" ? "Anular" : "Editar"} orden #{orden.numero}</DialogTitle>
           <div className="correccion-modal__lineas">
-            {lineas.map((linea) => (
-              <div className="constructor-linea" key={linea.idUi}>
-                <Select
-                  aria-label="Producto"
-                  value={String(linea.productoId)}
-                  disabled={modo === "anular"}
-                  onValueChange={(value) =>
-                    setLineas((actuales) =>
-                      actuales.map((item) =>
-                        item.idUi === linea.idUi ? { ...item, productoId: Number(value) } : item,
-                      ),
-                    )
-                  }
-                >
-                  {productos.map((producto) => (
-                    <SelectItem key={producto.id} value={String(producto.id)}>
-                      {producto.nombre}
-                    </SelectItem>
-                  ))}
-                </Select>
-                <div className="modal-cantidad">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    aria-label="Quitar una unidad"
-                    disabled={modo === "anular" || linea.cantidad === 0}
-                    onClick={() =>
-                      setLineas((actuales) =>
-                        actuales.map((item) =>
-                          item.idUi === linea.idUi ? { ...item, cantidad: Math.max(0, item.cantidad - 1) } : item,
-                        ),
-                      )
-                    }
-                  >
-                    −
-                  </Button>
-                  <strong>{linea.cantidad}</strong>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    aria-label="Agregar una unidad"
-                    disabled={modo === "anular"}
-                    onClick={() =>
-                      setLineas((actuales) =>
-                        actuales.map((item) =>
-                          item.idUi === linea.idUi ? { ...item, cantidad: item.cantidad + 1 } : item,
-                        ),
-                      )
-                    }
-                  >
-                    +
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="icono-secundario"
-                    title="Dejar línea en cero"
-                    disabled={modo === "anular"}
-                    onClick={() =>
-                      setLineas((actuales) =>
-                        actuales.map((item) => (item.idUi === linea.idUi ? { ...item, cantidad: 0 } : item)),
-                      )
-                    }
-                  >
-                    <Trash2 size={18} aria-hidden="true" />
-                  </Button>
+            {lineas.map((linea) => {
+              const nombreProducto =
+                productos.find((producto) => producto.id === linea.productoId)?.nombre ?? "el producto";
+              return (
+                <div className="correccion-linea" key={linea.idUi}>
+                  <div className="constructor-linea correccion-linea__principal">
+                    <Select
+                      aria-label="Producto"
+                      value={linea.productoId}
+                      disabled={modo === "anular"}
+                      onChange={(event) =>
+                        setLineas((actuales) =>
+                          actuales.map((item) =>
+                            item.idUi === linea.idUi ? { ...item, productoId: Number(event.target.value) } : item,
+                          ),
+                        )
+                      }
+                    >
+                      {productos.map((producto) => (
+                        <option key={producto.id} value={producto.id}>
+                          {producto.nombre}
+                        </option>
+                      ))}
+                    </Select>
+                    <div className="modal-cantidad">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label="Quitar una unidad"
+                        disabled={modo === "anular" || linea.cantidad === 0}
+                        onClick={() =>
+                          setLineas((actuales) =>
+                            actuales.map((item) =>
+                              item.idUi === linea.idUi ? { ...item, cantidad: Math.max(0, item.cantidad - 1) } : item,
+                            ),
+                          )
+                        }
+                      >
+                        −
+                      </Button>
+                      <strong>{linea.cantidad}</strong>
+                      <Button
+                        type="button"
+                        size="icon"
+                        aria-label="Agregar una unidad"
+                        disabled={modo === "anular"}
+                        onClick={() =>
+                          setLineas((actuales) =>
+                            actuales.map((item) =>
+                              item.idUi === linea.idUi ? { ...item, cantidad: item.cantidad + 1 } : item,
+                            ),
+                          )
+                        }
+                      >
+                        +
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="icono-secundario"
+                        title="Dejar línea en cero"
+                        disabled={modo === "anular"}
+                        onClick={() =>
+                          setLineas((actuales) =>
+                            actuales.map((item) => (item.idUi === linea.idUi ? { ...item, cantidad: 0 } : item)),
+                          )
+                        }
+                      >
+                        <Trash2 size={18} aria-hidden="true" />
+                      </Button>
+                    </div>
+                  </div>
+                  {modo === "editar" ? (
+                    <label className="correccion-linea__indicacion">
+                      Indicaciones para {nombreProducto}
+                      <Input
+                        aria-label={`Indicaciones para ${nombreProducto}`}
+                        placeholder="Ej.: sin crutones, bien caliente"
+                        value={linea.nota}
+                        onChange={(event) =>
+                          setLineas((actuales) =>
+                            actuales.map((item) =>
+                              item.idUi === linea.idUi ? { ...item, nota: event.target.value } : item,
+                            ),
+                          )
+                        }
+                      />
+                    </label>
+                  ) : null}
                 </div>
-                <Label>
-                  Nota del producto
-                  <Input
-                    value={linea.nota}
-                    disabled={modo === "anular"}
-                    onChange={(event) =>
-                      setLineas((actuales) =>
-                        actuales.map((item) => (item.idUi === linea.idUi ? { ...item, nota: event.target.value } : item)),
-                      )
-                    }
-                  />
-                </Label>
-              </div>
-            ))}
+              );
+            })}
           </div>
           {modo === "editar" ? (
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               onClick={() => {
                 const producto = productos[0];
                 if (!producto) return;
@@ -291,19 +302,19 @@ export function ModalEditarOrden({
               <Plus size={18} aria-hidden="true" /> Agregar producto
             </Button>
           ) : null}
-          <Label>
-            Indicaciones del cliente
+          <label>
+            Indicaciones generales para cocina
             <Textarea
               value={indicaciones}
               disabled={modo === "anular"}
               onChange={(event) => setIndicaciones(event.target.value)}
             />
-          </Label>
+          </label>
           {requiereMotivo ? (
-            <Label>
+            <label>
               Justificación
               <Textarea value={motivo} onChange={(event) => setMotivo(event.target.value)} />
-            </Label>
+            </label>
           ) : null}
           <div className="correccion-diff">
             <h3>Vista previa de cambios</h3>
@@ -317,8 +328,8 @@ export function ModalEditarOrden({
               <p>Sin cambios</p>
             )}
           </div>
-          <div className="constructor-orden__acciones">
-            <Button type="button" variant="secondary" onClick={onCancelar} disabled={guardando}>
+          <DialogFooter className="constructor-orden__acciones">
+            <Button type="button" variant="outline" onClick={onCancelar} disabled={guardando}>
               Cancelar
             </Button>
             <Button
@@ -329,7 +340,7 @@ export function ModalEditarOrden({
             >
               Continuar y pedir PIN
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       {pidiendoPin ? (
