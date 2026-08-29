@@ -1,4 +1,9 @@
 import { useState } from "react";
+import { Button } from "@/components/ui/button.tsx";
+import { Card } from "@/components/ui/card.tsx";
+import { Checkbox } from "@/components/ui/checkbox.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import { Select } from "@/components/ui/select.tsx";
 import type { ProductoCarta } from "./ConstructorOrden.tsx";
 import type { SlotArmadoUi, VarianteArmadoUi } from "./ModalArmadoPlato.tsx";
 
@@ -90,13 +95,13 @@ export function Contornos({
           <h1>Contornos</h1>
           <p>Configura variantes globales y las opciones que acepta cada plato.</p>
         </div>
-        <button type="button" onClick={onVolver}>Volver</button>
+        <Button type="button" variant="outline" onClick={onVolver}>Volver</Button>
       </header>
 
       {error ? <p role="alert">{error}</p> : null}
 
       <div className="contornos-admin__columnas">
-        <article className="tarjeta">
+        <Card className="tarjeta">
           <h2>Grupos y variantes</h2>
           {grupos.length === 0 ? <p>No hay grupos de contornos.</p> : null}
           {grupos.map((grupo) => (
@@ -129,9 +134,9 @@ export function Contornos({
             <h3>Nuevo grupo</h3>
             <label>
               Nombre
-              <input value={grupoNombre} onChange={(event) => setGrupoNombre(event.target.value)} required />
+              <Input value={grupoNombre} onChange={(event) => setGrupoNombre(event.target.value)} required />
             </label>
-            <button type="submit" className="primario">Crear grupo</button>
+            <Button type="submit">Crear grupo</Button>
           </form>
 
           <form
@@ -147,22 +152,22 @@ export function Contornos({
             <h3>Nueva variante</h3>
             <label>
               Grupo
-              <select
+              <Select
                 value={variante.grupoId || ""}
                 onChange={(event) => setVariante({ ...variante, grupoId: Number(event.target.value) })}
                 required
               >
                 <option value="">Selecciona un grupo</option>
                 {grupos.map((grupo) => <option key={grupo.id} value={grupo.id}>{grupo.nombre}</option>)}
-              </select>
+              </Select>
             </label>
             <label>
               Nombre
-              <input value={variante.nombre} onChange={(event) => setVariante({ ...variante, nombre: event.target.value })} required />
+              <Input value={variante.nombre} onChange={(event) => setVariante({ ...variante, nombre: event.target.value })} required />
             </label>
             <label>
               Suplemento
-              <input
+              <Input
                 type="number"
                 min="0"
                 value={variante.suplementoCentavos}
@@ -171,25 +176,25 @@ export function Contornos({
             </label>
             <label>
               Precio extra
-              <input
+              <Input
                 type="number"
                 min="0"
                 value={variante.extraCentavos}
                 onChange={(event) => setVariante({ ...variante, extraCentavos: Number(event.target.value) })}
               />
             </label>
-            <button type="submit" className="primario">Crear variante</button>
+            <Button type="submit">Crear variante</Button>
           </form>
-        </article>
+        </Card>
 
-        <article className="tarjeta">
+        <Card className="tarjeta">
           <h2>Slots por plato</h2>
           <label>
             Producto
-            <select value={productoId || ""} onChange={(event) => elegirProducto(Number(event.target.value))}>
+            <Select value={productoId || ""} onChange={(event) => elegirProducto(Number(event.target.value))}>
               <option value="">Selecciona un producto</option>
               {productos.map((producto) => <option key={producto.id} value={producto.id}>{producto.nombre}</option>)}
-            </select>
+            </Select>
           </label>
 
           {productoId ? (
@@ -199,7 +204,7 @@ export function Contornos({
                   <legend>Slot {indice + 1}</legend>
                   <label>
                     Posición
-                    <input
+                    <Input
                       type="number"
                       min="1"
                       value={slot.posicion}
@@ -208,14 +213,13 @@ export function Contornos({
                   </label>
                   <label>
                     Nombre
-                    <input value={slot.nombre} onChange={(event) => cambiarSlot(indice, { nombre: event.target.value })} />
+                    <Input value={slot.nombre} onChange={(event) => cambiarSlot(indice, { nombre: event.target.value })} />
                   </label>
                   <div className="contornos-admin__checks">
                     <span>Grupos permitidos</span>
                     {grupos.map((grupo) => (
                       <label key={grupo.id}>
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={slot.grupoIds.includes(grupo.id)}
                           onChange={() => alternarGrupo(indice, grupo.id)}
                         />
@@ -224,21 +228,21 @@ export function Contornos({
                     ))}
                   </div>
                   <label>
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={slot.permiteExtra}
                       onChange={(event) => cambiarSlot(indice, { permiteExtra: event.target.checked })}
                     />
                     Permite extras
                   </label>
-                  <button type="button" className="peligro" onClick={() => setSlots(slots.filter((_, i) => i !== indice))}>
+                  <Button type="button" variant="destructive" onClick={() => setSlots(slots.filter((_, i) => i !== indice))}>
                     Quitar slot
-                  </button>
+                  </Button>
                 </fieldset>
               ))}
               <div className="form-odoo__acciones">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() =>
                     setSlots([
                       ...slots,
@@ -247,10 +251,9 @@ export function Contornos({
                   }
                 >
                   Agregar slot
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className="primario"
                   disabled={guardando}
                   onClick={() =>
                     ejecutar(async () => {
@@ -264,11 +267,11 @@ export function Contornos({
                   }
                 >
                   {guardando ? "Guardando…" : "Guardar slots"}
-                </button>
+                </Button>
               </div>
             </>
           ) : <p className="login-odoo__ayuda">Elige un producto para configurar su armado.</p>}
-        </article>
+        </Card>
       </div>
     </section>
   );

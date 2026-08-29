@@ -165,7 +165,7 @@ export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar
           <Button type="button" variant="outline" onClick={onCancelar}>
             Cancelar
           </Button>
-          <Button type="button" className="primario" size="lg" disabled={!completos} onClick={confirmar}>
+          <Button type="button" size="lg" disabled={!completos} onClick={confirmar}>
             <Check size={19} aria-hidden="true" /> Agregar a la orden
           </Button>
         </div>

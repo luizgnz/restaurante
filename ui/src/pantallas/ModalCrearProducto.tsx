@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button.tsx";
+import { DialogContent, DialogDescription, DialogFooter, DialogOverlay, DialogTitle } from "@/components/ui/dialog.tsx";
 import { CrearProducto, type Categoria, type CrearProductoProps } from "./CrearProducto.tsx";
 
 export type ModalCrearProductoProps = {
   abierto: boolean;
   categorias: Categoria[];
+  ingredientesDisponibles?: Array<{ id: number; nombre: string }>;
   error?: string;
   onGuardar: CrearProductoProps["onGuardar"];
   onCerrar: () => void;
 };
 
-export function ModalCrearProducto({ abierto, categorias, error = "", onGuardar, onCerrar }: ModalCrearProductoProps) {
+export function ModalCrearProducto({ abierto, categorias, ingredientesDisponibles = [], error = "", onGuardar, onCerrar }: ModalCrearProductoProps) {
   const [sucio, setSucio] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
 
@@ -45,11 +48,12 @@ export function ModalCrearProducto({ abierto, categorias, error = "", onGuardar,
 
   return (
     <>
-      <div className="modal-fondo" role="dialog" aria-modal="true" aria-label="Crear producto">
-        <div className="modal-caja crear-producto-modal">
-          <h2>Crear producto</h2>
+      <DialogOverlay role="dialog" aria-modal="true" aria-label="Crear producto">
+        <DialogContent className="crear-producto-modal">
+          <DialogTitle>Crear producto</DialogTitle>
           <CrearProducto
             categorias={categorias}
+            ingredientesDisponibles={ingredientesDisponibles}
             error={error}
             onGuardar={onGuardar}
             onCancelar={() => {
@@ -58,23 +62,23 @@ export function ModalCrearProducto({ abierto, categorias, error = "", onGuardar,
             }}
             onDirtyChange={setSucio}
           />
-        </div>
-      </div>
+        </DialogContent>
+      </DialogOverlay>
       {confirmando ? (
-        <div className="modal-fondo confirmar-descarte" role="alertdialog" aria-modal="true" aria-label="Confirmar descarte">
-          <div className="modal-caja">
-            <h2>¿Descartar el producto?</h2>
-            <p className="login-odoo__ayuda">Se perderán los datos capturados.</p>
-            <div className="form-odoo__acciones">
-              <button type="button" className="tactil" onClick={() => setConfirmando(false)}>
+        <DialogOverlay className="confirmar-descarte" role="alertdialog" aria-modal="true" aria-label="Confirmar descarte">
+          <DialogContent>
+            <DialogTitle>¿Descartar el producto?</DialogTitle>
+            <DialogDescription>Se perderán los datos capturados.</DialogDescription>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setConfirmando(false)}>
                 Seguir editando
-              </button>
-              <button type="button" className="peligro tactil" onClick={onCerrar}>
+              </Button>
+              <Button type="button" variant="destructive" onClick={onCerrar}>
                 Descartar
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </DialogOverlay>
       ) : null}
     </>
   );

@@ -54,4 +54,26 @@ describe("ticket del pedido", () => {
     expect(html).toContain("Toca un producto del menú para agregarlo");
     expect(html).toContain("disabled");
   });
+
+  it("organiza la carta con búsqueda y categorías", () => {
+    const html = renderToStaticMarkup(
+      createElement(ConstructorOrden, {
+        productos: [
+          { id: 1, nombre: "Hamburguesa", precio_centavos: 8900, armable: 8, categoria_id: 10, categoria_nombre: "Comida" },
+          { id: 2, nombre: "Jugo", precio_centavos: 2500, armable: 10, categoria_id: 20, categoria_nombre: "Bebidas" },
+          { id: 3, nombre: "Empanada", precio_centavos: 1800, armable: 10, categoria_id: 30, categoria_nombre: "Comida" },
+        ],
+        mesaFija: { id: 1, numero: 1 },
+        borrador: { version: 1, mesaId: 1, claveIdempotencia: "ticket-3", lineas: [], indicaciones: "", actualizadoEn: "2026-08-24T12:00:00.000Z" },
+        onCambiar: () => undefined,
+        onEnviar: async () => undefined,
+        onCancelar: () => undefined,
+      }),
+    );
+    expect(html).toContain('placeholder="Buscar producto"');
+    expect(html).toContain("Todas");
+    expect(html).toContain("Comida");
+    expect(html).toContain("Bebidas");
+    expect((html.match(/>Comida<\/button>/g) ?? []).length).toBe(1);
+  });
 });

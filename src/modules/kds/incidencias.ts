@@ -29,6 +29,8 @@ export type IncidenciaCocina = {
   mesa: number;
   ordenNumero: number;
   producto: string | null;
+  productoReemplazoId: number | null;
+  productoReemplazo: string | null;
 };
 
 type IncidenciaRow = {
@@ -46,12 +48,15 @@ type IncidenciaRow = {
   mesa: number;
   orden_numero: number;
   producto: string | null;
+  producto_reemplazo_id: number | null;
+  producto_reemplazo: string | null;
 };
 
 const SELECT_INCIDENCIA = `
   SELECT i.id, i.comanda_id, i.orden_id, i.comanda_linea_id, i.tipo, i.alcance,
          i.motivo, i.propuesta, i.estado, i.creada_en, i.respondida_en,
-         m.numero AS mesa, o.numero AS orden_numero, p.nombre AS producto
+         m.numero AS mesa, o.numero AS orden_numero, p.nombre AS producto,
+         i.producto_reemplazo_id, pr.nombre AS producto_reemplazo
   FROM cocina_incidencias i
   JOIN ordenes o ON o.id = i.orden_id
   JOIN cuentas cu ON cu.id = o.cuenta_id
@@ -59,6 +64,7 @@ const SELECT_INCIDENCIA = `
   LEFT JOIN comanda_lineas cl ON cl.id = i.comanda_linea_id
   LEFT JOIN orden_lineas ol ON ol.id = cl.orden_linea_id
   LEFT JOIN productos p ON p.id = ol.producto_id
+  LEFT JOIN productos pr ON pr.id = i.producto_reemplazo_id
 `;
 
 function deFila(row: IncidenciaRow): IncidenciaCocina {
@@ -77,6 +83,8 @@ function deFila(row: IncidenciaRow): IncidenciaCocina {
     mesa: row.mesa,
     ordenNumero: row.orden_numero,
     producto: row.producto,
+    productoReemplazoId: row.producto_reemplazo_id,
+    productoReemplazo: row.producto_reemplazo,
   };
 }
 
@@ -102,6 +110,7 @@ export function crearIncidenciaCocina(
     alcance: AlcanceIncidenciaCocina;
     motivo: string;
     propuesta?: string | null;
+    productoReemplazoId?: number | null;
   },
 ): IncidenciaCocina {
   if (input.tipo !== "rechazo" && input.tipo !== "sugerencia") {
@@ -112,6 +121,7 @@ export function crearIncidenciaCocina(
   }
   const motivo = texto(input.motivo, "motivo");
   const propuesta = input.tipo === "sugerencia" ? texto(input.propuesta, "propuesta") : null;
+  const productoReemplazoId = input.tipo === "sugerencia" && input.alcance === "linea" ? input.productoReemplazoId ?? null : null;
 
   return db.transaction(() => {
     const comanda = db
@@ -125,13 +135,23 @@ export function crearIncidenciaCocina(
     if (input.alcance === "linea") {
       if (!input.comandaLineaId) throw new IncidenciaCocinaError("linea_requerida", "Selecciona un producto");
       const linea = db
-        .prepare("SELECT id, etapa, orden_linea_id FROM comanda_lineas WHERE id = ? AND comanda_id = ?")
+        .prepare(`SELECT cl.id, cl.etapa, cl.orden_linea_id, ol.producto_id
+                  FROM comanda_lineas cl
+                  JOIN orden_lineas ol ON ol.id = cl.orden_linea_id
+                  WHERE cl.id = ? AND cl.comanda_id = ?`)
         .get(input.comandaLineaId, input.comandaId) as
-        | { id: number; etapa: string; orden_linea_id: number | null }
+        | { id: number; etapa: string; orden_linea_id: number | null; producto_id: number }
         | undefined;
       if (!linea?.orden_linea_id) throw new IncidenciaCocinaError("linea_inexistente", "El producto no pertenece a la orden");
       if (linea.etapa !== "por_preparar") {
         throw new IncidenciaCocinaError("producto_ya_iniciado", "El producto ya comenzó su preparación");
+      }
+      if (productoReemplazoId != null) {
+        if (productoReemplazoId === linea.producto_id) {
+          throw new IncidenciaCocinaError("reemplazo_invalido", "El reemplazo debe ser un producto diferente");
+        }
+        const reemplazo = db.prepare("SELECT id FROM productos WHERE id = ? AND activo = 1 AND disponible_en_pos = 1").get(productoReemplazoId);
+        if (!reemplazo) throw new IncidenciaCocinaError("reemplazo_invalido", "El producto de reemplazo no está disponible");
       }
       comandaLineaId = linea.id;
     } else {
@@ -160,8 +180,8 @@ export function crearIncidenciaCocina(
       db
         .prepare(
           `INSERT INTO cocina_incidencias
-            (comanda_id, orden_id, comanda_linea_id, tipo, alcance, motivo, propuesta, estado, creada_en)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'pendiente', ?)`,
+            (comanda_id, orden_id, comanda_linea_id, tipo, alcance, motivo, propuesta, producto_reemplazo_id, estado, creada_en)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?)`,
         )
         .run(
           input.comandaId,
@@ -171,11 +191,29 @@ export function crearIncidenciaCocina(
           input.alcance,
           motivo,
           propuesta,
+          productoReemplazoId,
           new Date().toISOString(),
         ).lastInsertRowid,
     );
     return incidenciaPorId(db, id);
   })();
+}
+
+export function prepararSustitucion(
+  db: Database.Database,
+  id: number,
+): { incidencia: IncidenciaCocina; linea: LineaEfectiva; productoReemplazoId: number } {
+  const incidencia = incidenciaPorId(db, id);
+  if (incidencia.estado !== "pendiente" || incidencia.tipo !== "sugerencia") {
+    throw new IncidenciaCocinaError("incidencia_resuelta", "La sugerencia ya fue respondida");
+  }
+  if (incidencia.alcance !== "linea" || !incidencia.comandaLineaId || !incidencia.productoReemplazoId) {
+    throw new IncidenciaCocinaError("sustitucion_no_estructurada", "La sugerencia no tiene un producto de reemplazo");
+  }
+  const objetivo = db.prepare("SELECT orden_linea_id FROM comanda_lineas WHERE id = ?").get(incidencia.comandaLineaId) as { orden_linea_id: number | null } | undefined;
+  const linea = versionEfectivaOrden(db, incidencia.ordenId).find((actual) => actual.ordenLineaId === objetivo?.orden_linea_id);
+  if (!linea) throw new IncidenciaCocinaError("linea_inexistente", "El producto ya no forma parte de la orden");
+  return { incidencia, linea, productoReemplazoId: incidencia.productoReemplazoId };
 }
 
 export function listarIncidenciasMesero(db: Database.Database): IncidenciaCocina[] {

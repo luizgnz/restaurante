@@ -17,6 +17,8 @@ import {
   Type,
   Users,
 } from "lucide-react";
+import { Button } from "@/components/ui/button.tsx";
+import { Input } from "@/components/ui/input.tsx";
 import { MESA_LADO, ordenarMesas } from "../../../src/modules/salon/orden.ts";
 import type { Mesa, Piso } from "./Plano.tsx";
 
@@ -46,15 +48,17 @@ function Boton({
   peligro?: boolean;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant={peligro ? "destructive" : "outline"}
+      size="icon"
       className={`tactil boton-herramienta${peligro ? " peligro" : ""}`}
       title={children}
       aria-label={children}
       onClick={onClick}
     >
       {icono}
-    </button>
+    </Button>
   );
 }
 
@@ -78,7 +82,7 @@ function SubirImagen({ children, onImagen }: { children: string; onImagen: (data
   return (
     <label className="tactil boton-herramienta" title={children} aria-label={children}>
       <Imagen size={20} aria-hidden="true" />
-      <input
+      <Input
         type="file"
         accept="image/*"
         hidden
@@ -295,9 +299,10 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
         <div className="salon-odoo__pisos-izq" />
         <div className="salon-odoo__pisos-centro" role="tablist" aria-label="Pisos">
           {pisos.map((p) => (
-            <button
+            <Button
               key={p.id}
               type="button"
+              variant={p.id === pisoId ? "secondary" : "ghost"}
               role="tab"
               aria-selected={p.id === pisoId}
               className={`salon-odoo__piso${p.id === pisoId ? " is-on" : ""} tactil`}
@@ -307,16 +312,15 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
               }}
             >
               {p.nombre}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="salon-odoo__pisos-der">
-          <button type="button" className="tactil" onClick={onDescartar}>
+          <Button type="button" variant="outline" onClick={onDescartar}>
             Descartar
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="primario tactil"
             onClick={() => {
               const msg = avisoUnicidad();
               if (msg) {
@@ -339,7 +343,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
             }}
           >
             Guardar
-          </button>
+          </Button>
         </div>
       </header>
       {aviso ? <p role="alert">{aviso}</p> : null}
@@ -348,7 +352,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
         <fieldset className="editor-grupo" disabled={Boolean(seleccion)}>
           <legend>Opciones de piso</legend>
           <Campo icono={<Type size={20} aria-hidden="true" />} titulo="Nombre del piso">
-            <input
+            <Input
               className="editor-campo__nombre"
               size={16}
               maxLength={24}
@@ -357,7 +361,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
             />
           </Campo>
           <Campo icono={<Palette size={20} aria-hidden="true" />} titulo="Color de fondo del piso">
-            <input
+            <Input
               className="editor-campo__color"
               type="color"
               value={piso?.fondo_color || "#5c584c"}
@@ -393,7 +397,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
         <fieldset className="editor-grupo" disabled={!seleccion}>
           <legend>Opciones de mesa</legend>
           <Campo icono={<Hash size={20} aria-hidden="true" />} titulo="Número de mesa">
-            <input
+            <Input
               className="editor-campo__numero"
               inputMode="numeric"
               size={3}
@@ -403,7 +407,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
             />
           </Campo>
           <Campo icono={<Users size={20} aria-hidden="true" />} titulo="Clientes">
-            <input
+            <Input
               className="editor-campo__clientes"
               inputMode="numeric"
               size={2}
@@ -413,7 +417,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
             />
           </Campo>
           <Campo icono={<Palette size={20} aria-hidden="true" />} titulo="Color de la mesa">
-            <input
+            <Input
               className="editor-campo__color"
               type="color"
               value={seleccion?.fondo_color || "#ece7dc"}
@@ -465,9 +469,10 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
         onPointerUp={() => setArrastre(null)}
       >
         {visibles.map((m) => (
-          <button
+          <Button
             key={m.id}
             type="button"
+            variant="ghost"
             className={`mesa-odoo mesa-odoo--${m.forma} mesa-odoo--libre tactil ${sel === m.id ? "is-on" : ""}`}
             style={{
               left: `${m.pos_x}%`,
@@ -482,7 +487,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
           >
             <span className="mesa-odoo__num">Mesa {m.numero}</span>
             <span className="mesa-odoo__meta">{m.asientos} asientos</span>
-          </button>
+          </Button>
         ))}
       </div>
     </section>

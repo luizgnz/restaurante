@@ -1,4 +1,4 @@
-import { Layers3, LayoutDashboard, LayoutGrid, Plus, Shapes } from "lucide-react";
+import { BookOpen, Layers3, LayoutDashboard, LayoutGrid, Plus, Shapes } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
 
@@ -6,17 +6,18 @@ type Props = {
   onCrearProducto: () => void;
   onCategorias: () => void;
   onContornos: () => void;
+  onRecetas?: () => void;
   onEditarMapa: () => void;
   onMesas: () => void;
 };
 
-export function Backend({ onCrearProducto, onCategorias, onContornos, onEditarMapa, onMesas }: Props) {
+export function Backend({ onCrearProducto, onCategorias, onContornos, onRecetas, onEditarMapa, onMesas }: Props) {
   return (
     <section className="page-shell backend-odoo">
       <header className="page-header">
         <div>
-          <span className="page-eyebrow">Backend · Administración</span>
-          <h1>Configuración del local</h1>
+          <span className="page-eyebrow">Administración</span>
+          <h1>Administración del restaurante</h1>
           <p>Gestiona la carta, su estructura y la distribución del salón.</p>
         </div>
         <Button type="button" variant="outline" onClick={onMesas}>
@@ -38,6 +39,11 @@ export function Backend({ onCrearProducto, onCategorias, onContornos, onEditarMa
           <Layers3 size={24} aria-hidden="true" />
           <div><h2>Contornos</h2><p>Configura opciones, suplementos y extras.</p></div>
           <Button type="button" variant="outline" onClick={onContornos}>Configurar</Button>
+        </Card>
+        <Card className="backend-atajo">
+          <BookOpen size={24} aria-hidden="true" />
+          <div><h2>Recetas</h2><p>Edita ingredientes y cantidades de cada plato.</p></div>
+          <Button type="button" variant="outline" onClick={onRecetas} disabled={!onRecetas}>Editar recetas</Button>
         </Card>
         <Card className="backend-atajo">
           <LayoutGrid size={24} aria-hidden="true" />

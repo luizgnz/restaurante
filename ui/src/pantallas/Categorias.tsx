@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowLeft, Plus, Shapes } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
+import { Input } from "@/components/ui/input.tsx";
 
 export type CategoriaUi = { id: number; nombre: string };
 
@@ -42,7 +43,7 @@ export function Categorias({ categorias, onCrear, onVolver }: Props) {
         <h2>Nueva categoría</h2>
         <label>
           Nombre
-          <input value={nombre} placeholder="Ej: Postres" onChange={(event) => setNombre(event.target.value)} />
+          <Input value={nombre} placeholder="Ej: Postres" onChange={(event) => setNombre(event.target.value)} />
         </label>
         <div className="form-odoo__acciones">
           <Button type="button" disabled={!nombre.trim() || creando} onClick={crear}>

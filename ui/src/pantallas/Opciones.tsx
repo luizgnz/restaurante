@@ -30,6 +30,7 @@ type RolClave = "administrador" | "mesero" | "cocina" | "caja" | "inventario";
 type RolUi = { clave: RolClave; nombre: string; descripcion: string };
 type UsuarioUi = { id: number; nombre: string; usuario: string | null; activo: boolean; roles: RolClave[] };
 type EstadoRed = { habilitado: boolean; nombre: string; puerto: number; urls: string[]; salud: string };
+type TrabajoImpresion = { id: number; tipo: string; estado: string; intentos: number; ultimoError: string | null; creadoEn: string };
 type Props = { valores: OpcionesValores; onCambiar: (patch: Partial<OpcionesValores>) => void };
 
 function leerImagen(file: File, cb: (url: string) => void) {
@@ -143,13 +144,13 @@ function GestionUsuarios() {
       <header><div><span className="page-eyebrow">{form.id ? "Editar usuario" : "Nuevo usuario"}</span><h3>{form.id ? form.nombre : "Agregar al equipo"}</h3></div><Button type="button" size="icon" variant="ghost" aria-label="Cerrar editor" onClick={() => setAbierto(false)}><XCircle size={20} /></Button></header>
       <div className="user-editor__fields">
         <label>Nombre<input value={form.nombre} onChange={(event) => setForm({ ...form, nombre: event.target.value })} /></label>
-        <label>Usuario de acceso<input autoCapitalize="none" value={form.usuario} onChange={(event) => setForm({ ...form, usuario: event.target.value })} placeholder="Opcional para mesero o cocina" /></label>
+        <label>Usuario de acceso<input autoCapitalize="none" value={form.usuario} onChange={(event) => setForm({ ...form, usuario: event.target.value })} placeholder="Obligatorio para iniciar sesión" /></label>
         <label>{form.id ? "Nuevo PIN" : "PIN"}<input type="password" inputMode="numeric" value={form.pin} onChange={(event) => setForm({ ...form, pin: event.target.value })} placeholder={form.id ? "Dejar vacío para conservar" : "Obligatorio"} /></label>
-        <label>{form.id ? "Nueva contraseña" : "Contraseña"}<input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Necesaria para administradores" /></label>
+        <label>{form.id ? "Nueva contraseña" : "Contraseña"}<input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder={form.id ? "Dejar vacío para conservar" : "Obligatoria para iniciar sesión"} /></label>
       </div>
       <fieldset className="role-picker"><legend>Roles</legend>{roles.map((rol) => <label key={rol.clave}><input type="checkbox" checked={form.roles.includes(rol.clave)} onChange={(event) => setForm({ ...form, roles: event.target.checked ? [...form.roles, rol.clave] : form.roles.filter((item) => item !== rol.clave) })} /><span><strong>{rol.nombre}</strong><small>{rol.descripcion}</small></span></label>)}</fieldset>
       {form.id ? <label className="switch-tablet"><input type="checkbox" checked={form.activo} onChange={(event) => setForm({ ...form, activo: event.target.checked })} />Usuario activo</label> : null}
-      <div className="user-editor__actions"><Button type="button" variant="outline" onClick={() => setAbierto(false)}>Cancelar</Button><Button type="button" disabled={guardando || !form.nombre.trim() || !form.roles.length || (!form.id && !form.pin.trim())} onClick={guardar}>{guardando ? "Guardando…" : "Guardar usuario"}</Button></div>
+      <div className="user-editor__actions"><Button type="button" variant="outline" onClick={() => setAbierto(false)}>Cancelar</Button><Button type="button" disabled={guardando || !form.nombre.trim() || !form.usuario.trim() || !form.roles.length || (!form.id && (!form.pin.trim() || !form.password.trim()))} onClick={guardar}>{guardando ? "Guardando…" : "Guardar usuario"}</Button></div>
     </Card> : null}
     {estado ? <p className="settings-feedback" role="status">{estado}</p> : null}
   </fieldset>;
@@ -172,6 +173,51 @@ function EstadoServidor({ valores, onCambiar }: Props) {
   </fieldset>;
 }
 
+function ColaImpresion() {
+  const [trabajos, setTrabajos] = useState<TrabajoImpresion[]>([]);
+  const [estado, setEstado] = useState("");
+  const [ocupado, setOcupado] = useState<number | null>(null);
+  async function cargar() {
+    setEstado("");
+    try {
+      const data = await api<{ trabajos: TrabajoImpresion[] }>("/api/impresion/trabajos");
+      setTrabajos(data.trabajos);
+    } catch (error) {
+      setEstado(error instanceof Error ? error.message : String(error));
+    }
+  }
+  useEffect(() => { cargar(); }, []);
+  async function reintentar(id: number) {
+    setOcupado(id); setEstado("");
+    try {
+      await api(`/api/impresion/trabajos/${id}/reintentar`, { method: "POST" });
+      await cargar();
+    } catch (error) {
+      setEstado(error instanceof Error ? error.message : String(error));
+    } finally {
+      setOcupado(null);
+    }
+  }
+  return <Card className="print-queue">
+    <header className="settings-section-heading"><div><h3>Cola de impresión</h3><p>Últimos trabajos enviados y errores que necesitan atención.</p></div><Button type="button" size="icon" variant="outline" aria-label="Actualizar cola" onClick={cargar}><RefreshCw size={18} /></Button></header>
+    <div className="print-queue__list">
+      {trabajos.map((trabajo) => <div className={`print-queue__row is-${trabajo.estado}`} key={trabajo.id}>
+        <Printer size={18} aria-hidden="true" />
+        <div><strong>#{trabajo.id} · {trabajo.tipo}</strong><span>{new Date(trabajo.creadoEn).toLocaleString("es")} · {trabajo.intentos} intento(s)</span>{trabajo.ultimoError ? <em>{trabajo.ultimoError}</em> : null}</div>
+        <BadgeEstadoImpresion estado={trabajo.estado} conError={Boolean(trabajo.ultimoError)} />
+        {trabajo.ultimoError || trabajo.estado !== "sent" ? <Button type="button" size="sm" variant="outline" disabled={ocupado === trabajo.id} onClick={() => reintentar(trabajo.id)}>{ocupado === trabajo.id ? "Reintentando…" : "Reintentar"}</Button> : null}
+      </div>)}
+      {trabajos.length === 0 ? <p className="login-odoo__ayuda">Todavía no hay trabajos de impresión.</p> : null}
+    </div>
+    {estado ? <p role="alert">{estado}</p> : null}
+  </Card>;
+}
+
+function BadgeEstadoImpresion({ estado, conError }: { estado: string; conError: boolean }) {
+  const texto = estado === "sent" ? "Enviado" : conError || estado === "failed" ? "Con error" : "Pendiente";
+  return <span className={`settings-status ${estado === "sent" ? "is-ok" : "is-error"}`}>{texto}</span>;
+}
+
 export function Opciones({ valores, onCambiar }: Props) {
   return <section className="page-shell form-odoo opciones-page">
     <header className="page-header"><div><span className="page-eyebrow">Administración del sistema</span><h1>Opciones</h1><p>Configura el restaurante, impresión, permisos y dispositivos conectados.</p></div></header>
@@ -191,7 +237,7 @@ export function Opciones({ valores, onCambiar }: Props) {
     <fieldset className="form-odoo__tarjeta settings-card settings-card--wide">
       <legend>Seguridad y autorizaciones</legend>
       <div className="security-grid">
-        <label className="switch-tablet"><input type="checkbox" checked={valores.pin_habilitado} onChange={(event) => onCambiar({ pin_habilitado: event.target.checked })} />Solicitar contraseña</label>
+        <label className="switch-tablet"><input type="checkbox" checked={valores.pin_habilitado} onChange={(event) => onCambiar({ pin_habilitado: event.target.checked })} />Solicitar PIN</label>
         {valores.pin_habilitado ? <label>Momento<select value={valores.pin_momento} onChange={(event) => onCambiar({ pin_momento: event.target.value as OpcionesValores["pin_momento"] })}><option value="crear_orden">Antes de crear la orden</option><option value="enviar">Al hacer clic en Enviar</option></select></label> : null}
         <label className="switch-tablet"><input type="checkbox" checked={valores.confirmar_comanda} onChange={(event) => onCambiar({ confirmar_comanda: event.target.checked })} />Confirmar comanda antes de enviar</label>
         <label className="switch-tablet"><input type="checkbox" checked={valores.precuenta_obligatoria_antes_de_caja} onChange={(event) => onCambiar({ precuenta_obligatoria_antes_de_caja: event.target.checked })} />Pedir precuenta antes de cerrar la cuenta</label>
@@ -207,6 +253,7 @@ export function Opciones({ valores, onCambiar }: Props) {
         <SeccionImpresora tipo="comanda" impresora={valores.impresora_comanda} plantilla={valores.plantilla_comanda} onImpresora={(impresora_comanda) => onCambiar({ impresora_comanda })} onPlantilla={(plantilla_comanda) => onCambiar({ plantilla_comanda })} />
         <SeccionImpresora tipo="boleta" impresora={valores.impresora_boleta} plantilla={valores.plantilla_boleta} onImpresora={(impresora_boleta) => onCambiar({ impresora_boleta })} onPlantilla={(plantilla_boleta) => onCambiar({ plantilla_boleta })} />
       </div>
+      <ColaImpresion />
       <p className="settings-callout is-warning"><ShieldCheck size={18} />El comprobante impreso por el sistema no es automáticamente una boleta tributaria. Para validez fiscal se debe integrar el proveedor de facturación o servicio tributario correspondiente.</p>
     </fieldset>
     <GestionUsuarios />

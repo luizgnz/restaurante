@@ -1,4 +1,4 @@
-import { ChevronDown, Search, Send, ShoppingBag, Trash2, X } from "lucide-react";
+import { ChevronDown, MessageSquarePlus, Search, Send, ShoppingBag, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import type { CSSProperties } from "react";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -29,6 +29,7 @@ export type ConfigContornosUi = {
 };
 
 export type ConstructorOrdenProps = {
+  uiVersion?: "actual" | "nueva";
   mesaFija?: { id: number; numero: number };
   cuentaId?: number;
   mesasSeleccionables?: Array<{ id: number; numero: number; estado: "libre" | "ocupada" }>;
@@ -89,6 +90,7 @@ export function revelarProducto(
 }
 
 export function ConstructorOrden({
+  uiVersion = "actual",
   mesaFija,
   cuentaId,
   mesasSeleccionables = [],
@@ -105,6 +107,8 @@ export function ConstructorOrden({
   const [armado, setArmado] = useState<{ producto: ProductoCarta; slots: SlotArmadoUi[] } | null>(null);
   const [resumenMovilAbierto, setResumenMovilAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  const [busquedaAbierta, setBusquedaAbierta] = useState(false);
+  const [indicacionesAbiertas, setIndicacionesAbiertas] = useState(Boolean(borrador.indicaciones));
   const [categoria, setCategoria] = useState<string | "todas">("todas");
   const titulo = mesaFija ? `Nueva orden · Mesa #${mesaFija.numero}` : "Nueva orden";
   const mesaId = mesaFija?.id ?? borrador.mesaId;
@@ -156,7 +160,8 @@ export function ConstructorOrden({
         return;
       }
     }
-    mostrarProducto(producto.id);
+    if (uiVersion === "nueva") sumarProducto(producto.id);
+    else mostrarProducto(producto.id);
   }
 
   function confirmarArmado(selecciones: SeleccionArmado[], resumen: string) {
@@ -227,7 +232,7 @@ export function ConstructorOrden({
               type="button"
               variant="ghost"
               size="icon"
-              className="constructor-orden__cerrar-movil"
+              className={`constructor-orden__cerrar-movil${uiVersion === "nueva" ? " md:hidden" : ""}`}
               aria-label="Cerrar orden"
               onClick={() => setResumenMovilAbierto(false)}
             >
@@ -261,22 +266,30 @@ export function ConstructorOrden({
           {lineasPersistibles(lineasUi).length === 0 ? (
             <p className="login-odoo__ayuda">Toca un producto del menú para agregarlo.</p>
           ) : null}
-          <label>
-            Indicaciones del cliente
-            <Textarea
-              className="pedido-nota-area"
-              placeholder="Opcional. Va a cocina."
-              value={borrador.indicaciones}
-              onChange={(event) => cambiar({ indicaciones: event.target.value })}
-            />
-          </label>
+          {uiVersion === "nueva" && !indicacionesAbiertas ? (
+            <Button type="button" variant="ghost" size="sm" className="constructor-orden__agregar-nota" onClick={() => setIndicacionesAbiertas(true)}>
+              <MessageSquarePlus size={17} aria-hidden="true" /> Agregar indicaciones
+            </Button>
+          ) : (
+            <label className="constructor-orden__indicaciones">
+              {uiVersion === "nueva" ? "Indicaciones para cocina" : "Indicaciones del cliente"}
+              <Textarea
+                className="pedido-nota-area"
+                placeholder={uiVersion === "nueva" ? "Ej.: sin sal, alergia o preparación especial" : "Opcional. Va a cocina."}
+                value={borrador.indicaciones}
+                onChange={(event) => cambiar({ indicaciones: event.target.value })}
+              />
+              {uiVersion === "nueva" && !borrador.indicaciones ? (
+                <Button type="button" variant="ghost" size="sm" onClick={() => setIndicacionesAbiertas(false)}>Ocultar</Button>
+              ) : null}
+            </label>
+          )}
           <div className="constructor-orden__acciones">
             <Button type="button" variant="outline" onClick={onCancelar}>
               Cancelar
             </Button>
             <Button
               type="button"
-              className="primario"
               disabled={!mesaId || lineasPersistibles(lineasUi).length === 0 || enviando}
               onClick={enviar}
             >
@@ -294,11 +307,22 @@ export function ConstructorOrden({
             <Badge variant="secondary">{productos.length} disponibles</Badge>
           </div>
           <div className="constructor-catalogo__herramientas">
-            <label className="inventario-busqueda">
-              <Search size={18} aria-hidden="true" />
-              <span className="sr-only">Buscar producto</span>
-              <Input type="search" value={busqueda} placeholder="Buscar producto" onChange={(event) => setBusqueda(event.target.value)} />
-            </label>
+            {uiVersion === "nueva" && !busquedaAbierta ? (
+              <Button type="button" variant="outline" size="icon" aria-label="Buscar producto" title="Buscar producto" onClick={() => setBusquedaAbierta(true)}>
+                <Search size={18} aria-hidden="true" />
+              </Button>
+            ) : (
+              <label className="inventario-busqueda">
+                <Search size={18} aria-hidden="true" />
+                <span className="sr-only">Buscar producto</span>
+                <Input autoFocus={uiVersion === "nueva"} type="search" value={busqueda} placeholder="Buscar producto" onChange={(event) => setBusqueda(event.target.value)} />
+                {uiVersion === "nueva" ? (
+                  <Button type="button" variant="ghost" size="icon" aria-label="Cerrar búsqueda" onClick={() => { setBusqueda(""); setBusquedaAbierta(false); }}>
+                    <X size={17} aria-hidden="true" />
+                  </Button>
+                ) : null}
+              </label>
+            )}
             <div className="constructor-categorias" role="tablist" aria-label="Categorías de la carta">
               <Button type="button" size="sm" variant={categoria === "todas" ? "secondary" : "ghost"} onClick={() => setCategoria("todas")}>Todas</Button>
               {categorias.map((nombre) => <Button key={nombre} type="button" size="sm" variant={categoria === nombre ? "secondary" : "ghost"} onClick={() => setCategoria(nombre)}>{nombre}</Button>)}
@@ -364,7 +388,7 @@ export function ConstructorOrden({
       <Button
         type="button"
         size="lg"
-        className="constructor-orden__abrir-resumen"
+        className={`constructor-orden__abrir-resumen${uiVersion === "nueva" ? " md:hidden" : ""}`}
         onClick={() => setResumenMovilAbierto(true)}
       >
         <ShoppingBag size={20} aria-hidden="true" />

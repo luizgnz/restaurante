@@ -21,6 +21,7 @@ import { ModalOrdenesCuenta } from "./pantallas/ModalOrdenesCuenta.tsx";
 import type { SlotArmadoUi } from "./pantallas/ModalArmadoPlato.tsx";
 import { Opciones, type ImpresoraConfigUi, type OpcionesValores, type PlantillaImpresionUi } from "./pantallas/Opciones.tsx";
 import { Pedidos, type CuentaEnCursoUi } from "./pantallas/Pedidos.tsx";
+import { Recetas, type ProductoAdministrable } from "./pantallas/Recetas.tsx";
 import { PinPad } from "./pantallas/PinPad.tsx";
 import { PrecuentaEnPantalla, type PrecuentaUi } from "./pantallas/PrecuentaEnPantalla.tsx";
 import { Plano, type Mesa, type PedidoBarra, type Piso } from "./pantallas/Plano.tsx";
@@ -48,8 +49,16 @@ type PinPendiente =
 type EdicionOrden = { orden: OrdenCuentaUi; modo: "editar" | "anular" };
 
 type Vista = Destino;
-type Administrador = { id: number; nombre: string; derecho: string };
-type Sesion = { abierta: boolean; administrador: Administrador | null };
+type RolClave = "administrador" | "mesero" | "cocina" | "caja" | "inventario";
+type UsuarioSesion = { id: number; nombre: string; derecho: string; roles: RolClave[] };
+type Sesion = { abierta: boolean; usuario: UsuarioSesion | null; administrador?: UsuarioSesion | null };
+
+function vistaInicial(roles: RolClave[]): { vista: Vista; area: "mesero" | "cocina" } {
+  if (roles.includes("administrador") || roles.includes("mesero")) return { vista: "plano", area: "mesero" };
+  if (roles.includes("cocina")) return { vista: "kds", area: "cocina" };
+  if (roles.includes("caja")) return { vista: "pedidos", area: "mesero" };
+  return { vista: "inventario", area: "mesero" };
+}
 
 function nombreDeVista(vista: Vista, area: "mesero" | "cocina"): string {
   if (vista === "plano") return "Mesas";
@@ -60,12 +69,14 @@ function nombreDeVista(vista: Vista, area: "mesero" | "cocina"): string {
   if (vista === "editar-mapa") return "Mapa del salón";
   if (vista === "categorias") return "Categorías";
   if (vista === "contornos") return "Contornos";
+  if (vista === "recetas") return "Recetas";
   if (vista === "backend") return "Administración";
   if (vista === "opciones") return "Opciones";
   return area === "cocina" ? "Cocina" : "Restaurante";
 }
 
 export function App() {
+  const uiVersion = "nueva" as const;
   const [sesion, setSesion] = useState<Sesion | null>(null);
   const [vista, setVista] = useState<Vista>("plano");
   const [area, setArea] = useState<"mesero" | "cocina">("mesero");
@@ -76,6 +87,7 @@ export function App() {
   const [tieneFondo, setTieneFondo] = useState(false);
   const [fondoTick, setFondoTick] = useState(0);
   const [productos, setProductos] = useState<ProductoCarta[]>([]);
+  const [productosAdmin, setProductosAdmin] = useState<ProductoAdministrable[]>([]);
   const [materialesInventario, setMaterialesInventario] = useState<MaterialInventarioUi[]>([]);
   const [tarjetasKds, setTarjetasKds] = useState<TarjetaKdsUi[]>([]);
   const [incidenciasCocina, setIncidenciasCocina] = useState<IncidenciaCocinaUi[]>([]);
@@ -85,6 +97,7 @@ export function App() {
   const [borradorOrden, setBorradorOrden] = useState<BorradorOrden | null>(null);
   const [edicionOrden, setEdicionOrden] = useState<EdicionOrden | null>(null);
   const [modalCuentaId, setModalCuentaId] = useState<number | null>(null);
+  const [modalOrdenId, setModalOrdenId] = useState<number | null>(null);
   const [pinPendiente, setPinPendiente] = useState<PinPendiente | null>(null);
   const [previewOrden, setPreviewOrden] = useState<BorradorOrden | null>(null);
   const [comandaReciente, setComandaReciente] = useState<ComandaUi | null>(null);
@@ -140,6 +153,10 @@ export function App() {
   async function cargarCarta() {
     const data = await api<{ productos: typeof productos }>("/api/carta");
     setProductos(data.productos);
+  }
+  async function cargarProductosAdmin() {
+    const data = await api<{ productos: ProductoAdministrable[] }>("/api/productos");
+    setProductosAdmin(data.productos);
   }
   async function cargarInventario() {
     const data = await api<{ materiales: MaterialInventarioUi[] }>("/api/inventario");
@@ -200,15 +217,6 @@ export function App() {
     if (typeof data.nombre_servidor === "string") setNombreServidor(data.nombre_servidor);
   }
 
-  async function guardarBarras(patch: { barra_ultimos_pedidos?: boolean; barra_atrasados?: boolean }) {
-    const data = await api<{
-      barra_ultimos_pedidos: boolean;
-      barra_atrasados: boolean;
-    }>("/api/config", { method: "POST", body: JSON.stringify(patch) });
-    setBarraUltimos(data.barra_ultimos_pedidos);
-    setBarraAtrasados(data.barra_atrasados);
-  }
-
   async function guardarOpciones(patch: Partial<OpcionesValores>) {
     aplicarConfig(await api<OpcionesValores>("/api/config", { method: "POST", body: JSON.stringify(patch) }));
   }
@@ -243,23 +251,47 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    if (!sesion?.abierta) return;
-    cargarPlano().catch((e) => setError(String(e)));
-    cargarCarta().catch((e) => setError(String(e)));
-    cargarCuentasEnCurso().catch((e) => setError(String(e)));
-    cargarConfig().catch((e) => setError(String(e)));
-    cargarContornos().catch((e) => setError(String(e)));
-    cargarIncidenciasCocina().catch((e) => setError(String(e)));
-  }, [sesion?.abierta]);
+    const usuarioActual = sesion?.usuario ?? sesion?.administrador;
+    if (!sesion?.abierta || !usuarioActual) return;
+    const inicial = vistaInicial(usuarioActual.roles ?? (["administrador"] as RolClave[]));
+    setVista(inicial.vista);
+    setArea(inicial.area);
+  }, [sesion?.abierta, sesion?.usuario?.id, sesion?.administrador?.id]);
 
   useEffect(() => {
-    if (!sesion?.abierta) return;
+    const usuarioActual = sesion?.usuario ?? sesion?.administrador;
+    if (!sesion?.abierta || !usuarioActual) return;
+    const roles = usuarioActual.roles ?? (["administrador"] as RolClave[]);
+    const admin = roles.includes("administrador");
+    if (admin || roles.includes("mesero")) {
+      cargarPlano().catch((e) => setError(String(e)));
+      cargarCarta().catch((e) => setError(String(e)));
+      cargarCuentasEnCurso().catch((e) => setError(String(e)));
+      cargarContornos().catch((e) => setError(String(e)));
+      cargarIncidenciasCocina().catch((e) => setError(String(e)));
+    } else if (roles.includes("cocina")) {
+      cargarCarta().catch((e) => setError(String(e)));
+      cargarKds().catch((e) => setError(String(e)));
+    } else if (roles.includes("caja")) {
+      cargarCuentasEnCurso().catch((e) => setError(String(e)));
+    } else {
+      cargarInventario().catch((e) => setError(String(e)));
+    }
+    cargarConfig().catch((e) => setError(String(e)));
+  }, [sesion?.abierta, sesion?.usuario?.id, sesion?.administrador?.id]);
+
+  useEffect(() => {
+    const usuarioActual = sesion?.usuario ?? sesion?.administrador;
+    if (!sesion?.abierta || !usuarioActual) return;
+    const roles = usuarioActual.roles ?? (["administrador"] as RolClave[]);
     const intervalo = window.setInterval(() => {
-      cargarIncidenciasCocina().catch(() => undefined);
+      if (roles.some((rol) => rol === "mesero" || rol === "administrador")) {
+        cargarIncidenciasCocina().catch(() => undefined);
+      }
       if (area === "cocina") cargarKds().catch(() => undefined);
     }, 4_000);
     return () => window.clearInterval(intervalo);
-  }, [sesion?.abierta, area]);
+  }, [sesion?.abierta, sesion?.usuario?.id, sesion?.administrador?.id, area]);
 
   async function conError(fn: () => Promise<void>) {
     try {
@@ -298,6 +330,7 @@ export function App() {
       cargarContornos().catch((e) => setError(String(e)));
       cargarCarta().catch((e) => setError(String(e)));
     }
+    if (v === "recetas") cargarProductosAdmin().catch((e) => setError(String(e)));
     setVista(v);
   }
 
@@ -305,6 +338,7 @@ export function App() {
     setErrorCrearProducto("");
     setCrearProductoAbierto(true);
     cargarCategorias().catch((e) => setErrorCrearProducto(String(e)));
+    cargarProductosAdmin().catch((e) => setErrorCrearProducto(String(e)));
   }
 
   function contextoBorrador(contexto: ContextoOrden) {
@@ -371,7 +405,7 @@ export function App() {
       setComandaReciente({
         mesaNumero: mesas.find((mesa) => mesa.id === borrador.mesaId)?.numero ?? null,
         ordenNumero: respuesta.ordenNumero,
-        mesero: sesion?.administrador?.nombre ?? "",
+        mesero: sesion?.usuario?.nombre ?? sesion?.administrador?.nombre ?? "",
         indicaciones: borrador.indicaciones.trim() ? borrador.indicaciones : null,
         lineas: borrador.lineas
           .filter((linea) => linea.cantidad > 0)
@@ -443,7 +477,7 @@ export function App() {
         setPrecuentaReciente({
           mesaNumero: detalle.mesa.numero,
           numero: respuesta.numero,
-          mesero: sesion?.administrador?.nombre ?? "",
+          mesero: sesion?.usuario?.nombre ?? sesion?.administrador?.nombre ?? "",
           lineas: detalle.ordenes.flatMap((orden) =>
             orden.lineas
               .filter((linea) => linea.cantidad > 0)
@@ -505,14 +539,31 @@ export function App() {
     );
   }
 
+  const usuario = sesion.usuario ?? sesion.administrador ?? {
+    id: 0,
+    nombre: "",
+    derecho: "avanzado",
+    roles: ["administrador"] as RolClave[],
+  };
+  const roles = usuario.roles ?? (["administrador"] as RolClave[]);
+  const puedeAdministrar = roles.includes("administrador");
+  const puedeMesas = puedeAdministrar || roles.includes("mesero");
+  const puedeCocina = puedeAdministrar || roles.includes("cocina");
+  const puedeOrdenes = puedeMesas || roles.includes("caja");
+
   return (
-    <div className="pos-odoo">
+    <div className="pos-odoo ui-v2" data-ui-version="nueva">
       <Barra
+        uiVersion={uiVersion}
         vista={vista}
         area={area}
         marca={nombreLocal}
         logo={logoData}
-        nombre={sesion.administrador?.nombre ?? ""}
+        nombre={usuario.nombre}
+        puedeMesas={puedeMesas}
+        puedeOrdenes={puedeOrdenes}
+        puedeCocina={puedeCocina}
+        puedeAdministrar={puedeAdministrar}
         onMesas={() => ir("plano")}
         onOrdenes={() => ir("pedidos")}
         onInventario={() => ir("inventario")}
@@ -522,22 +573,24 @@ export function App() {
           setArea(siguiente);
           setError("");
           if (siguiente === "cocina") {
+            if (!puedeCocina) return;
             setVista("kds");
             cargarKds().catch((e) => setError(String(e)));
           } else {
-            setVista("plano");
-            cargarPlano().catch((e) => setError(String(e)));
+            if (!puedeMesas && !puedeOrdenes) return;
+            setVista(puedeMesas ? "plano" : "pedidos");
+            if (puedeMesas) cargarPlano().catch((e) => setError(String(e)));
+            else cargarCuentasEnCurso().catch((e) => setError(String(e)));
           }
         }}
         onCerrarSesion={() =>
           conError(async () => {
             await api("/api/sesion/cerrar", { method: "POST" });
-            setSesion({ abierta: false, administrador: null });
+            setSesion({ abierta: false, usuario: null, administrador: null });
             setArea("mesero");
             setVista("plano");
           })
         }
-        onCrearProducto={abrirCrearProducto}
         onIr={ir}
       />
       <div className="mobile-view-context" aria-live="polite">
@@ -598,9 +651,21 @@ export function App() {
         {modalCuentaId != null && cuentaActual?.id === modalCuentaId ? (
           <ModalOrdenesCuenta
             cuenta={cuentaActual}
-            onEditarOrden={(orden) => setEdicionOrden({ orden, modo: "editar" })}
-            onAnularOrden={(orden) => setEdicionOrden({ orden, modo: "anular" })}
-            onCerrar={() => setModalCuentaId(null)}
+            ordenId={modalOrdenId}
+            onEditarOrden={(orden) => {
+              setModalCuentaId(null);
+              setModalOrdenId(null);
+              setEdicionOrden({ orden, modo: "editar" });
+            }}
+            onAnularOrden={(orden) => {
+              setModalCuentaId(null);
+              setModalOrdenId(null);
+              setEdicionOrden({ orden, modo: "anular" });
+            }}
+            onCerrar={() => {
+              setModalCuentaId(null);
+              setModalOrdenId(null);
+            }}
           />
         ) : null}
         {edicionOrden && cuentaActual ? (
@@ -631,6 +696,7 @@ export function App() {
         ) : null}
         {vista === "plano" ? (
           <Plano
+            uiVersion={uiVersion}
             piso={piso}
             pisoId={pisoId}
             pisos={pisos}
@@ -647,8 +713,8 @@ export function App() {
             ultimos={ultimosPedidos(conEspera(cuentasEnCurso), 5)}
             atrasados={pedidosAtrasados(conEspera(cuentasEnCurso), 5)}
             onPedido={() => setVista("pedidos")}
-            onToggleUltimos={() => conError(() => guardarBarras({ barra_ultimos_pedidos: !barraUltimos }))}
-            onToggleAtrasados={() => conError(() => guardarBarras({ barra_atrasados: !barraAtrasados }))}
+            onToggleUltimos={() => setBarraUltimos((actual) => !actual)}
+            onToggleAtrasados={() => setBarraAtrasados((actual) => !actual)}
             onOrdenes={() => {
               setVista("pedidos");
               cargarCuentasEnCurso().catch((e) => setError(String(e)));
@@ -674,6 +740,7 @@ export function App() {
         ) : null}
         {vista === "pedido" && contextoOrden && borradorOrden ? (
           <ConstructorOrden
+            uiVersion={uiVersion}
             productos={productos}
             borrador={borradorOrden}
             cuentaId={contextoOrden.tipo === "cuenta" ? contextoOrden.cuentaId : undefined}
@@ -719,6 +786,7 @@ export function App() {
         {vista === "kds" ? (
           <Kds
             tarjetas={tarjetasKds}
+            productos={productos}
             onRecargar={cargarKds}
             onCambiarEtapa={async (lineaId, etapa) => {
               await api(`/api/kds/lineas/${lineaId}/etapa`, {
@@ -738,11 +806,12 @@ export function App() {
         ) : null}
         {vista === "pedidos" ? (
           <Pedidos
+            uiVersion={uiVersion}
             cuentas={cuentasEnCurso}
             incidencias={incidenciasCocina}
-            onAceptarSugerencia={async (incidenciaId) => {
-              await api(`/api/cocina/incidencias/${incidenciaId}/aceptar`, { method: "POST" });
-              await Promise.all([cargarIncidenciasCocina(), cargarKds()]);
+            onAceptarSugerencia={async (incidenciaId, pin) => {
+              await api(`/api/cocina/incidencias/${incidenciaId}/aceptar`, { method: "POST", body: JSON.stringify({ pin }) });
+              await Promise.all([cargarIncidenciasCocina(), cargarCuentasEnCurso(), cargarPlano()]);
             }}
             onEliminarIncidencia={async (incidenciaId, pin) => {
               await api(`/api/cocina/incidencias/${incidenciaId}/eliminar`, {
@@ -751,9 +820,10 @@ export function App() {
               });
               await Promise.all([cargarIncidenciasCocina(), cargarKds(), cargarCuentasEnCurso(), cargarPlano()]);
             }}
-            onAbrir={(cuentaId) =>
+            onAbrir={(cuentaId, ordenId) =>
               conError(async () => {
                 await cargarCuenta(cuentaId);
+                setModalOrdenId(ordenId ?? null);
                 setModalCuentaId(cuentaId);
               })
             }
@@ -762,7 +832,7 @@ export function App() {
         {vista === "inventario" ? (
           <Inventario
             materiales={materialesInventario}
-            puedeIngresar={area === "mesero" && sesion.administrador?.derecho === "avanzado"}
+            puedeIngresar={puedeAdministrar}
             onRecargar={cargarInventario}
             onRegistrarEntrada={async (productoId, cantidad, pin) => {
               await api(`/api/inventario/${productoId}/entradas`, {
@@ -771,11 +841,19 @@ export function App() {
               });
               await Promise.all([cargarInventario(), cargarCarta()]);
             }}
+            onRegistrarPerdida={async (productoId, cantidad, motivo, pin) => {
+              await api(`/api/inventario/${productoId}/perdidas`, {
+                method: "POST",
+                body: JSON.stringify({ cantidad, motivo, pin }),
+              });
+              await Promise.all([cargarInventario(), cargarCarta()]);
+            }}
           />
         ) : null}
         <ModalCrearProducto
           abierto={crearProductoAbierto}
           categorias={categorias}
+          ingredientesDisponibles={productosAdmin.filter((producto) => producto.tipo_consumo !== "receta_kit" && Boolean(producto.rastrear_inventario))}
           error={errorCrearProducto}
           onCerrar={() => {
             setCrearProductoAbierto(false);
@@ -785,7 +863,7 @@ export function App() {
             try {
               setErrorCrearProducto("");
               await api("/api/productos", { method: "POST", body: JSON.stringify(p) });
-              await cargarCarta();
+              await Promise.all([cargarCarta(), cargarProductosAdmin()]);
               setCrearProductoAbierto(false);
             } catch (e) {
               setErrorCrearProducto(e instanceof Error ? e.message : String(e));
@@ -836,10 +914,12 @@ export function App() {
             onCrearProducto={abrirCrearProducto}
             onCategorias={() => ir("categorias")}
             onContornos={() => ir("contornos")}
+            onRecetas={() => ir("recetas")}
             onEditarMapa={() => ir("editar-mapa")}
             onMesas={() => ir("plano")}
           />
         ) : null}
+        {vista === "recetas" ? <Recetas productos={productosAdmin} onVolver={() => ir("backend")} /> : null}
         {vista === "categorias" ? (
           <Categorias
             categorias={categorias}

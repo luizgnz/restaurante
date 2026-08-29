@@ -27,7 +27,7 @@ export const ROLES: Array<{ clave: RolClave; nombre: string; descripcion: string
   { clave: "mesero", nombre: "Mesero", descripcion: "Crea órdenes y atiende mesas" },
   { clave: "cocina", nombre: "Cocina", descripcion: "Recibe y prepara comandas" },
   { clave: "caja", nombre: "Caja", descripcion: "Emite comprobantes y cierra cuentas" },
-  { clave: "inventario", nombre: "Inventario", descripcion: "Consulta y registra existencias" },
+  { clave: "inventario", nombre: "Inventario", descripcion: "Consulta existencias y disponibilidad" },
 ];
 
 const CLAVES_ROL = new Set<string>(ROLES.map((rol) => rol.clave));
@@ -173,9 +173,6 @@ export async function exigirCredenciales(
   if (!row?.password_hash || !(await verifyPin(password, row.password_hash))) {
     throw new PinError("credenciales_invalidas", "Usuario o contraseña incorrectos");
   }
-  if (row.derecho !== "avanzado" && !rolesDeEmpleado(db, row.id).includes("administrador")) {
-    throw new PinError("sin_derecho", "Solo un administrador puede abrir el salón");
-  }
   return row;
 }
 
@@ -215,7 +212,7 @@ function puede(derecho: Derecho, accion: AccionPin, roles: RolClave[]): boolean 
     return derecho === "basico" || derecho === "avanzado";
   }
   if (roles.includes("administrador")) return true;
-  if (accion === "inventario") return roles.includes("inventario");
+  if (accion === "inventario") return false;
   if (accion === "caja") return roles.includes("caja");
   if (accion === "abrir_sesion") return false;
   if (accion === "precuenta") return roles.includes("mesero") || roles.includes("caja");

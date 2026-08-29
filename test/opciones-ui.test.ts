@@ -38,7 +38,7 @@ describe("opciones", () => {
     expect(html).toContain("Servidor y red local");
     expect(html).not.toContain("Punto de venta");
     expect(html).not.toContain("todo el POS");
-    expect(html).toContain("Solicitar contraseña");
+    expect(html).toContain("Solicitar PIN");
     expect(html).toContain("Confirmar comanda");
     expect(html).toContain("Pedir precuenta antes de cerrar la cuenta");
     expect(html).toContain("Pedir permiso avanzado para cerrar la cuenta");

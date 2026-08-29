@@ -96,4 +96,21 @@ describe("ventana de órdenes de la cuenta", () => {
 
     expect(html).not.toContain("Anulado");
   });
+
+  it("al elegir una orden muestra solo su menú de editar o eliminar", () => {
+    const html = renderToStaticMarkup(
+      createElement(ModalOrdenesCuenta, {
+        cuenta,
+        ordenId: 11,
+        onEditarOrden: () => undefined,
+        onAnularOrden: () => undefined,
+        onCerrar: () => undefined,
+      }),
+    );
+    expect(html).toContain('aria-label="Acciones para Orden #1"');
+    expect(html).toContain("Orden #1 · Mesa 7");
+    expect(html).toContain("Editar pedido");
+    expect(html).toContain("Eliminar pedido");
+    expect(html).not.toContain('title="Editar orden"');
+  });
 });

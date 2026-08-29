@@ -56,7 +56,7 @@ describe("empleados", () => {
     expect(listarUsuarios(db).find((item) => item.id === usuario.id)?.roles).toEqual(["caja", "inventario", "mesero"]);
     expect((await exigirPin(db, "4545", "crear_pedido")).nombre).toBe("Vale");
     expect((await exigirPin(db, "4545", "caja")).nombre).toBe("Vale");
-    expect((await exigirPin(db, "4545", "inventario")).nombre).toBe("Vale");
+    await expect(exigirPin(db, "4545", "inventario")).rejects.toMatchObject({ codigo: "sin_derecho" });
     db.close();
   });
 

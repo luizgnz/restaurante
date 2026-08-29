@@ -332,7 +332,9 @@ describe("corrección de orden", () => {
     expect(html).toContain("Vista previa de cambios");
     expect(html).toContain("Sin cambios");
     expect(html).toContain("Continuar y pedir PIN");
-    expect(html).not.toContain("Nota del producto");
+    expect(html).toContain("Indicaciones para Hamburguesa");
+    expect(html).toContain('value="sin cebolla"');
+    expect(html).toContain("Indicaciones generales para cocina");
   });
 
   it("no incluye líneas históricas en cero ni permite resucitarlas", () => {

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
+import { Textarea } from "@/components/ui/textarea.tsx";
 
 export type LineaOrdenUi = {
   lineaClave: string;
@@ -78,7 +79,7 @@ export function CuentaMesa({
           </div>
         </div>
         {aceptaConsumo ? (
-          <Button type="button" size="lg" className="primario" onClick={onNuevaOrden}>
+          <Button type="button" size="lg" onClick={onNuevaOrden}>
             <Plus size={18} aria-hidden="true" /> Nueva orden
           </Button>
         ) : null}
@@ -142,7 +143,7 @@ export function CuentaMesa({
 
       <label className="tarjeta cuenta-mesa__nota">
         Nota privada
-        <textarea
+        <Textarea
           value={notaPrivada}
           placeholder="Solo visible en el sistema. No va a cocina."
           onChange={(event) => setNotaPrivada(event.target.value)}
@@ -165,7 +166,7 @@ export function CuentaMesa({
               <ReceiptText size={18} aria-hidden="true" /> Precuenta
             </Button>
             {puedeCerrar ? (
-              <Button type="button" className="primario" onClick={onCerrarCuenta}>
+              <Button type="button" onClick={onCerrarCuenta}>
                 <Send size={18} aria-hidden="true" /> Cerrar cuenta
               </Button>
             ) : null}

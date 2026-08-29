@@ -14,8 +14,7 @@ type Props = {
 
 export function PrecuentaEnPantalla({ restaurante, precuenta, onCerrar }: Props) {
   return (
-    <div
-      className="modal-fondo"
+    <DialogOverlay
       role="dialog"
       aria-modal="true"
       aria-label="Precuenta emitida"
@@ -23,7 +22,7 @@ export function PrecuentaEnPantalla({ restaurante, precuenta, onCerrar }: Props)
         if (event.target === event.currentTarget) onCerrar();
       }}
     >
-      <div className="modal-caja ticket-papel">
+      <DialogContent className="ticket-papel">
         <p className="ticket-papel__local">{restaurante}</p>
         <h2 className="ticket-papel__tipo">PRECUENTA</h2>
         <p className="ticket-papel__referencia">
@@ -47,10 +46,12 @@ export function PrecuentaEnPantalla({ restaurante, precuenta, onCerrar }: Props)
           <strong>TOTAL</strong>
           <strong>${precuenta.totalCentavos}</strong>
         </p>
-        <button type="button" className="primario tactil" onClick={onCerrar}>
+        <Button type="button" onClick={onCerrar}>
           Listo
-        </button>
-      </div>
-    </div>
+        </Button>
+      </DialogContent>
+    </DialogOverlay>
   );
 }
+import { Button } from "@/components/ui/button.tsx";
+import { DialogContent, DialogOverlay } from "@/components/ui/dialog.tsx";

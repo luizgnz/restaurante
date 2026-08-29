@@ -68,4 +68,75 @@ describe("API de inventario", () => {
     expect((e.db.prepare("SELECT count(*) AS c FROM inventario_movimientos").get() as { c: number }).c).toBe(0);
     e.db.close();
   });
+
+  it("registra una pérdida con motivo y descuenta la existencia física", async () => {
+    const e = await entornoApi();
+    await abrirSalon(e);
+
+    const res = await post(e.app, `/api/inventario/${e.ids.pan}/perdidas`, {
+      cantidad: 2.5,
+      motivo: "producto_danado",
+      pin: "2222",
+    });
+
+    expect(res.status).toBe(201);
+    expect(await res.json()).toMatchObject({
+      material: { id: e.ids.pan, enMano: 17.5, reservado: 0, disponible: 17.5 },
+    });
+    expect(
+      e.db
+        .prepare(
+          `SELECT tipo, cantidad_real, stock_anterior_real, stock_nuevo_real, motivo
+           FROM inventario_movimientos WHERE producto_id = ?`,
+        )
+        .get(e.ids.pan),
+    ).toEqual({
+      tipo: "perdida",
+      cantidad_real: 2.5,
+      stock_anterior_real: 20,
+      stock_nuevo_real: 17.5,
+      motivo: "producto_danado",
+    });
+    e.db.close();
+  });
+
+  it("protege las pérdidas con PIN y no permite descontar más de lo existente", async () => {
+    const e = await entornoApi();
+    await abrirSalon(e);
+
+    const basico = await post(e.app, `/api/inventario/${e.ids.jugo}/perdidas`, {
+      cantidad: 1,
+      motivo: "consumo_interno",
+      pin: "1234",
+    });
+    expect(basico.status).toBe(403);
+    expect(await codigoDe(basico)).toBe("sin_derecho");
+
+    const excesiva = await post(e.app, `/api/inventario/${e.ids.jugo}/perdidas`, {
+      cantidad: 11,
+      motivo: "consumo_interno",
+      pin: "2222",
+    });
+    expect(excesiva.status).toBe(409);
+    expect(await codigoDe(excesiva)).toBe("stock_insuficiente");
+    expect(
+      (e.db.prepare("SELECT on_hand_real FROM stock WHERE producto_id = ?").get(e.ids.jugo) as { on_hand_real: number })
+        .on_hand_real,
+    ).toBe(10);
+    expect((e.db.prepare("SELECT count(*) AS c FROM inventario_movimientos").get() as { c: number }).c).toBe(0);
+    e.db.close();
+  });
+
+  it("rechaza un motivo de pérdida que no esté tipificado", async () => {
+    const e = await entornoApi();
+    await abrirSalon(e);
+    const res = await post(e.app, `/api/inventario/${e.ids.jugo}/perdidas`, {
+      cantidad: 1,
+      motivo: "otro",
+      pin: "2222",
+    });
+    expect(res.status).toBe(400);
+    expect(await codigoDe(res)).toBe("motivo_invalido");
+    e.db.close();
+  });
 });

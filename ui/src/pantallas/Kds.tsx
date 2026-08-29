@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
+import { Select } from "@/components/ui/select.tsx";
+import { Textarea } from "@/components/ui/textarea.tsx";
 
 export type IncidenciaCocinaUi = {
   id: number;
@@ -17,6 +19,8 @@ export type IncidenciaCocinaUi = {
   mesa: number;
   ordenNumero: number;
   producto: string | null;
+  productoReemplazoId?: number | null;
+  productoReemplazo?: string | null;
 };
 
 export type LineaKdsUi = {
@@ -48,6 +52,7 @@ type NuevaIncidencia = {
   alcance: "linea" | "orden";
   motivo: string;
   propuesta: string | null;
+  productoReemplazoId?: number | null;
 };
 
 type Props = {
@@ -55,6 +60,7 @@ type Props = {
   onCambiarEtapa: (lineaId: number, etapa: "en_proceso" | "listo") => Promise<void>;
   onCrearIncidencia: (incidencia: NuevaIncidencia) => Promise<void>;
   onRecargar: () => Promise<void>;
+  productos?: Array<{ id: number; nombre: string }>;
 };
 
 type ModalIncidencia = {
@@ -87,10 +93,11 @@ function varianteEtapa(etapa: string): "secondary" | "warning" | "success" | "da
   return "danger";
 }
 
-export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar }: Props) {
+export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar, productos = [] }: Props) {
   const [modal, setModal] = useState<ModalIncidencia | null>(null);
   const [motivo, setMotivo] = useState("");
   const [propuesta, setPropuesta] = useState("");
+  const [productoReemplazoId, setProductoReemplazoId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [recargando, setRecargando] = useState(false);
@@ -110,6 +117,7 @@ export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar }:
     });
     setMotivo("");
     setPropuesta("");
+    setProductoReemplazoId(null);
     setError("");
   }
 
@@ -119,7 +127,11 @@ export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar }:
       setError("Indica por qué cocina no puede preparar lo solicitado.");
       return;
     }
-    if (modal.tipo === "sugerencia" && !propuesta.trim()) {
+    if (modal.tipo === "sugerencia" && modal.alcance === "linea" && !productoReemplazoId) {
+      setError("Selecciona el producto que reemplazará al solicitado.");
+      return;
+    }
+    if (modal.tipo === "sugerencia" && modal.alcance === "orden" && !propuesta.trim()) {
       setError("Escribe el cambio que propones al cliente.");
       return;
     }
@@ -132,7 +144,12 @@ export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar }:
         tipo: modal.tipo,
         alcance: modal.alcance,
         motivo: motivo.trim(),
-        propuesta: modal.tipo === "sugerencia" ? propuesta.trim() : null,
+        propuesta: modal.tipo === "sugerencia"
+          ? modal.alcance === "linea"
+            ? `Reemplazar por ${productos.find((producto) => producto.id === productoReemplazoId)?.nombre ?? "otro producto"}${propuesta.trim() ? `. ${propuesta.trim()}` : ""}`
+            : propuesta.trim()
+          : null,
+        productoReemplazoId: modal.tipo === "sugerencia" && modal.alcance === "linea" ? productoReemplazoId : null,
       });
       setModal(null);
     } catch (e) {
@@ -223,8 +240,15 @@ export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar }:
             <span className="page-eyebrow">{modal.alcance === "orden" ? "Orden completa" : "Producto"}</span>
             <h2 id="incidencia-titulo">{modal.tipo === "sugerencia" ? "Sugerir un cambio" : "Marcar como no disponible"}</h2>
             <p><strong>{modal.objetivo}</strong></p>
-            <label>Motivo<textarea autoFocus rows={3} value={motivo} onChange={(event) => setMotivo(event.target.value)} placeholder="Ej.: no queda aguacate" /></label>
-            {modal.tipo === "sugerencia" ? <label>Cambio sugerido<textarea rows={3} value={propuesta} onChange={(event) => setPropuesta(event.target.value)} placeholder="Ej.: reemplazar aguacate por tomate" /></label> : null}
+            <label>Motivo<Textarea autoFocus rows={3} value={motivo} onChange={(event) => setMotivo(event.target.value)} placeholder="Ej.: no queda aguacate" /></label>
+            {modal.tipo === "sugerencia" && modal.alcance === "linea" ? <>
+              <label>Producto de reemplazo<Select value={productoReemplazoId ?? ""} onChange={(event) => setProductoReemplazoId(Number(event.target.value) || null)}>
+                <option value="">Selecciona un producto</option>
+                {productos.filter((producto) => producto.nombre !== modal.objetivo).map((producto) => <option key={producto.id} value={producto.id}>{producto.nombre}</option>)}
+              </Select></label>
+              <label>Detalle opcional<Textarea rows={2} value={propuesta} onChange={(event) => setPropuesta(event.target.value)} placeholder="Ej.: mantener los mismos contornos" /></label>
+            </> : null}
+            {modal.tipo === "sugerencia" && modal.alcance === "orden" ? <label>Cambio sugerido<Textarea rows={3} value={propuesta} onChange={(event) => setPropuesta(event.target.value)} placeholder="Describe el cambio para los productos afectados" /></label> : null}
             {error ? <p className="inventario-modal__error" role="alert">{error}</p> : null}
             <div className="inventario-modal__acciones">
               <Button type="button" variant="outline" onClick={() => setModal(null)}>Cancelar</Button>

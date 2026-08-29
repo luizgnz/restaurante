@@ -21,7 +21,7 @@ describe("pantallas módulo restaurante", () => {
     // Todo producto queda asociado a una categoría.
     expect(html).not.toContain("Sin categoría");
     expect(html).toContain("Categoría del menú");
-    expect(html).toContain("Disponible en el PdV");
+    expect(html).toContain("Disponible en la carta");
     expect(html).toContain("Rastrear en el inventario");
     expect(html).toContain("Código de producto");
     expect(html).toContain("Color del ítem");
@@ -82,6 +82,7 @@ describe("pantallas módulo restaurante", () => {
         onCrearProducto: () => undefined,
         onCategorias: () => undefined,
         onContornos: () => undefined,
+        onRecetas: () => undefined,
         onEditarMapa: () => undefined,
         onMesas: () => undefined,
       }),
@@ -90,6 +91,7 @@ describe("pantallas módulo restaurante", () => {
     expect(html).toContain("Categorías");
     expect(html).toContain("Contornos");
     expect(html).toContain("Editar mapa");
-    expect(html).toContain("Backend");
+    expect(html).toContain("Administración");
+    expect(html).toContain("Editar recetas");
   });
 });

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button.tsx";
+import { DialogContent, DialogDescription, DialogOverlay, DialogTitle } from "@/components/ui/dialog.tsx";
 
 type Props = { onPin: (pin: string) => void; onCancelar: () => void; titulo: string; error?: string };
 
@@ -36,8 +38,7 @@ export function PinPad({ onPin, onCancelar, titulo, error = "" }: Props) {
   }, [pin, onPin, onCancelar]);
 
   return (
-    <div
-      className="modal-fondo"
+    <DialogOverlay
       role="dialog"
       aria-modal="true"
       aria-label={titulo}
@@ -45,21 +46,21 @@ export function PinPad({ onPin, onCancelar, titulo, error = "" }: Props) {
         if (e.target === e.currentTarget) onCancelar();
       }}
     >
-      <div className="modal-caja pin-caja">
-        <h2>{titulo}</h2>
+      <DialogContent className="pin-caja">
+        <DialogTitle>{titulo}</DialogTitle>
         <p className="pin-marcas">{pin.replace(/./g, "•") || "PIN"}</p>
         {error ? (
           <p role="alert" className="pin-error">
             {error}. Vuelve a ingresar el PIN.
           </p>
         ) : null}
-        <p className="login-odoo__ayuda">Puedes escribirlo con el teclado: números, Retroceso y Enter.</p>
+        <DialogDescription>Puedes escribirlo con el teclado: números, Retroceso y Enter.</DialogDescription>
         <div className="pin">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9", "←", "0", "OK"].map((k) => (
-            <button
+            <Button
               key={k}
               type="button"
-              className={k === "OK" ? "primario tactil" : "tactil"}
+              variant={k === "OK" ? "default" : "outline"}
               onClick={() => {
                 if (k === "←") setPin((p) => p.slice(0, -1));
                 else if (k === "OK") onPin(pin);
@@ -67,13 +68,13 @@ export function PinPad({ onPin, onCancelar, titulo, error = "" }: Props) {
               }}
             >
               {k}
-            </button>
+            </Button>
           ))}
         </div>
-        <button type="button" onClick={onCancelar}>
+        <Button type="button" variant="ghost" onClick={onCancelar}>
           Cancelar
-        </button>
-      </div>
-    </div>
+        </Button>
+      </DialogContent>
+    </DialogOverlay>
   );
 }

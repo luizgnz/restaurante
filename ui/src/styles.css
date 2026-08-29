@@ -1,4 +1,5 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+@source "./**/*.{ts,tsx,html}";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -202,6 +203,11 @@ nav {
   display: flex;
   gap: 6px;
   align-items: center;
+}
+.pos-nav__primary,
+.pos-nav__identity,
+.pos-nav__right {
+  display: contents;
 }
 .pos-odoo__desplegable {
   position: relative;
@@ -885,11 +891,35 @@ main {
   display: grid;
   gap: 8px;
 }
+.correccion-linea {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+.correccion-linea__principal {
+  padding: 0;
+  border-bottom: 0;
+}
+.correccion-linea__indicacion {
+  display: grid;
+  gap: 5px;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+.correccion-linea__indicacion input {
+  color: var(--foreground);
+  font-weight: 400;
+}
 .correccion-diff {
-  border: 1px solid #555;
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px 12px;
-  background: #151515;
+  background: var(--muted);
+  color: var(--foreground);
 }
 .correccion-diff h3,
 .correccion-diff p {
@@ -2607,6 +2637,28 @@ button.icono {
   color: var(--muted-foreground);
   font-size: 0.75rem;
 }
+.inventario-material__accion {
+  display: flex;
+  min-width: 0;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.35rem 0.45rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.inventario-material__accion:hover {
+  background: var(--accent);
+}
+.inventario-material__accion:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
 .inventario-seguridad {
   display: flex;
   align-items: center;
@@ -2707,6 +2759,80 @@ button.icono {
   color: var(--muted-foreground);
   font-size: 0.85rem;
   line-height: 1.45;
+}
+.pedido-orden__abrir {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.22rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pedido-orden__abrir:hover {
+  border-color: var(--border);
+  background: var(--muted);
+}
+.pedido-orden__abrir:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.pedido-orden__abrir strong {
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  text-underline-offset: 0.18em;
+}
+.ordenes-cuenta-modal__acciones-principales {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+.ordenes-cuenta-modal__acciones-principales button {
+  justify-content: center;
+}
+
+/* Órdenes: tarjetas breves que no se estiran para llenar toda la fila. */
+.ui-v2 .pedidos-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 390px));
+  align-items: start;
+  gap: 0.75rem;
+}
+.ui-v2 .pedido-cabecera {
+  gap: 0.55rem;
+  padding: 0.7rem 0.8rem;
+}
+.ui-v2 .pedido-card__mesa {
+  gap: 0.35rem;
+}
+.ui-v2 .pedido-card__mesa strong {
+  font-size: 1rem;
+}
+.ui-v2 .pedido-card__ordenes {
+  padding: 0.25rem 0.55rem 0.45rem;
+}
+.ui-v2 .pedido-card .pedido-indicaciones {
+  padding: 0.35rem 0;
+}
+.ui-v2 .pedido-orden__abrir {
+  gap: 0.15rem;
+  padding: 0.4rem 0.45rem;
+}
+.ui-v2 .pedido-orden__abrir span {
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 767px) {
+  .ui-v2 .pedidos-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Administración */
@@ -3438,13 +3564,11 @@ button.is-on,
 button[data-variant="default"] {
   background: var(--primary);
   color: var(--primary-foreground);
-  box-shadow: 0 5px 14px rgb(8 125 104 / 0.16);
 }
 
 button.primario:hover:not(:disabled),
 button[data-variant="default"]:hover:not(:disabled) {
-  background: #066d5b;
-  box-shadow: 0 8px 18px rgb(8 125 104 / 0.22);
+  background: color-mix(in oklab, var(--primary) 88%, transparent);
 }
 
 button[data-variant="outline"]:hover:not(:disabled),
@@ -3473,10 +3597,7 @@ textarea:focus {
 
 .pos-odoo {
   min-height: 100svh;
-  background:
-    radial-gradient(circle at 96% -6%, rgb(197 237 222 / 0.52), transparent 25rem),
-    radial-gradient(circle at -8% 34%, rgb(224 238 231 / 0.65), transparent 22rem),
-    var(--background);
+  background: var(--background);
 }
 
 .pos-odoo > main {
@@ -3489,7 +3610,7 @@ textarea:focus {
   gap: 0.4rem;
   border-color: color-mix(in oklab, var(--border) 86%, transparent);
   background: rgb(255 255 255 / 0.9);
-  box-shadow: 0 8px 28px rgb(29 66 55 / 0.07);
+  box-shadow: var(--shadow-lifted);
   backdrop-filter: blur(18px) saturate(1.2);
 }
 
@@ -3650,7 +3771,7 @@ button.icono:focus-visible {
     padding: 0.4rem 0.42rem calc(0.34rem + env(safe-area-inset-bottom));
     border-top: 1px solid var(--border);
     background: rgb(255 255 255 / 0.97);
-    box-shadow: 0 -8px 28px rgb(29 66 55 / 0.1);
+    box-shadow: 0 -8px 28px rgb(16 18 22 / 0.1);
   }
 
   .pos-nav__item,
@@ -3967,4 +4088,392 @@ button.icono:focus-visible {
   color: var(--foreground);
   box-shadow: none;
 }
+
+/* ==========================================================================
+   Interfaz principal · enfoque transaction-first
+   ========================================================================== */
+.ui-v2 .salon-odoo {
+  gap: 0.65rem;
+}
+.ui-v2 .pos-odoo__marca {
+  font-family: "Snell Roundhand", "Apple Chancery", "Segoe Script", cursive;
+  font-size: 1.72rem;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  line-height: 1;
+}
+@media (min-width: 1050px) {
+  .ui-v2 .pos-nav {
+    position: sticky;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+  .ui-v2 .pos-nav__primary,
+  .ui-v2 .pos-nav__identity,
+  .ui-v2 .pos-nav__right {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+  }
+  .ui-v2 .pos-nav__primary {
+    gap: 0.4rem;
+    justify-self: start;
+  }
+  .ui-v2 .pos-nav__identity {
+    justify-self: center;
+  }
+  .ui-v2 .pos-nav__right {
+    gap: 0.55rem;
+    justify-self: end;
+  }
+  .ui-v2 .pos-odoo__marca {
+    position: static;
+    flex: 0 1 auto;
+    max-width: 24vw;
+    margin: 0;
+    overflow: hidden;
+    justify-content: center;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transform: none;
+  }
+  .ui-v2 .pos-odoo__iconos {
+    flex: 0 0 auto;
+  }
+  .ui-v2 button.icono {
+    width: 42px;
+    min-width: 42px;
+    padding: 0 !important;
+  }
+}
+.ui-v2 .salon-odoo__resumen {
+  align-items: center;
+}
+.ui-v2 .salon-odoo__resumen h1 {
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+}
+.ui-v2 .salon-odoo__resumen p,
+.ui-v2 .salon-odoo__eyebrow,
+.ui-v2 .constructor-orden__cabecera p,
+.ui-v2 .constructor-orden__cabecera .constructor-orden__eyebrow {
+  display: none;
+}
+.ui-v2 .salon-odoo__metricas {
+  gap: 0.4rem;
+}
+.ui-v2 .salon-odoo__metricas > div {
+  display: flex;
+  min-width: auto;
+  gap: 0.35rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+.ui-v2 .salon-odoo__metricas strong {
+  font-size: 1rem;
+}
+.ui-v2 .salon-odoo__metricas span {
+  grid-column: auto;
+  font-size: 0.75rem;
+}
+.ui-v2 .salon-odoo__pisos {
+  padding: 0.35rem;
+  border-radius: var(--radius);
+}
+.ui-v2 .plano-mapa {
+  min-height: clamp(30rem, calc(100svh - 205px), 58rem);
+}
+.ui-v2 .mesa-odoo {
+  max-width: 160px;
+  max-height: 160px;
+  transition:
+    width 160ms ease,
+    height 160ms ease,
+    border-color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.ui-v2 .constructor-orden {
+  gap: 0.65rem;
+}
+.ui-v2 .constructor-orden__cabecera {
+  min-height: 42px;
+}
+.ui-v2 .constructor-orden__cabecera h1 {
+  font-size: clamp(1.3rem, 2vw, 1.75rem);
+}
+.ui-v2 .constructor-orden__cuerpo {
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 0.8rem;
+}
+.ui-v2 .constructor-orden__catalogo {
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr);
+  grid-template-areas:
+    "header header"
+    "tools carta";
+  align-items: start;
+  gap: 0.7rem 0.8rem;
+}
+.ui-v2 .constructor-orden__catalogo-cabecera {
+  grid-area: header;
+  margin: 0;
+}
+.ui-v2 .constructor-catalogo__herramientas {
+  grid-area: tools;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.55rem;
+  margin: 0;
+}
+.ui-v2 .constructor-catalogo__herramientas > button {
+  align-self: flex-start;
+}
+.ui-v2 .constructor-categorias {
+  flex-direction: column;
+  gap: 0.2rem;
+  overflow: visible;
+  padding: 0;
+}
+.ui-v2 .constructor-categorias button {
+  width: 100%;
+  justify-content: flex-start;
+}
+.ui-v2 .inventario-busqueda {
+  display: flex;
+  width: 100%;
+}
+.ui-v2 .inventario-busqueda input {
+  min-width: 0;
+}
+.ui-v2 .inventario-busqueda button {
+  flex: 0 0 auto;
+}
+.ui-v2 .constructor-orden__carta {
+  grid-area: carta;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.6rem;
+  max-height: calc(100svh - 190px);
+  padding-top: 0;
+}
+.ui-v2 .carta__item {
+  min-height: 166px;
+}
+.ui-v2 .carta__foto {
+  height: 78px;
+}
+.ui-v2 .carta__contenido {
+  padding: 0.6rem 0.65rem 0.75rem;
+}
+.ui-v2 .carta__item:has(.carta__cantidad) .carta__contenido {
+  padding-bottom: 3rem;
+}
+.ui-v2 .carta__cantidad {
+  bottom: 0.42rem;
+  box-shadow: var(--shadow-soft);
+}
+.ui-v2 .constructor-orden__resumen {
+  top: 72px;
+  max-height: calc(100svh - 88px);
+  padding: 0.9rem;
+  box-shadow: none;
+}
+.ui-v2 .constructor-orden__resumen-cabecera {
+  margin-bottom: 0.45rem;
+}
+.ui-v2 .constructor-linea {
+  padding-block: 0.55rem;
+}
+.ui-v2 .constructor-orden__agregar-nota {
+  width: fit-content;
+  margin-block: 0.35rem;
+  padding-inline: 0.35rem;
+  color: var(--muted-foreground);
+}
+.ui-v2 .constructor-orden__indicaciones {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+.ui-v2 .constructor-orden__indicaciones textarea {
+  min-height: 82px;
+}
+.ui-v2 .constructor-orden__indicaciones > button {
+  justify-self: start;
+}
+.ui-v2 .constructor-orden__acciones {
+  position: sticky;
+  bottom: -0.9rem;
+  margin: 0.6rem -0.9rem -0.9rem;
+  padding: 0.75rem 0.9rem 0.9rem;
+  border-top: 1px solid var(--border);
+  background: var(--card);
+}
+
+/* Inventario: una sola franja operativa con búsqueda, totales y recarga. */
+.ui-v2 .inventario-page {
+  gap: 0.65rem;
+}
+.ui-v2 .inventario-page .page-header {
+  align-items: center;
+}
+.ui-v2 .inventario-page .page-header h1 {
+  margin: 0;
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+}
+.ui-v2 .inventario-page .page-header p,
+.ui-v2 .inventario-page .page-eyebrow {
+  display: none;
+}
+.ui-v2 .inventario-panel {
+  border-radius: var(--radius);
+}
+.ui-v2 .inventario-herramientas {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) max-content auto;
+  gap: 0.6rem;
+  padding: 0.65rem;
+}
+.ui-v2 .inventario-busqueda {
+  max-width: none;
+  height: var(--control-h);
+  padding-left: 0.65rem;
+  border-radius: var(--radius);
+}
+.ui-v2 .inventario-resumen {
+  display: grid;
+  grid-template-columns: repeat(4, max-content);
+  gap: 0.35rem;
+}
+.ui-v2 .inventario-resumen > div,
+.ui-v2 .inventario-resumen > button {
+  gap: 0.4rem;
+  min-width: 0;
+  padding: 0.38rem 0.5rem;
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+.ui-v2 .inventario-resumen > button {
+  justify-content: flex-start;
+  min-width: 112px;
+  padding-inline: 0.6rem;
+}
+.ui-v2 .inventario-resumen > button > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 0.28rem;
+}
+.ui-v2 .inventario-resumen > div > svg,
+.ui-v2 .inventario-resumen > button > svg {
+  box-sizing: content-box;
+  width: 20px;
+  height: 20px;
+  padding: 0.22rem;
+  border-radius: 0.45rem;
+  background: var(--accent);
+  color: var(--foreground);
+}
+.ui-v2 .inventario-resumen strong {
+  font-size: 1rem;
+  line-height: 1;
+}
+.ui-v2 .inventario-resumen span {
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: 0.78rem;
+  font-weight: 550;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-v2 .inventario-filtros {
+  align-items: center;
+}
+.ui-v2 .inventario-fila {
+  grid-template-columns: minmax(180px, 1.8fr) repeat(3, minmax(82px, 0.62fr)) minmax(108px, 0.75fr);
+  gap: 0.5rem;
+  min-height: 54px;
+  padding: 0.5rem 0.75rem;
+}
+.ui-v2 .inventario-material__accion strong {
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  text-underline-offset: 0.18em;
+}
+.ui-v2 .inventario-ajuste__tipo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+.ui-v2 .inventario-ajuste__tipo button {
+  justify-content: center;
+}
+.ui-v2 .inventario-fila--cabecera {
+  min-height: 36px;
+  padding-block: 0.4rem;
+  font-size: 0.68rem;
+}
+.ui-v2 .inventario-seguridad {
+  gap: 0.35rem;
+  font-size: 0.76rem;
+}
+
+@media (max-width: 767px) {
+  .ui-v2 .constructor-orden__catalogo {
+    display: block;
+  }
+  .ui-v2 .constructor-catalogo__herramientas {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 0.55rem;
+  }
+  .ui-v2 .constructor-categorias {
+    flex: 1;
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .ui-v2 .constructor-categorias button {
+    width: auto;
+  }
+  .ui-v2 .constructor-orden__carta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: none;
+  }
+  .ui-v2 .plano-mapa {
+    min-height: 0;
+  }
+  .ui-v2 .inventario-herramientas {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.55rem;
+  }
+  .ui-v2 .inventario-busqueda,
+  .ui-v2 .inventario-resumen {
+    grid-column: 1 / -1;
+  }
+  .ui-v2 .inventario-resumen {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ui-v2 .inventario-filtros {
+    min-width: 0;
+    overflow-x: auto;
+  }
+  .ui-v2 .inventario-herramientas > [aria-label="Recargar inventario"] {
+    grid-column: 2;
+    justify-self: end;
+  }
+  .ui-v2 .inventario-fila {
+    min-height: auto;
+    padding: 0.75rem;
+  }
+}
+
 }

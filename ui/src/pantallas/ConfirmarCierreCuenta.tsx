@@ -7,8 +7,7 @@ type Props = {
 
 export function ConfirmarCierreCuenta({ mesaNumero, totalCentavos, onConfirmar, onCancelar }: Props) {
   return (
-    <div
-      className="modal-fondo"
+    <DialogOverlay
       role="dialog"
       aria-modal="true"
       aria-label="Confirmar cierre de cuenta"
@@ -16,20 +15,22 @@ export function ConfirmarCierreCuenta({ mesaNumero, totalCentavos, onConfirmar, 
         if (event.target === event.currentTarget) onCancelar();
       }}
     >
-      <div className="modal-caja">
-        <h2>¿Cerrar cuenta?</h2>
-        <p className="login-odoo__ayuda">
+      <DialogContent>
+        <DialogTitle>¿Cerrar cuenta?</DialogTitle>
+        <DialogDescription>
           La cuenta de Mesa #{mesaNumero} por ${totalCentavos} se envía a caja y la mesa queda libre.
-        </p>
-        <div className="form-odoo__acciones">
-          <button type="button" className="tactil" onClick={onCancelar}>
+        </DialogDescription>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onCancelar}>
             Cancelar
-          </button>
-          <button type="button" className="primario tactil" onClick={onConfirmar}>
+          </Button>
+          <Button type="button" onClick={onConfirmar}>
             Cerrar cuenta
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </DialogOverlay>
   );
 }
+import { Button } from "@/components/ui/button.tsx";
+import { DialogContent, DialogDescription, DialogFooter, DialogOverlay, DialogTitle } from "@/components/ui/dialog.tsx";

@@ -71,6 +71,15 @@ describe("pantalla Órdenes sobre cuentas", () => {
     expect(html).toContain("1 × Jugo");
   });
 
+  it("en V2 hace clicable la orden y deja la mesa como contexto", () => {
+    const html = renderToStaticMarkup(
+      createElement(Pedidos, { uiVersion: "nueva", cuentas: [cuenta()], onAbrir: () => undefined }),
+    );
+    expect(html).toContain('aria-label="Abrir acciones de Orden #1, Mesa 7"');
+    expect(html).toContain('class="pedido-orden__abrir"');
+    expect(html).toContain('<div class="pedido-cabecera">');
+  });
+
   it("sin cuentas en curso lo dice", () => {
     const html = renderToStaticMarkup(createElement(Pedidos, { cuentas: [], onAbrir: () => undefined }));
     expect(html).toContain("No hay cuentas en curso");

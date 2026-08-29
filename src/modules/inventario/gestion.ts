@@ -13,6 +13,8 @@ export type MaterialInventario = {
   ultimaEntradaEn: string | null;
 };
 
+export type MotivoPerdidaInventario = "producto_danado" | "consumo_interno";
+
 type MaterialFila = {
   id: number;
   nombre: string;
@@ -87,6 +89,56 @@ export async function registrarEntradaInventario(
         )
         .run(input.productoId, input.cantidad, anterior.on_hand_real, nuevo, empleado.id, new Date().toISOString())
         .lastInsertRowid,
+    );
+    const fila = db.prepare(`${SELECT_MATERIAL} AND p.id = ?`).get(input.productoId) as MaterialFila;
+    return { material: materialDeFila(fila), movimientoId };
+  })();
+}
+
+export async function registrarPerdidaInventario(
+  db: Database.Database,
+  input: { productoId: number; cantidad: number; motivo: MotivoPerdidaInventario; pin: string },
+): Promise<{ material: MaterialInventario; movimientoId: number }> {
+  if (!Number.isFinite(input.cantidad) || input.cantidad <= 0 || input.cantidad > 1_000_000) {
+    throw new InventarioError("cantidad_invalida", "La cantidad debe ser mayor que cero");
+  }
+  if (input.motivo !== "producto_danado" && input.motivo !== "consumo_interno") {
+    throw new InventarioError("motivo_invalido", "Selecciona un motivo válido para la pérdida");
+  }
+
+  const empleado = await exigirPin(db, input.pin, "inventario");
+  return db.transaction(() => {
+    const anterior = db
+      .prepare(
+        `SELECT p.id, s.on_hand_real
+         FROM productos p
+         JOIN stock s ON s.producto_id = p.id
+         WHERE p.id = ? AND p.activo = 1`,
+      )
+      .get(input.productoId) as { id: number; on_hand_real: number } | undefined;
+    if (!anterior) throw new InventarioError("material_inexistente", "El material no existe o no controla inventario");
+    if (input.cantidad > anterior.on_hand_real) {
+      throw new InventarioError("stock_insuficiente", "La pérdida no puede superar la existencia en mano");
+    }
+
+    const nuevo = anterior.on_hand_real - input.cantidad;
+    db.prepare("UPDATE stock SET on_hand_real = ? WHERE producto_id = ?").run(nuevo, input.productoId);
+    const movimientoId = Number(
+      db
+        .prepare(
+          `INSERT INTO inventario_movimientos
+            (producto_id, tipo, cantidad_real, stock_anterior_real, stock_nuevo_real, empleado_id, motivo, creado_en)
+           VALUES (?, 'perdida', ?, ?, ?, ?, ?, ?)`,
+        )
+        .run(
+          input.productoId,
+          input.cantidad,
+          anterior.on_hand_real,
+          nuevo,
+          empleado.id,
+          input.motivo,
+          new Date().toISOString(),
+        ).lastInsertRowid,
     );
     const fila = db.prepare(`${SELECT_MATERIAL} AND p.id = ?`).get(input.productoId) as MaterialFila;
     return { material: materialDeFila(fila), movimientoId };

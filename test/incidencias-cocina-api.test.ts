@@ -97,6 +97,40 @@ describe("coordinación Cocina ↔ Mesero", () => {
     e.db.close();
   });
 
+  it("si acepta un cambio estructurado reemplaza solo el producto solicitado", async () => {
+    const e = await entornoApi();
+    await post(e.app, "/api/sesion/abrir", { usuario: "admin", password: "admin" });
+    const orden = await crearOrden(e, {
+      lineas: [
+        { productoId: e.ids.hamburguesa, cantidad: 2 },
+        { productoId: e.ids.agua, cantidad: 1 },
+      ],
+    });
+    const tarjeta = (await tarjetas(e.app)).find((item) => item.tipo === "orden")!;
+    const hamburguesa = tarjeta.lineas.find((linea) => linea.nombre === "Hamburguesa")!;
+    const creada = await post(e.app, "/api/cocina/incidencias", {
+      comandaId: tarjeta.id,
+      comandaLineaId: hamburguesa.id,
+      tipo: "sugerencia",
+      alcance: "linea",
+      motivo: "No queda pan",
+      propuesta: "Cambiar Hamburguesa por Jugo",
+      productoReemplazoId: e.ids.jugo,
+    });
+    expect(creada.status).toBe(201);
+    const incidencia = (await creada.json()) as { id: number };
+
+    const aceptada = await post(e.app, `/api/cocina/incidencias/${incidencia.id}/aceptar`, { pin: "1234" });
+    expect(aceptada.status).toBe(200);
+    const cuenta = await verCuenta(e.app, orden.cuentaId);
+    expect(cuenta.ordenes[0].lineas).toEqual(expect.arrayContaining([
+      expect.objectContaining({ nombre: "Hamburguesa", cantidad: 0 }),
+      expect.objectContaining({ nombre: "Jugo", cantidad: 2 }),
+      expect.objectContaining({ nombre: "Agua con gas", cantidad: 1 }),
+    ]));
+    e.db.close();
+  });
+
   it("permite rechazar la orden completa solo antes de iniciar la preparación", async () => {
     const e = await entornoApi();
     await post(e.app, "/api/sesion/abrir", { usuario: "admin", password: "admin" });
