@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Button } from "../components/ui/button.tsx";
-import { Dialog, DialogContent, DialogTitle } from "../components/ui/dialog.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog.tsx";
 
 type Props = { onPin: (pin: string) => void; onCancelar: () => void; titulo: string; error?: string };
 
@@ -38,24 +38,22 @@ export function PinPad({ onPin, onCancelar, titulo, error = "" }: Props) {
   }, [pin, onPin, onCancelar]);
 
   return (
-    <Dialog onOverlayClick={onCancelar}>
-      <DialogContent className="pin-caja w-[min(340px,92vw)]" aria-label={titulo}>
+    <Dialog aria-label={titulo} onOverlayClick={onCancelar}>
+      <DialogContent className="pin-caja">
         <DialogTitle>{titulo}</DialogTitle>
-        <p className="pin-marcas text-center">{pin.replace(/./g, "•") || "PIN"}</p>
+        <p className="pin-marcas">{pin.replace(/./g, "•") || "PIN"}</p>
         {error ? (
           <p role="alert" className="pin-error">
             {error}. Vuelve a ingresar el PIN.
           </p>
         ) : null}
-        <p className="login-odoo__ayuda text-center text-sm text-muted-foreground">
-          Puedes escribirlo con el teclado: números, Retroceso y Enter.
-        </p>
+        <DialogDescription>Puedes escribirlo con el teclado: números, Retroceso y Enter.</DialogDescription>
         <div className="pin">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9", "←", "0", "OK"].map((k) => (
             <Button
               key={k}
               type="button"
-              variant={k === "OK" ? "default" : "secondary"}
+              variant={k === "OK" ? "default" : "outline"}
               onClick={() => {
                 if (k === "←") setPin((p) => p.slice(0, -1));
                 else if (k === "OK") onPin(pin);
@@ -66,7 +64,7 @@ export function PinPad({ onPin, onCancelar, titulo, error = "" }: Props) {
             </Button>
           ))}
         </div>
-        <Button type="button" variant="outline" className="w-full" onClick={onCancelar}>
+        <Button type="button" variant="ghost" onClick={onCancelar}>
           Cancelar
         </Button>
       </DialogContent>

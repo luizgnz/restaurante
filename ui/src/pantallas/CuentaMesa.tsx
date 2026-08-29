@@ -1,9 +1,9 @@
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Clock3, Pencil, Plus, ReceiptText, Send, Trash2, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Badge } from "../components/ui/badge.tsx";
-import { Button } from "../components/ui/button.tsx";
-import { Label } from "../components/ui/label.tsx";
-import { Textarea } from "../components/ui/textarea.tsx";
+import { Badge } from "@/components/ui/badge.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Card } from "@/components/ui/card.tsx";
+import { Textarea } from "@/components/ui/textarea.tsx";
 
 export type LineaOrdenUi = {
   lineaClave: string;
@@ -13,6 +13,7 @@ export type LineaOrdenUi = {
   cantidad: number;
   precioCentavos: number;
   nota: string | null;
+  contornos?: string[];
 };
 
 export type OrdenCuentaUi = {
@@ -37,21 +38,23 @@ export type CuentaDetalleUi = {
 
 type Props = {
   cuenta: CuentaDetalleUi;
+  puedeCerrar: boolean;
   onNuevaOrden: () => void;
   onEditarOrden: (orden: OrdenCuentaUi) => void;
   onAnularOrden: (orden: OrdenCuentaUi) => void;
   onPrecuenta: () => void;
-  onEnviarCaja: () => void;
+  onCerrarCuenta: () => void;
   onNotaPrivada: (nota: string) => Promise<void>;
 };
 
 export function CuentaMesa({
   cuenta,
+  puedeCerrar,
   onNuevaOrden,
   onEditarOrden,
   onAnularOrden,
   onPrecuenta,
-  onEnviarCaja,
+  onCerrarCuenta,
   onNotaPrivada,
 }: Props) {
   const aceptaConsumo = cuenta.estado === "abierta" || cuenta.estado === "precuenta_emitida";
@@ -63,28 +66,34 @@ export function CuentaMesa({
   }, [cuenta.id, cuenta.notaPrivada]);
 
   return (
-    <section className="cuenta-mesa flex flex-col gap-4">
-      <header className="cuenta-mesa__cabecera flex flex-wrap items-center justify-between gap-3">
+    <section className="cuenta-mesa">
+      <header className="cuenta-mesa__cabecera">
         <div>
-          <h1 className="m-0 text-2xl font-semibold tracking-tight">Cuenta de mesa #{cuenta.mesa.numero}</h1>
-          <p className="login-odoo__ayuda text-sm text-muted-foreground">
-            {cuenta.estado.replaceAll("_", " ")} · Total ${cuenta.totalCentavos}
-          </p>
+          <span className="cuenta-mesa__eyebrow">Servicio en curso</span>
+          <h1>Cuenta de mesa #{cuenta.mesa.numero}</h1>
+          <div className="cuenta-mesa__resumen">
+            <Badge variant={cuenta.estado === "precuenta_emitida" ? "warning" : "success"}>
+              {cuenta.estado.replaceAll("_", " ")}
+            </Badge>
+            <strong>Total ${cuenta.totalCentavos}</strong>
+          </div>
         </div>
         {aceptaConsumo ? (
-          <Button type="button" onClick={onNuevaOrden}>
+          <Button type="button" size="lg" onClick={onNuevaOrden}>
             <Plus size={18} aria-hidden="true" /> Nueva orden
           </Button>
         ) : null}
       </header>
 
-      <div className="cuenta-mesa__ordenes grid gap-3 lg:grid-cols-2">
+      <div className="cuenta-mesa__ordenes">
         {cuenta.ordenes.map((orden) => (
-          <article className="tarjeta cuenta-orden rounded-3xl border border-border bg-card p-4 shadow-sm" key={orden.id}>
+          <Card className="tarjeta cuenta-orden" key={orden.id}>
             <header className="cuenta-orden__cabecera">
               <div>
                 <h2>Orden #{orden.numero}</h2>
-                <Badge className="pedido-estado">{orden.estado}</Badge>
+                <Badge variant={orden.estado === "anulada" ? "danger" : orden.estado === "corregida" ? "warning" : "default"}>
+                  {orden.estado}
+                </Badge>
               </div>
               {aceptaConsumo && orden.estado !== "anulada" ? (
                 <div className="cuenta-orden__acciones">
@@ -100,7 +109,7 @@ export function CuentaMesa({
                   </Button>
                   <Button
                     type="button"
-                    variant="destructive"
+                    variant="ghost"
                     size="icon"
                     className="icono-secundario peligro"
                     title="Anular orden"
@@ -112,7 +121,8 @@ export function CuentaMesa({
               ) : null}
             </header>
             <p className="cuenta-orden__meta">
-              {orden.empleado} · {new Date(orden.creadaEn).toLocaleString("es")}
+              <UserRound size={15} aria-hidden="true" /> {orden.empleado}
+              <Clock3 size={15} aria-hidden="true" /> {new Date(orden.creadaEn).toLocaleString("es")}
             </p>
             {orden.lineas.filter((linea) => linea.cantidad > 0).map((linea) => (
               <div className="pedido-linea" key={linea.lineaClave}>
@@ -121,18 +131,21 @@ export function CuentaMesa({
                   {linea.nota ? ` (${linea.nota})` : ""}
                 </span>
                 <span>${linea.cantidad * linea.precioCentavos}</span>
+                {(linea.contornos ?? []).length > 0 ? (
+                  <span className="pedido-nota-fija">{linea.contornos!.join(" · ")}</span>
+                ) : null}
               </div>
             ))}
             {orden.indicaciones ? <p className="pedido-indicaciones">Indicaciones: {orden.indicaciones}</p> : null}
-          </article>
+          </Card>
         ))}
       </div>
 
-      <Label className="tarjeta cuenta-mesa__nota">
+      <label className="tarjeta cuenta-mesa__nota">
         Nota privada
         <Textarea
           value={notaPrivada}
-          placeholder="Solo visible en el POS. No va a cocina."
+          placeholder="Solo visible en el sistema. No va a cocina."
           onChange={(event) => setNotaPrivada(event.target.value)}
           onBlur={() => {
             setErrorNota("");
@@ -141,20 +154,22 @@ export function CuentaMesa({
             );
           }}
         />
-        <span className="login-odoo__ayuda">Solo visible en el POS.</span>
+        <span className="login-odoo__ayuda">Solo visible en el sistema.</span>
         {errorNota ? <span role="alert">{errorNota}</span> : null}
-      </Label>
+      </label>
 
-      <footer className="cuenta-mesa__pie sticky bottom-0 flex flex-wrap items-center gap-2 rounded-3xl border border-border bg-card p-3 shadow-sm">
-        <strong>Total ${cuenta.totalCentavos}</strong>
+      <footer className="cuenta-mesa__pie">
+        <div><span>Total de la cuenta</span><strong>${cuenta.totalCentavos}</strong></div>
         {aceptaConsumo ? (
           <>
             <Button type="button" variant="outline" onClick={onPrecuenta}>
-              Precuenta
+              <ReceiptText size={18} aria-hidden="true" /> Precuenta
             </Button>
-            <Button type="button" onClick={onEnviarCaja}>
-              Enviar a caja
-            </Button>
+            {puedeCerrar ? (
+              <Button type="button" onClick={onCerrarCuenta}>
+                <Send size={18} aria-hidden="true" /> Cerrar cuenta
+              </Button>
+            ) : null}
           </>
         ) : null}
       </footer>

@@ -109,6 +109,7 @@ describe("versión efectiva de órdenes", () => {
         cantidad: 1,
         precioCentavos: 8900,
         nota: "extra queso",
+        contornos: [],
       },
     ]);
     const original = db.prepare("SELECT cantidad, nota FROM orden_lineas WHERE id = ?").get(lineaId) as {

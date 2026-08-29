@@ -7,7 +7,10 @@ import { abrirTab, asignarMesa, borradorSinMesa, limpiarPedidosSinMesa } from ".
 import { MemoryPrinter } from "../src/print/memory.ts";
 import { openTestDb } from "./helpers.ts";
 
-describe("pedidos sin mesa", () => {
+// Circuito legacy: los borradores sin mesa son del modelo de pedidos. El modelo
+// de cuentas guarda los borradores en el navegador; estos tests quedan como
+// referencia del adaptador hasta retirar las tablas legacy.
+describe("pedidos sin mesa (legacy)", () => {
   it("solo hay un borrador sin mesa: abrir otra vez reusa el mismo", async () => {
     const db = openTestDb();
     seedCartaDemo(db);

@@ -4,15 +4,26 @@ import { pedidosAtrasados, ultimosPedidos } from "../../src/modules/salon/barras
 import { esperaMinutos, nivelEspera } from "../../src/modules/tiempo.ts";
 import { Barra, type Destino } from "./pantallas/Barra.tsx";
 import { Backend } from "./pantallas/Backend.tsx";
-import { ConstructorOrden, type ProductoCarta } from "./pantallas/ConstructorOrden.tsx";
-import { CrearProducto, type Categoria } from "./pantallas/CrearProducto.tsx";
+import { Categorias } from "./pantallas/Categorias.tsx";
+import { ComandaEnPantalla, type ComandaUi } from "./pantallas/ComandaEnPantalla.tsx";
+import { ConfirmarCierreCuenta } from "./pantallas/ConfirmarCierreCuenta.tsx";
+import { ConstructorOrden, type ConfigContornosUi, type ProductoCarta } from "./pantallas/ConstructorOrden.tsx";
+import { Contornos, type GrupoContornoUi, type SlotEditorUi } from "./pantallas/Contornos.tsx";
+import { type Categoria } from "./pantallas/CrearProducto.tsx";
 import { CuentaMesa, type CuentaDetalleUi, type OrdenCuentaUi } from "./pantallas/CuentaMesa.tsx";
 import { EditarMapa } from "./pantallas/EditarMapa.tsx";
+import { Inventario, type MaterialInventarioUi } from "./pantallas/Inventario.tsx";
+import { Kds, type IncidenciaCocinaUi, type TarjetaKdsUi } from "./pantallas/Kds.tsx";
 import { Login } from "./pantallas/Login.tsx";
+import { ModalCrearProducto } from "./pantallas/ModalCrearProducto.tsx";
 import { ModalEditarOrden } from "./pantallas/ModalEditarOrden.tsx";
-import { Opciones, type OpcionesValores } from "./pantallas/Opciones.tsx";
-import { Pedidos, type PedidoEnCurso } from "./pantallas/Pedidos.tsx";
+import { ModalOrdenesCuenta } from "./pantallas/ModalOrdenesCuenta.tsx";
+import type { SlotArmadoUi } from "./pantallas/ModalArmadoPlato.tsx";
+import { Opciones, type ImpresoraConfigUi, type OpcionesValores, type PlantillaImpresionUi } from "./pantallas/Opciones.tsx";
+import { Pedidos, type CuentaEnCursoUi } from "./pantallas/Pedidos.tsx";
+import { Recetas, type ProductoAdministrable } from "./pantallas/Recetas.tsx";
 import { PinPad } from "./pantallas/PinPad.tsx";
+import { PrecuentaEnPantalla, type PrecuentaUi } from "./pantallas/PrecuentaEnPantalla.tsx";
 import { Plano, type Mesa, type PedidoBarra, type Piso } from "./pantallas/Plano.tsx";
 import { VistaPreviaComanda } from "./pantallas/VistaPreviaComanda.tsx";
 import {
@@ -25,13 +36,9 @@ import {
 import {
   completarEnvioBorrador,
   contextoNuevaOrdenDeCuenta,
-  cuentaConocidaDeMesa,
   ejecutarAccionModal,
-  estadoMesaConCuentas,
-  registrarCuentaConocida,
   vistaTrasAccionCuenta,
   type ContextoOrden,
-  type CuentasConocidas,
 } from "./lib/flujo-cuentas.ts";
 
 type PinPendiente =
@@ -42,12 +49,37 @@ type PinPendiente =
 type EdicionOrden = { orden: OrdenCuentaUi; modo: "editar" | "anular" };
 
 type Vista = Destino;
-type Administrador = { id: number; nombre: string; derecho: string };
-type Sesion = { abierta: boolean; administrador: Administrador | null };
+type RolClave = "administrador" | "mesero" | "cocina" | "caja" | "inventario";
+type UsuarioSesion = { id: number; nombre: string; derecho: string; roles: RolClave[] };
+type Sesion = { abierta: boolean; usuario: UsuarioSesion | null; administrador?: UsuarioSesion | null };
+
+function vistaInicial(roles: RolClave[]): { vista: Vista; area: "mesero" | "cocina" } {
+  if (roles.includes("administrador") || roles.includes("mesero")) return { vista: "plano", area: "mesero" };
+  if (roles.includes("cocina")) return { vista: "kds", area: "cocina" };
+  if (roles.includes("caja")) return { vista: "pedidos", area: "mesero" };
+  return { vista: "inventario", area: "mesero" };
+}
+
+function nombreDeVista(vista: Vista, area: "mesero" | "cocina"): string {
+  if (vista === "plano") return "Mesas";
+  if (vista === "pedido") return "Orden en mesa";
+  if (vista === "pedidos") return "Órdenes";
+  if (vista === "inventario") return "Inventario";
+  if (vista === "kds") return "Cocina";
+  if (vista === "editar-mapa") return "Mapa del salón";
+  if (vista === "categorias") return "Categorías";
+  if (vista === "contornos") return "Contornos";
+  if (vista === "recetas") return "Recetas";
+  if (vista === "backend") return "Administración";
+  if (vista === "opciones") return "Opciones";
+  return area === "cocina" ? "Cocina" : "Restaurante";
+}
 
 export function App() {
+  const uiVersion = "nueva" as const;
   const [sesion, setSesion] = useState<Sesion | null>(null);
   const [vista, setVista] = useState<Vista>("plano");
+  const [area, setArea] = useState<"mesero" | "cocina">("mesero");
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [piso, setPiso] = useState("Salón");
   const [pisoId, setPisoId] = useState<number | null>(null);
@@ -55,16 +87,22 @@ export function App() {
   const [tieneFondo, setTieneFondo] = useState(false);
   const [fondoTick, setFondoTick] = useState(0);
   const [productos, setProductos] = useState<ProductoCarta[]>([]);
-  const [pedidos, setPedidos] = useState<PedidoEnCurso[]>([]);
-  const [cuentaId, setCuentaId] = useState<number | null>(null);
-  const [cuentasConocidas, setCuentasConocidas] = useState<CuentasConocidas>({});
+  const [productosAdmin, setProductosAdmin] = useState<ProductoAdministrable[]>([]);
+  const [materialesInventario, setMaterialesInventario] = useState<MaterialInventarioUi[]>([]);
+  const [tarjetasKds, setTarjetasKds] = useState<TarjetaKdsUi[]>([]);
+  const [incidenciasCocina, setIncidenciasCocina] = useState<IncidenciaCocinaUi[]>([]);
+  const [cuentasEnCurso, setCuentasEnCurso] = useState<CuentaEnCursoUi[]>([]);
+  const [cuentaActual, setCuentaActual] = useState<CuentaDetalleUi | null>(null);
   const [contextoOrden, setContextoOrden] = useState<ContextoOrden | null>(null);
   const [borradorOrden, setBorradorOrden] = useState<BorradorOrden | null>(null);
   const [edicionOrden, setEdicionOrden] = useState<EdicionOrden | null>(null);
+  const [modalCuentaId, setModalCuentaId] = useState<number | null>(null);
+  const [modalOrdenId, setModalOrdenId] = useState<number | null>(null);
   const [pinPendiente, setPinPendiente] = useState<PinPendiente | null>(null);
   const [previewOrden, setPreviewOrden] = useState<BorradorOrden | null>(null);
+  const [comandaReciente, setComandaReciente] = useState<ComandaUi | null>(null);
+  const [precuentaReciente, setPrecuentaReciente] = useState<PrecuentaUi | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const [tabletCocina, setTabletCocina] = useState(false);
   const [barraUltimos, setBarraUltimos] = useState(true);
   const [barraAtrasados, setBarraAtrasados] = useState(true);
   const [nombreLocal, setNombreLocal] = useState("Restaurante");
@@ -76,12 +114,22 @@ export function App() {
   const [confirmarComanda, setConfirmarComanda] = useState(false);
   const [auditoriaAnulaciones, setAuditoriaAnulaciones] = useState(false);
   const [justificacionAnulacion, setJustificacionAnulacion] = useState(false);
+  const [precuentaObligatoria, setPrecuentaObligatoria] = useState(true);
+  const [cierreRequiereAvanzado, setCierreRequiereAvanzado] = useState(false);
+  const [impresoraComanda, setImpresoraComanda] = useState<ImpresoraConfigUi>({ habilitada: false, nombre: "Cocina", host: "", puerto: 9100, ancho_mm: 80 });
+  const [impresoraBoleta, setImpresoraBoleta] = useState<ImpresoraConfigUi>({ habilitada: false, nombre: "Caja", host: "", puerto: 9100, ancho_mm: 80 });
+  const [plantillaComanda, setPlantillaComanda] = useState<PlantillaImpresionUi>({ titulo: "COMANDA", encabezado: "", pie: "" });
+  const [plantillaBoleta, setPlantillaBoleta] = useState<PlantillaImpresionUi>({ titulo: "COMPROBANTE", encabezado: "", pie: "Gracias por su visita" });
+  const [servidorRedHabilitado, setServidorRedHabilitado] = useState(true);
+  const [nombreServidor, setNombreServidor] = useState("Restaurante");
+  const [confirmarCierre, setConfirmarCierre] = useState(false);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [contornosConfig, setContornosConfig] = useState<ConfigContornosUi | null>(null);
+  const [crearProductoAbierto, setCrearProductoAbierto] = useState(false);
+  const [errorCrearProducto, setErrorCrearProducto] = useState("");
   const [error, setError] = useState("");
   const [errorModal, setErrorModal] = useState("");
   const envioEnCurso = useRef(false);
-  const cuenta =
-    cuentaId == null ? null : Object.values(cuentasConocidas).find((item) => item.id === cuentaId) ?? null;
 
   async function cargarSesion() {
     setSesion(await api<Sesion>("/api/sesion"));
@@ -106,18 +154,33 @@ export function App() {
     const data = await api<{ productos: typeof productos }>("/api/carta");
     setProductos(data.productos);
   }
+  async function cargarProductosAdmin() {
+    const data = await api<{ productos: ProductoAdministrable[] }>("/api/productos");
+    setProductosAdmin(data.productos);
+  }
+  async function cargarInventario() {
+    const data = await api<{ materiales: MaterialInventarioUi[] }>("/api/inventario");
+    setMaterialesInventario(data.materiales);
+  }
+  async function cargarKds() {
+    const data = await api<{ tarjetas: TarjetaKdsUi[] }>("/api/kds");
+    setTarjetasKds(data.tarjetas);
+  }
+  async function cargarIncidenciasCocina() {
+    const data = await api<{ incidencias: IncidenciaCocinaUi[] }>("/api/cocina/incidencias");
+    setIncidenciasCocina(data.incidencias);
+  }
   async function cargarCuenta(id: number) {
     const data = await api<CuentaDetalleUi>(`/api/cuentas/${id}`);
-    setCuentaId(id);
-    setCuentasConocidas((actuales) => registrarCuentaConocida(actuales, data));
+    setCuentaActual(data);
     return data;
   }
-  async function cargarPedidos() {
-    const data = await api<{ pedidos: PedidoEnCurso[] }>("/api/pedidos");
-    setPedidos(data.pedidos);
+  async function cargarCuentasEnCurso() {
+    const data = await api<{ cuentas: CuentaEnCursoUi[] }>("/api/cuentas");
+    setCuentasEnCurso(data.cuentas);
   }
   async function cargarConfig() {
-    const data = await api<OpcionesValores & { tablet_cocina: boolean; barra_ultimos_pedidos: boolean; barra_atrasados: boolean }>(
+    const data = await api<OpcionesValores & { barra_ultimos_pedidos: boolean; barra_atrasados: boolean }>(
       "/api/config",
     );
     aplicarConfig(data);
@@ -125,12 +188,10 @@ export function App() {
 
   function aplicarConfig(
     data: Partial<OpcionesValores> & {
-      tablet_cocina?: boolean;
       barra_ultimos_pedidos?: boolean;
       barra_atrasados?: boolean;
     },
   ) {
-    if (typeof data.tablet_cocina === "boolean") setTabletCocina(data.tablet_cocina);
     if (typeof data.barra_ultimos_pedidos === "boolean") setBarraUltimos(data.barra_ultimos_pedidos);
     if (typeof data.barra_atrasados === "boolean") setBarraAtrasados(data.barra_atrasados);
     if (typeof data.nombre_local === "string") setNombreLocal(data.nombre_local);
@@ -142,15 +203,18 @@ export function App() {
     if (typeof data.confirmar_comanda === "boolean") setConfirmarComanda(data.confirmar_comanda);
     if (typeof data.auditoria_anulaciones === "boolean") setAuditoriaAnulaciones(data.auditoria_anulaciones);
     if (typeof data.justificacion_anulacion === "boolean") setJustificacionAnulacion(data.justificacion_anulacion);
-  }
-
-  async function guardarBarras(patch: { barra_ultimos_pedidos?: boolean; barra_atrasados?: boolean }) {
-    const data = await api<{
-      barra_ultimos_pedidos: boolean;
-      barra_atrasados: boolean;
-    }>("/api/config", { method: "POST", body: JSON.stringify(patch) });
-    setBarraUltimos(data.barra_ultimos_pedidos);
-    setBarraAtrasados(data.barra_atrasados);
+    if (typeof data.precuenta_obligatoria_antes_de_caja === "boolean") {
+      setPrecuentaObligatoria(data.precuenta_obligatoria_antes_de_caja);
+    }
+    if (typeof data.enviar_a_caja_requiere_avanzado === "boolean") {
+      setCierreRequiereAvanzado(data.enviar_a_caja_requiere_avanzado);
+    }
+    if (data.impresora_comanda) setImpresoraComanda(data.impresora_comanda);
+    if (data.impresora_boleta) setImpresoraBoleta(data.impresora_boleta);
+    if (data.plantilla_comanda) setPlantillaComanda(data.plantilla_comanda);
+    if (data.plantilla_boleta) setPlantillaBoleta(data.plantilla_boleta);
+    if (typeof data.servidor_red_habilitado === "boolean") setServidorRedHabilitado(data.servidor_red_habilitado);
+    if (typeof data.nombre_servidor === "string") setNombreServidor(data.nombre_servidor);
   }
 
   async function guardarOpciones(patch: Partial<OpcionesValores>) {
@@ -162,18 +226,22 @@ export function App() {
     document.documentElement.dataset.tamano = tamanoUi;
   }, [tipografia, tamanoUi]);
 
-  function conEspera(lista: PedidoEnCurso[]): PedidoBarra[] {
-    return lista.map((p) => {
-      const abierto_en = p.abierto_en ?? new Date().toISOString();
-      const espera_min = p.espera_min ?? esperaMinutos(abierto_en);
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [vista, contextoOrden?.tipo, cuentaActual?.id]);
+
+  function conEspera(lista: CuentaEnCursoUi[]): PedidoBarra[] {
+    return lista.map((cuenta) => {
+      const abiertaEn = cuenta.abiertaEn ?? new Date().toISOString();
+      const espera_min = cuenta.espera_min ?? esperaMinutos(abiertaEn);
       return {
-        id: p.id,
-        mesa: p.mesa,
-        mesero: p.mesero,
-        hace: p.hace,
+        id: cuenta.id,
+        mesa: cuenta.mesa,
+        mesero: cuenta.mesero,
+        hace: cuenta.hace,
         espera_min,
         nivel: nivelEspera(espera_min),
-        abierto_en,
+        abierto_en: abiertaEn,
       };
     });
   }
@@ -183,12 +251,47 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    if (!sesion?.abierta) return;
-    cargarPlano().catch((e) => setError(String(e)));
-    cargarCarta().catch((e) => setError(String(e)));
-    cargarPedidos().catch((e) => setError(String(e)));
+    const usuarioActual = sesion?.usuario ?? sesion?.administrador;
+    if (!sesion?.abierta || !usuarioActual) return;
+    const inicial = vistaInicial(usuarioActual.roles ?? (["administrador"] as RolClave[]));
+    setVista(inicial.vista);
+    setArea(inicial.area);
+  }, [sesion?.abierta, sesion?.usuario?.id, sesion?.administrador?.id]);
+
+  useEffect(() => {
+    const usuarioActual = sesion?.usuario ?? sesion?.administrador;
+    if (!sesion?.abierta || !usuarioActual) return;
+    const roles = usuarioActual.roles ?? (["administrador"] as RolClave[]);
+    const admin = roles.includes("administrador");
+    if (admin || roles.includes("mesero")) {
+      cargarPlano().catch((e) => setError(String(e)));
+      cargarCarta().catch((e) => setError(String(e)));
+      cargarCuentasEnCurso().catch((e) => setError(String(e)));
+      cargarContornos().catch((e) => setError(String(e)));
+      cargarIncidenciasCocina().catch((e) => setError(String(e)));
+    } else if (roles.includes("cocina")) {
+      cargarCarta().catch((e) => setError(String(e)));
+      cargarKds().catch((e) => setError(String(e)));
+    } else if (roles.includes("caja")) {
+      cargarCuentasEnCurso().catch((e) => setError(String(e)));
+    } else {
+      cargarInventario().catch((e) => setError(String(e)));
+    }
     cargarConfig().catch((e) => setError(String(e)));
-  }, [sesion?.abierta]);
+  }, [sesion?.abierta, sesion?.usuario?.id, sesion?.administrador?.id]);
+
+  useEffect(() => {
+    const usuarioActual = sesion?.usuario ?? sesion?.administrador;
+    if (!sesion?.abierta || !usuarioActual) return;
+    const roles = usuarioActual.roles ?? (["administrador"] as RolClave[]);
+    const intervalo = window.setInterval(() => {
+      if (roles.some((rol) => rol === "mesero" || rol === "administrador")) {
+        cargarIncidenciasCocina().catch(() => undefined);
+      }
+      if (area === "cocina") cargarKds().catch(() => undefined);
+    }, 4_000);
+    return () => window.clearInterval(intervalo);
+  }, [sesion?.abierta, sesion?.usuario?.id, sesion?.administrador?.id, area]);
 
   async function conError(fn: () => Promise<void>) {
     try {
@@ -204,11 +307,38 @@ export function App() {
     setCategorias(data.categorias);
   }
 
+  async function cargarContornos() {
+    const data = await api<{ grupos: GrupoContornoUi[] }>("/api/contornos");
+    setContornosConfig({
+      grupos: data.grupos,
+      variantes: data.grupos.flatMap((grupo) => grupo.variantes),
+    });
+  }
+
+  async function slotsDeProducto(productoId: number): Promise<SlotArmadoUi[]> {
+    const data = await api<{ slots: SlotArmadoUi[] }>(`/api/productos/${productoId}/slots`);
+    return data.slots;
+  }
+
   async function ir(v: Destino) {
-    if (v === "pedidos") cargarPedidos().catch((e) => setError(String(e)));
-    if (v === "producto-nuevo") cargarCategorias().catch((e) => setError(String(e)));
+    if (v === "pedidos") cargarCuentasEnCurso().catch((e) => setError(String(e)));
+    if (v === "kds") cargarKds().catch((e) => setError(String(e)));
+    if (v === "inventario") cargarInventario().catch((e) => setError(String(e)));
     if (v === "plano" || v === "editar-mapa") cargarPlano().catch((e) => setError(String(e)));
+    if (v === "categorias") cargarCategorias().catch((e) => setError(String(e)));
+    if (v === "contornos") {
+      cargarContornos().catch((e) => setError(String(e)));
+      cargarCarta().catch((e) => setError(String(e)));
+    }
+    if (v === "recetas") cargarProductosAdmin().catch((e) => setError(String(e)));
     setVista(v);
+  }
+
+  function abrirCrearProducto() {
+    setErrorCrearProducto("");
+    setCrearProductoAbierto(true);
+    cargarCategorias().catch((e) => setErrorCrearProducto(String(e)));
+    cargarProductosAdmin().catch((e) => setErrorCrearProducto(String(e)));
   }
 
   function contextoBorrador(contexto: ContextoOrden) {
@@ -235,7 +365,7 @@ export function App() {
   function abrirConstructor(contexto: ContextoOrden) {
     const clave = claveBorrador(contextoBorrador(contexto));
     const guardado = cargarBorrador(window.localStorage, clave);
-    if (contexto.tipo !== "cuenta") setCuentaId(null);
+    if (contexto.tipo !== "cuenta") setCuentaActual(null);
     setContextoOrden(contexto);
     setBorradorOrden(guardado ?? borradorNuevo(contexto));
     setVista("pedido");
@@ -256,7 +386,7 @@ export function App() {
         contextoOrden.tipo === "cuenta"
           ? `/api/cuentas/${contextoOrden.cuentaId}/ordenes`
           : "/api/ordenes";
-      const respuesta = await api<{ cuentaId: number }>(ruta, {
+      const respuesta = await api<{ cuentaId: number; ordenNumero: number }>(ruta, {
         method: "POST",
         body: JSON.stringify({
           mesaId: borrador.mesaId,
@@ -272,10 +402,24 @@ export function App() {
         cargarCuenta,
         eliminarBorrador: () => eliminarBorrador(window.localStorage, clave),
       });
+      setComandaReciente({
+        mesaNumero: mesas.find((mesa) => mesa.id === borrador.mesaId)?.numero ?? null,
+        ordenNumero: respuesta.ordenNumero,
+        mesero: sesion?.usuario?.nombre ?? sesion?.administrador?.nombre ?? "",
+        indicaciones: borrador.indicaciones.trim() ? borrador.indicaciones : null,
+        lineas: borrador.lineas
+          .filter((linea) => linea.cantidad > 0)
+          .map((linea) => ({
+            nombre: productos.find((producto) => producto.id === linea.productoId)?.nombre ?? `Producto ${linea.productoId}`,
+            cantidad: linea.cantidad,
+            nota: linea.nota.trim() ? linea.nota : null,
+            contornos: linea.contornosTexto ? linea.contornosTexto.split(" · ") : [],
+          })),
+      });
       setContextoOrden(null);
       setBorradorOrden(null);
       setPinPendiente(null);
-      await Promise.all([cargarPlano(), cargarPedidos()]);
+      await Promise.all([cargarPlano(), cargarCuentasEnCurso()]);
     } finally {
       envioEnCurso.current = false;
       setEnviando(false);
@@ -300,7 +444,7 @@ export function App() {
     const mesaNumero = mesas.find((mesa) => mesa.id === borrador.mesaId)?.numero;
     const lineas = borrador.lineas.map((linea) => {
       const nombre = productos.find((producto) => producto.id === linea.productoId)?.nombre ?? `Producto ${linea.productoId}`;
-      return `${linea.cantidad} × ${nombre}${linea.nota ? ` (${linea.nota})` : ""}`;
+      return `${linea.cantidad} × ${nombre}${linea.contornosTexto ? ` (${linea.contornosTexto})` : ""}${linea.nota ? ` (${linea.nota})` : ""}`;
     });
     return [`Mesa #${mesaNumero ?? borrador.mesaId ?? "?"}`, ...lineas, borrador.indicaciones ? `Indicaciones: ${borrador.indicaciones}` : ""]
       .filter(Boolean)
@@ -324,13 +468,34 @@ export function App() {
     envioEnCurso.current = true;
     setEnviando(true);
     try {
-      await api(`/api/cuentas/${id}/${tipo}`, { method: "POST", body: JSON.stringify({ pin }) });
-      await cargarCuenta(id);
-      await Promise.all([cargarPlano(), cargarPedidos()]);
+      const respuesta = await api<{ numero: number }>(`/api/cuentas/${id}/${tipo}`, {
+        method: "POST",
+        body: JSON.stringify({ pin }),
+      });
+      const detalle = await cargarCuenta(id);
+      if (tipo === "precuenta") {
+        setPrecuentaReciente({
+          mesaNumero: detalle.mesa.numero,
+          numero: respuesta.numero,
+          mesero: sesion?.usuario?.nombre ?? sesion?.administrador?.nombre ?? "",
+          lineas: detalle.ordenes.flatMap((orden) =>
+            orden.lineas
+              .filter((linea) => linea.cantidad > 0)
+              .map((linea) => ({
+                nombre: linea.nombre,
+                cantidad: linea.cantidad,
+                precioCentavos: linea.precioCentavos,
+                nota: linea.nota,
+              })),
+          ),
+          totalCentavos: detalle.totalCentavos,
+        });
+      }
+      await Promise.all([cargarPlano(), cargarCuentasEnCurso()]);
       setPinPendiente(null);
       setVista(vistaTrasAccionCuenta(tipo));
       if (tipo === "enviar-caja") {
-        setCuentaId(null);
+        setCuentaActual(null);
         setContextoOrden(null);
         setBorradorOrden(null);
       }
@@ -341,13 +506,13 @@ export function App() {
   }
 
   function empezarAccionCuenta(tipo: "precuenta" | "enviar-caja") {
-    if (!cuentaId || enviando || pinPendiente) return;
+    if (!cuentaActual || enviando || pinPendiente) return;
     if (pinHabilitado) {
       setErrorModal("");
-      setPinPendiente({ tipo, cuentaId });
+      setPinPendiente({ tipo, cuentaId: cuentaActual.id });
       return;
     }
-    conError(() => accionCuenta(tipo, cuentaId));
+    conError(() => accionCuenta(tipo, cuentaActual.id));
   }
 
   async function resolverPin(pin: string) {
@@ -374,26 +539,66 @@ export function App() {
     );
   }
 
+  const usuario = sesion.usuario ?? sesion.administrador ?? {
+    id: 0,
+    nombre: "",
+    derecho: "avanzado",
+    roles: ["administrador"] as RolClave[],
+  };
+  const roles = usuario.roles ?? (["administrador"] as RolClave[]);
+  const puedeAdministrar = roles.includes("administrador");
+  const puedeMesas = puedeAdministrar || roles.includes("mesero");
+  const puedeCocina = puedeAdministrar || roles.includes("cocina");
+  const puedeOrdenes = puedeMesas || roles.includes("caja");
+
   return (
-    <div className="pos-odoo flex min-h-dvh flex-col bg-background">
+    <div className="pos-odoo ui-v2" data-ui-version="nueva">
       <Barra
+        uiVersion={uiVersion}
         vista={vista}
+        area={area}
         marca={nombreLocal}
         logo={logoData}
-        nombre={sesion.administrador?.nombre ?? ""}
+        nombre={usuario.nombre}
+        puedeMesas={puedeMesas}
+        puedeOrdenes={puedeOrdenes}
+        puedeCocina={puedeCocina}
+        puedeAdministrar={puedeAdministrar}
         onMesas={() => ir("plano")}
         onOrdenes={() => ir("pedidos")}
+        onInventario={() => ir("inventario")}
+        onCocina={() => ir("kds")}
+        notificacionesCocina={incidenciasCocina.length}
+        onCambiarArea={(siguiente) => {
+          setArea(siguiente);
+          setError("");
+          if (siguiente === "cocina") {
+            if (!puedeCocina) return;
+            setVista("kds");
+            cargarKds().catch((e) => setError(String(e)));
+          } else {
+            if (!puedeMesas && !puedeOrdenes) return;
+            setVista(puedeMesas ? "plano" : "pedidos");
+            if (puedeMesas) cargarPlano().catch((e) => setError(String(e)));
+            else cargarCuentasEnCurso().catch((e) => setError(String(e)));
+          }
+        }}
         onCerrarSesion={() =>
           conError(async () => {
             await api("/api/sesion/cerrar", { method: "POST" });
-            setSesion({ abierta: false, administrador: null });
+            setSesion({ abierta: false, usuario: null, administrador: null });
+            setArea("mesero");
             setVista("plano");
           })
         }
         onIr={ir}
       />
-      {error ? <p className="px-4 text-sm text-destructive" role="alert">{error}</p> : null}
-      <main className="flex flex-1 flex-col gap-4 p-3 sm:p-5">
+      <div className="mobile-view-context" aria-live="polite">
+        <span>Sección actual</span>
+        <strong>{nombreDeVista(vista, area)}</strong>
+      </div>
+      {error ? <p role="alert">{error}</p> : null}
+      <main>
         {pinPendiente ? (
           <PinPad
             titulo={
@@ -418,7 +623,52 @@ export function App() {
             onContinuar={() => conError(continuarPreviewOrden)}
           />
         ) : null}
-        {edicionOrden && cuenta ? (
+        {comandaReciente ? (
+          <ComandaEnPantalla
+            restaurante={nombreLocal}
+            comanda={comandaReciente}
+            onCerrar={() => setComandaReciente(null)}
+          />
+        ) : null}
+        {precuentaReciente ? (
+          <PrecuentaEnPantalla
+            restaurante={nombreLocal}
+            precuenta={precuentaReciente}
+            onCerrar={() => setPrecuentaReciente(null)}
+          />
+        ) : null}
+        {confirmarCierre && cuentaActual ? (
+          <ConfirmarCierreCuenta
+            mesaNumero={cuentaActual.mesa.numero}
+            totalCentavos={cuentaActual.totalCentavos}
+            onCancelar={() => setConfirmarCierre(false)}
+            onConfirmar={() => {
+              setConfirmarCierre(false);
+              empezarAccionCuenta("enviar-caja");
+            }}
+          />
+        ) : null}
+        {modalCuentaId != null && cuentaActual?.id === modalCuentaId ? (
+          <ModalOrdenesCuenta
+            cuenta={cuentaActual}
+            ordenId={modalOrdenId}
+            onEditarOrden={(orden) => {
+              setModalCuentaId(null);
+              setModalOrdenId(null);
+              setEdicionOrden({ orden, modo: "editar" });
+            }}
+            onAnularOrden={(orden) => {
+              setModalCuentaId(null);
+              setModalOrdenId(null);
+              setEdicionOrden({ orden, modo: "anular" });
+            }}
+            onCerrar={() => {
+              setModalCuentaId(null);
+              setModalOrdenId(null);
+            }}
+          />
+        ) : null}
+        {edicionOrden && cuentaActual ? (
           <ModalEditarOrden
             orden={edicionOrden.orden}
             productos={productos}
@@ -438,18 +688,19 @@ export function App() {
                   ...(edicionOrden.modo === "anular" ? { lineas: undefined, indicaciones: undefined } : {}),
                 }),
               });
-              await cargarCuenta(cuenta.id);
+              await cargarCuenta(cuentaActual.id);
               setEdicionOrden(null);
-              await Promise.all([cargarPlano(), cargarPedidos()]);
+              await Promise.all([cargarPlano(), cargarCuentasEnCurso()]);
             }}
           />
         ) : null}
         {vista === "plano" ? (
           <Plano
+            uiVersion={uiVersion}
             piso={piso}
             pisoId={pisoId}
             pisos={pisos}
-            mesas={mesas.map((m) => ({ ...m, estado: estadoMesaConCuentas(m.estado, cuentasConocidas, m.id) }))}
+            mesas={mesas}
             bloqueado={Boolean(pinPendiente || previewOrden || edicionOrden)}
             fondoUrl={tieneFondo && pisoId ? `/api/pisos/${pisoId}/fondo?t=${fondoTick}` : null}
             onPiso={(p) => {
@@ -459,31 +710,28 @@ export function App() {
             }}
             mostrarUltimos={barraUltimos}
             mostrarAtrasados={barraAtrasados}
-            ultimos={ultimosPedidos(conEspera(pedidos), 5)}
-            atrasados={pedidosAtrasados(conEspera(pedidos), 5)}
+            ultimos={ultimosPedidos(conEspera(cuentasEnCurso), 5)}
+            atrasados={pedidosAtrasados(conEspera(cuentasEnCurso), 5)}
             onPedido={() => setVista("pedidos")}
-            onToggleUltimos={() => conError(() => guardarBarras({ barra_ultimos_pedidos: !barraUltimos }))}
-            onToggleAtrasados={() => conError(() => guardarBarras({ barra_atrasados: !barraAtrasados }))}
+            onToggleUltimos={() => setBarraUltimos((actual) => !actual)}
+            onToggleAtrasados={() => setBarraAtrasados((actual) => !actual)}
             onOrdenes={() => {
               setVista("pedidos");
-              cargarPedidos().catch((e) => setError(String(e)));
+              cargarCuentasEnCurso().catch((e) => setError(String(e)));
             }}
             onNuevoPedido={() => abrirConstructor({ tipo: "general" })}
             onMesa={(m) => {
-              const conocida = cuentaConocidaDeMesa(cuentasConocidas, m.id);
-              if (conocida && (conocida.estado === "abierta" || conocida.estado === "precuenta_emitida")) {
-                setCuentaId(conocida.id);
-                setContextoOrden(null);
-                setBorradorOrden(null);
-                setVista("pedido");
+              if (m.cuentaId) {
+                conError(async () => {
+                  await cargarCuenta(m.cuentaId as number);
+                  setContextoOrden(null);
+                  setBorradorOrden(null);
+                  setVista("pedido");
+                });
                 return;
               }
-              if (conocida?.estado === "en_caja") {
-                setError(`La cuenta de Mesa #${m.numero} ya está en caja.`);
-                return;
-              }
-              if (m.pedidoId || m.estado !== "libre") {
-                setError("Esta mesa pertenece al circuito legacy; su coexistencia se resolverá en Task 12.");
+              if (m.estado !== "libre") {
+                setError(`La Mesa #${m.numero} no está disponible.`);
                 return;
               }
               abrirConstructor({ tipo: "mesa", mesaId: m.id, mesaNumero: m.numero });
@@ -492,6 +740,7 @@ export function App() {
         ) : null}
         {vista === "pedido" && contextoOrden && borradorOrden ? (
           <ConstructorOrden
+            uiVersion={uiVersion}
             productos={productos}
             borrador={borradorOrden}
             cuentaId={contextoOrden.tipo === "cuenta" ? contextoOrden.cuentaId : undefined}
@@ -503,61 +752,124 @@ export function App() {
             mesasSeleccionables={mesas.map((m) => ({
               id: m.id,
               numero: m.numero,
-              estado: estadoMesaConCuentas(m.estado, cuentasConocidas, m.id) === "libre" ? "libre" : "ocupada",
+              estado: m.estado === "libre" ? "libre" : "ocupada",
             }))}
+            contornos={contornosConfig}
+            onSlotsDeProducto={slotsDeProducto}
             onCambiar={cambiarBorrador}
             onEnviar={(borrador) => conError(() => empezarEnviarOrden(borrador))}
             onCancelar={() => {
               setContextoOrden(null);
               setBorradorOrden(null);
-              setVista(cuenta ? "pedido" : "plano");
+              setVista(cuentaActual ? "pedido" : "plano");
             }}
           />
         ) : null}
-        {vista === "pedido" && !contextoOrden && cuenta ? (
+        {vista === "pedido" && !contextoOrden && cuentaActual ? (
           <CuentaMesa
-            cuenta={cuenta}
-            onNuevaOrden={() => abrirConstructor(contextoNuevaOrdenDeCuenta(cuenta))}
+            cuenta={cuentaActual}
+            puedeCerrar={!precuentaObligatoria || cuentaActual.estado === "precuenta_emitida"}
+            onNuevaOrden={() => abrirConstructor(contextoNuevaOrdenDeCuenta(cuentaActual))}
             onEditarOrden={(orden) => setEdicionOrden({ orden, modo: "editar" })}
             onAnularOrden={(orden) => setEdicionOrden({ orden, modo: "anular" })}
             onPrecuenta={() => empezarAccionCuenta("precuenta")}
-            onEnviarCaja={() => empezarAccionCuenta("enviar-caja")}
+            onCerrarCuenta={() => setConfirmarCierre(true)}
             onNotaPrivada={async (notaPrivada) => {
-              await api(`/api/cuentas/${cuenta.id}/nota-privada`, {
+              await api(`/api/cuentas/${cuentaActual.id}/nota-privada`, {
                 method: "POST",
                 body: JSON.stringify({ notaPrivada }),
               });
-              await cargarCuenta(cuenta.id);
+              await cargarCuenta(cuentaActual.id);
+            }}
+          />
+        ) : null}
+        {vista === "kds" ? (
+          <Kds
+            tarjetas={tarjetasKds}
+            productos={productos}
+            onRecargar={cargarKds}
+            onCambiarEtapa={async (lineaId, etapa) => {
+              await api(`/api/kds/lineas/${lineaId}/etapa`, {
+                method: "POST",
+                body: JSON.stringify({ etapa }),
+              });
+              await cargarKds();
+            }}
+            onCrearIncidencia={async (incidencia) => {
+              await api("/api/cocina/incidencias", {
+                method: "POST",
+                body: JSON.stringify(incidencia),
+              });
+              await Promise.all([cargarKds(), cargarIncidenciasCocina()]);
             }}
           />
         ) : null}
         {vista === "pedidos" ? (
           <Pedidos
-            mostrarEnProceso={tabletCocina}
-            pedidos={pedidos}
-            onAbrir={() => setError("La lista legacy es solo lectura hasta Task 12.")}
-            onEnProceso={(lineaId) =>
+            uiVersion={uiVersion}
+            cuentas={cuentasEnCurso}
+            incidencias={incidenciasCocina}
+            onAceptarSugerencia={async (incidenciaId, pin) => {
+              await api(`/api/cocina/incidencias/${incidenciaId}/aceptar`, { method: "POST", body: JSON.stringify({ pin }) });
+              await Promise.all([cargarIncidenciasCocina(), cargarCuentasEnCurso(), cargarPlano()]);
+            }}
+            onEliminarIncidencia={async (incidenciaId, pin) => {
+              await api(`/api/cocina/incidencias/${incidenciaId}/eliminar`, {
+                method: "POST",
+                body: JSON.stringify({ pin }),
+              });
+              await Promise.all([cargarIncidenciasCocina(), cargarKds(), cargarCuentasEnCurso(), cargarPlano()]);
+            }}
+            onAbrir={(cuentaId, ordenId) =>
               conError(async () => {
-                await api(`/api/lineas/${lineaId}/en-proceso`, { method: "POST" });
-                await cargarPedidos();
+                await cargarCuenta(cuentaId);
+                setModalOrdenId(ordenId ?? null);
+                setModalCuentaId(cuentaId);
               })
             }
           />
         ) : null}
-        {vista === "producto-nuevo" ? (
-          <CrearProducto
-            categorias={categorias}
-            error={error}
-            onCancelar={() => setVista("plano")}
-            onGuardar={(p) =>
-              conError(async () => {
-                await api("/api/productos", { method: "POST", body: JSON.stringify(p) });
-                await cargarCarta();
-                setVista("plano");
-              })
-            }
+        {vista === "inventario" ? (
+          <Inventario
+            materiales={materialesInventario}
+            puedeIngresar={puedeAdministrar}
+            onRecargar={cargarInventario}
+            onRegistrarEntrada={async (productoId, cantidad, pin) => {
+              await api(`/api/inventario/${productoId}/entradas`, {
+                method: "POST",
+                body: JSON.stringify({ cantidad, pin }),
+              });
+              await Promise.all([cargarInventario(), cargarCarta()]);
+            }}
+            onRegistrarPerdida={async (productoId, cantidad, motivo, pin) => {
+              await api(`/api/inventario/${productoId}/perdidas`, {
+                method: "POST",
+                body: JSON.stringify({ cantidad, motivo, pin }),
+              });
+              await Promise.all([cargarInventario(), cargarCarta()]);
+            }}
           />
         ) : null}
+        <ModalCrearProducto
+          abierto={crearProductoAbierto}
+          categorias={categorias}
+          ingredientesDisponibles={productosAdmin.filter((producto) => producto.tipo_consumo !== "receta_kit" && Boolean(producto.rastrear_inventario))}
+          error={errorCrearProducto}
+          onCerrar={() => {
+            setCrearProductoAbierto(false);
+            setErrorCrearProducto("");
+          }}
+          onGuardar={async (p) => {
+            try {
+              setErrorCrearProducto("");
+              await api("/api/productos", { method: "POST", body: JSON.stringify(p) });
+              await Promise.all([cargarCarta(), cargarProductosAdmin()]);
+              setCrearProductoAbierto(false);
+            } catch (e) {
+              setErrorCrearProducto(e instanceof Error ? e.message : String(e));
+            }
+          }}
+        />
         {vista === "editar-mapa" ? (
           <EditarMapa
             pisos={pisos}
@@ -599,9 +911,53 @@ export function App() {
         ) : null}
         {vista === "backend" ? (
           <Backend
-            onCrearProducto={() => ir("producto-nuevo")}
+            onCrearProducto={abrirCrearProducto}
+            onCategorias={() => ir("categorias")}
+            onContornos={() => ir("contornos")}
+            onRecetas={() => ir("recetas")}
             onEditarMapa={() => ir("editar-mapa")}
             onMesas={() => ir("plano")}
+          />
+        ) : null}
+        {vista === "recetas" ? <Recetas productos={productosAdmin} onVolver={() => ir("backend")} /> : null}
+        {vista === "categorias" ? (
+          <Categorias
+            categorias={categorias}
+            onCrear={async (nombre) => {
+              await api("/api/categorias", { method: "POST", body: JSON.stringify({ nombre }) });
+              await cargarCategorias();
+            }}
+            onVolver={() => ir("backend")}
+          />
+        ) : null}
+        {vista === "contornos" ? (
+          <Contornos
+            grupos={contornosConfig?.grupos ?? []}
+            productos={productos}
+            onCrearGrupo={async (nombre) => {
+              await api("/api/contornos/grupos", { method: "POST", body: JSON.stringify({ nombre }) });
+              await cargarContornos();
+            }}
+            onCrearVariante={async (input) => {
+              await api("/api/contornos/variantes", { method: "POST", body: JSON.stringify(input) });
+              await cargarContornos();
+            }}
+            onCargarSlots={slotsDeProducto}
+            onGuardarSlots={async (productoId: number, slots: SlotEditorUi[]) => {
+              await api(`/api/productos/${productoId}/slots`, {
+                method: "PUT",
+                body: JSON.stringify({
+                  slots: slots.map(({ posicion, nombre, permiteExtra, grupoIds }) => ({
+                    posicion,
+                    nombre,
+                    permiteExtra,
+                    grupoIds,
+                  })),
+                }),
+              });
+              await cargarCarta();
+            }}
+            onVolver={() => ir("backend")}
           />
         ) : null}
         {vista === "opciones" ? (
@@ -616,6 +972,14 @@ export function App() {
               confirmar_comanda: confirmarComanda,
               auditoria_anulaciones: auditoriaAnulaciones,
               justificacion_anulacion: justificacionAnulacion,
+              precuenta_obligatoria_antes_de_caja: precuentaObligatoria,
+              enviar_a_caja_requiere_avanzado: cierreRequiereAvanzado,
+              impresora_comanda: impresoraComanda,
+              impresora_boleta: impresoraBoleta,
+              plantilla_comanda: plantillaComanda,
+              plantilla_boleta: plantillaBoleta,
+              servidor_red_habilitado: servidorRedHabilitado,
+              nombre_servidor: nombreServidor,
             }}
             onCambiar={(patch) => conError(() => guardarOpciones(patch))}
           />

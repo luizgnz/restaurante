@@ -1,14 +1,14 @@
-import { useState, type FormEvent } from "react";
-import { Button } from "../components/ui/button.tsx";
-import { Checkbox } from "../components/ui/checkbox.tsx";
-import { Input } from "../components/ui/input.tsx";
-import { Label } from "../components/ui/label.tsx";
-import { Select, SelectItem } from "../components/ui/select.tsx";
+import { useEffect, useState, type FormEvent } from "react";
+import { Button } from "@/components/ui/button.tsx";
+import { Checkbox } from "@/components/ui/checkbox.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import { Select } from "@/components/ui/select.tsx";
 
 export type Categoria = { id: number; nombre: string };
 
-type Props = {
+export type CrearProductoProps = {
   categorias: Categoria[];
+  ingredientesDisponibles?: Array<{ id: number; nombre: string }>;
   error: string;
   onGuardar: (p: {
     nombre: string;
@@ -20,9 +20,13 @@ type Props = {
     codigo: string;
     color: string;
     foto_data: string | null;
+    receta: Array<{ ingredienteId: number; cantidad: number }>;
   }) => void;
   onCancelar: () => void;
+  onDirtyChange?: (sucio: boolean) => void;
 };
+
+const COLOR_INICIAL = "#714b67";
 
 function leerImagen(file: File, cb: (url: string) => void) {
   const r = new FileReader();
@@ -30,117 +34,151 @@ function leerImagen(file: File, cb: (url: string) => void) {
   r.readAsDataURL(file);
 }
 
-export function CrearProducto({ categorias, error, onGuardar, onCancelar }: Props) {
+export function CrearProducto({ categorias, ingredientesDisponibles = [], error, onGuardar, onCancelar, onDirtyChange }: CrearProductoProps) {
+  const categoriaInicial = categorias[0] ? String(categorias[0].id) : "";
   const [nombre, setNombre] = useState("");
   const [precio, setPrecio] = useState("0");
-  const [categoriaId, setCategoriaId] = useState<string>(categorias[0] ? String(categorias[0].id) : "none");
+  const [categoriaId, setCategoriaId] = useState<string>(categoriaInicial);
   const [tipo, setTipo] = useState("no_almacenable");
   const [enPos, setEnPos] = useState(true);
-  const [rastrear, setRastrear] = useState(true);
+  const [rastrear, setRastrear] = useState(false);
   const [codigo, setCodigo] = useState("");
-  const [color, setColor] = useState("#1c1917");
+  const [color, setColor] = useState(COLOR_INICIAL);
   const [foto, setFoto] = useState<string | null>(null);
+  const [receta, setReceta] = useState<Array<{ ingredienteId: number; cantidad: number }>>([]);
+  const [errorReceta, setErrorReceta] = useState("");
+
+  const sucio =
+    nombre.trim() !== "" ||
+    precio !== "0" ||
+    codigo.trim() !== "" ||
+    color !== COLOR_INICIAL ||
+    foto !== null ||
+    tipo !== "no_almacenable" ||
+    !enPos ||
+    rastrear ||
+    categoriaId !== categoriaInicial;
+
+  useEffect(() => {
+    onDirtyChange?.(sucio);
+  }, [sucio, onDirtyChange]);
 
   function enviar(e: FormEvent) {
     e.preventDefault();
+    if (tipo === "receta_kit" && receta.length === 0) {
+      setErrorReceta("Agrega al menos un ingrediente a la receta.");
+      return;
+    }
+    setErrorReceta("");
     onGuardar({
       nombre,
       precio_centavos: Math.round(Number(precio) || 0),
-      categoria_id: categoriaId && categoriaId !== "none" ? Number(categoriaId) : null,
+      categoria_id: categoriaId ? Number(categoriaId) : null,
       tipo_consumo: tipo,
       disponible_en_pos: enPos,
       rastrear_inventario: rastrear,
       codigo,
       color,
       foto_data: foto,
+      receta,
     });
   }
 
   return (
-    <section className="form-odoo mx-auto w-full max-w-xl">
-      <form className="form-odoo__tarjeta flex flex-col gap-4 rounded-3xl border border-border bg-card p-6 shadow-sm" onSubmit={enviar}>
-        <div>
-          <h1 className="m-0 text-2xl font-semibold tracking-tight">Nuevo producto</h1>
-          <p className="login-odoo__ayuda mt-1 text-sm text-muted-foreground">
-            Nombre, precio, foto, código y si se rastrea en inventario.
-          </p>
-        </div>
-        <Label className="form-odoo__foto">
-          Foto
-          {foto ? <img src={foto} alt="" className="form-odoo__foto-vista mt-2 size-16 rounded-2xl object-cover" /> : null}
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) leerImagen(f, setFoto);
-            }}
-          />
-        </Label>
-        {foto ? (
-          <Button type="button" variant="outline" onClick={() => setFoto(null)}>
-            Quitar foto
-          </Button>
-        ) : null}
-        <Label>
-          Nombre
-          <Input value={nombre} onChange={(e) => setNombre(e.target.value)} autoFocus required />
-        </Label>
-        <Label>
-          Código de producto
-          <Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Opcional" />
-        </Label>
-        <Label>
-          Precio de venta
-          <Input inputMode="numeric" value={precio} onChange={(e) => setPrecio(e.target.value)} />
-        </Label>
-        <Label>
-          Color del ítem
-          <Input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
-        </Label>
-        <Label>
-          Categoría POS
-          <Select value={categoriaId} onValueChange={setCategoriaId}>
-            <SelectItem value="none">Sin categoría</SelectItem>
+    <form className="form-odoo__tarjeta" onSubmit={enviar}>
+      <p className="login-odoo__ayuda">Nombre, precio, foto, código y si se rastrea en inventario.</p>
+      <label className="form-odoo__foto">
+        Foto
+        {foto ? <img src={foto} alt="" className="form-odoo__foto-vista" /> : null}
+        <Input
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) leerImagen(f, setFoto);
+          }}
+        />
+      </label>
+      {foto ? (
+        <Button type="button" variant="outline" onClick={() => setFoto(null)}>
+          Quitar foto
+        </Button>
+      ) : null}
+      <label>
+        Nombre
+        <Input value={nombre} onChange={(e) => setNombre(e.target.value)} autoFocus required />
+      </label>
+      <label>
+        Código de producto
+        <Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Opcional" />
+      </label>
+      <label>
+        Precio de venta
+        <Input inputMode="numeric" value={precio} onChange={(e) => setPrecio(e.target.value)} />
+      </label>
+      <label>
+        Color del ítem
+        <Input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
+      </label>
+      <label>
+        Categoría del menú
+          <Select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
             {categorias.map((c) => (
-              <SelectItem key={c.id} value={String(c.id)}>
+              <option key={c.id} value={c.id}>
                 {c.nombre}
-              </SelectItem>
+              </option>
             ))}
           </Select>
-        </Label>
-        <Label>
-          Tipo
-          <Select value={tipo} onValueChange={setTipo}>
-            <SelectItem value="no_almacenable">Consumible</SelectItem>
-            <SelectItem value="almacenable_unitario">Almacenable</SelectItem>
-            <SelectItem value="receta_kit">Receta</SelectItem>
-          </Select>
-        </Label>
-        {tipo === "receta_kit" ? (
-          <div className="editor-receta rounded-2xl p-4 text-sm">
-            <p className="m-0 font-semibold">Receta</p>
-            <p className="mt-1 mb-0 text-[var(--editor-receta-muted)]">
-              Este producto se arma con componentes de inventario. El descuento de stock usa la receta, no el ítem final.
-            </p>
-          </div>
-        ) : null}
-        <Label className="switch-tablet flex-row items-center gap-3">
-          <Checkbox checked={rastrear} onCheckedChange={(checked) => setRastrear(checked === true)} />
-          Rastrear en el inventario
-        </Label>
-        <Label className="switch-tablet flex-row items-center gap-3">
-          <Checkbox checked={enPos} onCheckedChange={(checked) => setEnPos(checked === true)} />
-          Disponible en el PdV
-        </Label>
-        <div className="form-odoo__acciones flex flex-wrap justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onCancelar}>
-            Descartar
-          </Button>
-          <Button type="submit">Guardar</Button>
-        </div>
-        {error ? <p role="alert">{error}</p> : null}
-      </form>
-    </section>
+      </label>
+      <label>
+        Tipo
+        <Select value={tipo} onChange={(e) => {
+          const siguiente = e.target.value;
+          setTipo(siguiente);
+          setRastrear(siguiente === "almacenable_unitario");
+          if (siguiente === "receta_kit" && receta.length === 0 && ingredientesDisponibles[0]) {
+            setReceta([{ ingredienteId: ingredientesDisponibles[0].id, cantidad: 1 }]);
+          }
+        }}>
+          <option value="no_almacenable">Consumible</option>
+          <option value="almacenable_unitario">Almacenable</option>
+          <option value="receta_kit">Receta</option>
+        </Select>
+      </label>
+      {tipo === "receta_kit" ? <fieldset className="recipe-editor">
+        <legend>Ingredientes de la receta</legend>
+        <p className="login-odoo__ayuda">Define cuánto consume una unidad de este plato.</p>
+        {receta.map((linea, indice) => <div className="recipe-editor__line" key={`${indice}-${linea.ingredienteId}`}>
+          <label>Ingrediente<Select value={linea.ingredienteId} onChange={(event) => setReceta(receta.map((item, i) => i === indice ? { ...item, ingredienteId: Number(event.target.value) } : item))}>
+            {ingredientesDisponibles.map((ingrediente) => <option key={ingrediente.id} value={ingrediente.id}>{ingrediente.nombre}</option>)}
+          </Select></label>
+          <label>Cantidad<Input type="number" min="0.001" step="0.001" inputMode="decimal" value={linea.cantidad} onChange={(event) => setReceta(receta.map((item, i) => i === indice ? { ...item, cantidad: Number(event.target.value) } : item))} /></label>
+          <Button type="button" variant="destructive" onClick={() => setReceta(receta.filter((_, i) => i !== indice))}>Quitar</Button>
+        </div>)}
+        <Button type="button" variant="outline" disabled={ingredientesDisponibles.length === 0} onClick={() => {
+          const disponible = ingredientesDisponibles.find((ingrediente) => !receta.some((linea) => linea.ingredienteId === ingrediente.id));
+          if (disponible) setReceta([...receta, { ingredienteId: disponible.id, cantidad: 1 }]);
+        }}>Agregar ingrediente</Button>
+        {ingredientesDisponibles.length === 0 ? <p role="alert">Crea primero los materiales que usará la receta.</p> : null}
+        {errorReceta ? <p role="alert">{errorReceta}</p> : null}
+      </fieldset> : null}
+      <label className="switch-tablet">
+        <Checkbox checked={rastrear} onChange={(e) => setRastrear(e.target.checked)} />
+        Rastrear en el inventario
+      </label>
+      <label className="switch-tablet">
+        <Checkbox checked={enPos} onChange={(e) => setEnPos(e.target.checked)} />
+        Disponible en la carta
+      </label>
+      <div className="form-odoo__acciones">
+        <Button type="button" variant="outline" onClick={onCancelar}>
+          Descartar
+        </Button>
+        <Button type="submit">
+          Guardar
+        </Button>
+      </div>
+      {error ? <p role="alert">{error}</p> : null}
+    </form>
   );
 }

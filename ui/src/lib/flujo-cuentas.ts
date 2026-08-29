@@ -5,8 +5,6 @@ export type ContextoOrden =
   | { tipo: "mesa"; mesaId: number; mesaNumero: number }
   | { tipo: "cuenta"; cuentaId: number; mesaId: number; mesaNumero: number };
 
-export type CuentasConocidas = Record<number, CuentaDetalleUi>;
-
 export function contextoNuevaOrdenDeCuenta(cuenta: CuentaDetalleUi): ContextoOrden {
   return {
     tipo: "cuenta",
@@ -14,33 +12,6 @@ export function contextoNuevaOrdenDeCuenta(cuenta: CuentaDetalleUi): ContextoOrd
     mesaId: cuenta.mesa.id,
     mesaNumero: cuenta.mesa.numero,
   };
-}
-
-export function registrarCuentaConocida(
-  conocidas: CuentasConocidas,
-  cuenta: CuentaDetalleUi,
-): CuentasConocidas {
-  return { ...conocidas, [cuenta.mesa.id]: cuenta };
-}
-
-export function cuentaConocidaDeMesa(
-  conocidas: CuentasConocidas,
-  mesaId: number,
-): CuentaDetalleUi | null {
-  return conocidas[mesaId] ?? null;
-}
-
-export function estadoMesaConCuentas(
-  estadoApi: string,
-  conocidas: CuentasConocidas,
-  mesaId: number,
-): string {
-  const cuenta = cuentaConocidaDeMesa(conocidas, mesaId);
-  if (!cuenta) return estadoApi;
-  if (cuenta.estado === "abierta") return "en_cocina";
-  if (cuenta.estado === "precuenta_emitida") return "precuenta";
-  if (cuenta.estado === "en_caja") return "en_caja";
-  return estadoApi;
 }
 
 export function vistaTrasAccionCuenta(tipo: "precuenta" | "enviar-caja"): "pedido" | "plano" {

@@ -29,7 +29,7 @@ export async function despacharJobs(db: Database.Database, printer: PrinterPort)
     .all() as { id: number; kind: string; payload: string; attempts: number }[];
   for (const job of jobs) {
     try {
-      await printer.print(bytesDeJob(job.kind, job.payload));
+      await printer.print(bytesDeJob(job.kind, job.payload), { kind: job.kind as PrintJobKind });
       db.prepare("UPDATE print_jobs SET status = 'sent', attempts = attempts + 1, last_error = NULL WHERE id = ?").run(
         job.id,
       );

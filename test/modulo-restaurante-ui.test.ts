@@ -15,15 +15,18 @@ describe("pantallas módulo restaurante", () => {
         onCancelar: () => undefined,
       }),
     );
-    expect(html).toContain("Nuevo producto");
+    expect(html).not.toContain("Nuevo producto");
+    expect(html).not.toContain("<h1");
     expect(html).toContain("Precio de venta");
-    expect(html).toContain("Categoría POS");
-    expect(html).toContain("Disponible en el PdV");
+    // Todo producto queda asociado a una categoría.
+    expect(html).not.toContain("Sin categoría");
+    expect(html).toContain("Categoría del menú");
+    expect(html).toContain("Disponible en la carta");
     expect(html).toContain("Rastrear en el inventario");
     expect(html).toContain("Código de producto");
     expect(html).toContain("Color del ítem");
     expect(html).toContain("Foto");
-    expect(html).toContain("data-state=\"checked\"");
+    expect(html).toContain("checked");
     expect(html).toContain("Guardar");
   });
 
@@ -36,7 +39,7 @@ describe("pantallas módulo restaurante", () => {
             id: 1,
             numero: 7,
             estado: "libre",
-            pedidoId: null,
+            cuentaId: null,
             asientos: 4,
             pos_x: 10,
             pos_y: 10,
@@ -77,12 +80,18 @@ describe("pantallas módulo restaurante", () => {
     const html = renderToStaticMarkup(
       createElement(Backend, {
         onCrearProducto: () => undefined,
+        onCategorias: () => undefined,
+        onContornos: () => undefined,
+        onRecetas: () => undefined,
         onEditarMapa: () => undefined,
         onMesas: () => undefined,
       }),
     );
     expect(html).toContain("Crear producto");
+    expect(html).toContain("Categorías");
+    expect(html).toContain("Contornos");
     expect(html).toContain("Editar mapa");
-    expect(html).toContain("Backend");
+    expect(html).toContain("Administración");
+    expect(html).toContain("Editar recetas");
   });
 });

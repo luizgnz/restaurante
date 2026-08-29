@@ -17,7 +17,7 @@ import { openTestDb } from "./helpers.ts";
 type Db = ReturnType<typeof openTestDb>;
 
 describe("enviar a caja", () => {
-  it("básico no puede; avanzado firma stock, libera mesa y no se reenvía", async () => {
+  it("por defecto cierra cualquier mesero; firma stock, libera mesa y no se reenvía", async () => {
     const db = openTestDb();
     const ids = seedCartaDemo(db);
     await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });
@@ -32,9 +32,10 @@ describe("enviar a caja", () => {
     });
     await emitirPrecuenta(db, pedidoId, "1234", printer, defaultConfig());
 
-    await expect(enviarACaja(db, pedidoId, "1234", defaultConfig())).rejects.toMatchObject({ codigo: "sin_derecho" });
+    const estricto: AppConfig = { ...defaultConfig(), enviar_a_caja_requiere_avanzado: true };
+    await expect(enviarACaja(db, pedidoId, "1234", estricto)).rejects.toMatchObject({ codigo: "sin_derecho" });
 
-    await enviarACaja(db, pedidoId, "2222", defaultConfig());
+    await enviarACaja(db, pedidoId, "1234", defaultConfig());
     const pan = db.prepare("SELECT on_hand_real, reserved_real FROM stock WHERE producto_id = ?").get(ids.pan) as {
       on_hand_real: number;
       reserved_real: number;
@@ -77,7 +78,11 @@ describe("enviar a caja", () => {
   });
 
   it("honra enviar_a_caja_requiere_avanzado también en el flujo legacy", async () => {
-    const conAvanzado: AppConfig = { ...defaultConfig(), precuenta_obligatoria_antes_de_caja: false };
+    const conAvanzado: AppConfig = {
+      ...defaultConfig(),
+      precuenta_obligatoria_antes_de_caja: false,
+      enviar_a_caja_requiere_avanzado: true,
+    };
     const estricto = await pedidoEnviado(conAvanzado);
     await expect(enviarACaja(estricto.db, estricto.pedidoId, "1234", conAvanzado)).rejects.toMatchObject({
       codigo: "sin_derecho",
@@ -149,15 +154,21 @@ describe("enviar cuenta a caja", () => {
     e.db.close();
   });
 
-  it("exige derecho avanzado", async () => {
+  it("pide derecho avanzado solo si la configuración lo exige", async () => {
+    const estrictoCfg: AppConfig = { ...defaultConfig(), enviar_a_caja_requiere_avanzado: true };
     const e = await cuentaAbierta((ids) => [{ productoId: ids.jugo, cantidad: 2 }]);
     await emitirPrecuentaCuenta(e.db, e.cuentaId, "1234", new MemoryPrinter(), defaultConfig());
 
-    await expect(enviarCuentaACaja(e.db, e.cuentaId, "1234", defaultConfig())).rejects.toMatchObject({
+    await expect(enviarCuentaACaja(e.db, e.cuentaId, "1234", estrictoCfg)).rejects.toMatchObject({
       codigo: "sin_derecho",
     });
     expect(e.db.prepare("SELECT count(*) AS c FROM caja_handoffs").get() as { c: number }).toEqual({ c: 0 });
     expect(obtenerCuenta(e.db, e.cuentaId).estado).toBe("precuenta_emitida");
+
+    // Por defecto cualquier mesero cierra la cuenta.
+    const { handoffId } = await enviarCuentaACaja(e.db, e.cuentaId, "1234", defaultConfig());
+    expect(handoffId).toBeGreaterThan(0);
+    expect(obtenerCuenta(e.db, e.cuentaId).estado).toBe("en_caja");
     e.db.close();
   });
 

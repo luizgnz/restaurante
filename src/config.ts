@@ -10,6 +10,20 @@ export type TipografiaPos = "sans" | "serif" | "redondeada";
 export type TamanoUi = "compacto" | "normal" | "grande";
 export type PinMomento = "crear_orden" | "enviar";
 
+export type ImpresoraRedConfig = {
+  habilitada: boolean;
+  nombre: string;
+  host: string;
+  puerto: number;
+  ancho_mm: 58 | 80;
+};
+
+export type PlantillaImpresion = {
+  titulo: string;
+  encabezado: string;
+  pie: string;
+};
+
 export type AppConfig = {
   puerto: number;
   extra_nube: boolean;
@@ -37,6 +51,12 @@ export type AppConfig = {
   pin_al_anular: boolean;
   auditoria_anulaciones: boolean;
   justificacion_anulacion: boolean;
+  impresora_comanda: ImpresoraRedConfig;
+  impresora_boleta: ImpresoraRedConfig;
+  plantilla_comanda: PlantillaImpresion;
+  plantilla_boleta: PlantillaImpresion;
+  servidor_red_habilitado: boolean;
+  nombre_servidor: string;
 };
 
 export function defaultConfig(): AppConfig {
@@ -51,7 +71,7 @@ export function defaultConfig(): AppConfig {
     pin_al_emitir_precuenta: true,
     pin_al_enviar_caja: true,
     tablet_cocina: false,
-    enviar_a_caja_requiere_avanzado: true,
+    enviar_a_caja_requiere_avanzado: false,
     precuenta_obligatoria_antes_de_caja: true,
     liberar_mesa_cuando: "al_enviar_a_caja",
     bloqueo_inactividad_seg: 60,
@@ -67,13 +87,44 @@ export function defaultConfig(): AppConfig {
     pin_al_anular: true,
     auditoria_anulaciones: false,
     justificacion_anulacion: false,
+    impresora_comanda: {
+      habilitada: false,
+      nombre: "Cocina",
+      host: "",
+      puerto: 9100,
+      ancho_mm: 80,
+    },
+    impresora_boleta: {
+      habilitada: false,
+      nombre: "Caja",
+      host: "",
+      puerto: 9100,
+      ancho_mm: 80,
+    },
+    plantilla_comanda: {
+      titulo: "COMANDA",
+      encabezado: "",
+      pie: "",
+    },
+    plantilla_boleta: {
+      titulo: "COMPROBANTE",
+      encabezado: "",
+      pie: "Gracias por su visita",
+    },
+    servidor_red_habilitado: true,
+    nombre_servidor: "Restaurante",
   };
 }
 
 export function normalizarConfig(cfg: AppConfig): AppConfig {
+  const defaults = defaultConfig();
   return {
     ...sincronizarPinEnviar(cfg),
     justificacion_anulacion: cfg.auditoria_anulaciones && cfg.justificacion_anulacion,
+    impresora_comanda: { ...defaults.impresora_comanda, ...cfg.impresora_comanda },
+    impresora_boleta: { ...defaults.impresora_boleta, ...cfg.impresora_boleta },
+    plantilla_comanda: { ...defaults.plantilla_comanda, ...cfg.plantilla_comanda },
+    plantilla_boleta: { ...defaults.plantilla_boleta, ...cfg.plantilla_boleta },
   };
 }
 

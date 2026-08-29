@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { crearEmpleado, exigirPin } from "../src/modules/empleados/empleados.ts";
+import { actualizarUsuario, crearEmpleado, exigirPin, listarUsuarios } from "../src/modules/empleados/empleados.ts";
 import { hashPin, verifyPin } from "../src/modules/empleados/pin.ts";
 import { openTestDb } from "./helpers.ts";
 
@@ -43,6 +43,35 @@ describe("empleados", () => {
     await expect(exigirPin(db, "1111", "crear_pedido")).rejects.toMatchObject({ codigo: "sin_derecho" });
     expect((await exigirPin(db, "1234", "anular")).nombre).toBe("Ana");
     expect((await exigirPin(db, "1234", "crear_pedido")).nombre).toBe("Ana");
+    db.close();
+  });
+
+  it("combina roles y aplica sus permisos", async () => {
+    const db = openTestDb();
+    const usuario = await crearEmpleado(db, {
+      nombre: "Vale",
+      pin: "4545",
+      roles: ["mesero", "caja", "inventario"],
+    });
+    expect(listarUsuarios(db).find((item) => item.id === usuario.id)?.roles).toEqual(["caja", "inventario", "mesero"]);
+    expect((await exigirPin(db, "4545", "crear_pedido")).nombre).toBe("Vale");
+    expect((await exigirPin(db, "4545", "caja")).nombre).toBe("Vale");
+    await expect(exigirPin(db, "4545", "inventario")).rejects.toMatchObject({ codigo: "sin_derecho" });
+    db.close();
+  });
+
+  it("permite editar roles pero conserva al último administrador", async () => {
+    const db = openTestDb();
+    const admin = await crearEmpleado(db, { nombre: "Jefa", pin: "2222", roles: ["administrador"] });
+    await expect(actualizarUsuario(db, admin.id, {
+      nombre: "Jefa",
+      roles: ["mesero"],
+      activo: true,
+    })).rejects.toMatchObject({ codigo: "ultimo_administrador" });
+    const otro = await crearEmpleado(db, { nombre: "Otro", pin: "3333", roles: ["administrador"] });
+    const editado = await actualizarUsuario(db, admin.id, { nombre: "Jefa", roles: ["mesero", "caja"], activo: true });
+    expect(editado.roles).toEqual(["caja", "mesero"]);
+    expect(listarUsuarios(db).find((item) => item.id === otro.id)?.roles).toEqual(["administrador"]);
     db.close();
   });
 });

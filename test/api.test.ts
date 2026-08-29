@@ -7,7 +7,7 @@ import { MemoryPrinter } from "../src/print/memory.ts";
 import { codigoDe, crearOrden, entornoApi, openTestDb, post, verCuenta } from "./helpers.ts";
 
 describe("api", () => {
-  it("sesión: básico no abre; avanzado sí; GET refleja abierta", async () => {
+  it("sesión: cualquier usuario con credenciales válidas puede iniciar", async () => {
     const db = openTestDb();
     await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });
     await crearEmpleado(db, {
@@ -20,7 +20,7 @@ describe("api", () => {
     const app = createApp({ db, config: defaultConfig(), printer: new MemoryPrinter() });
 
     const vacia = await app.request("/api/sesion");
-    expect(await vacia.json()).toEqual({ abierta: false, administrador: null });
+    expect(await vacia.json()).toEqual({ abierta: false, usuario: null, administrador: null });
 
     const no = await app.request("/api/sesion/abrir", {
       method: "POST",

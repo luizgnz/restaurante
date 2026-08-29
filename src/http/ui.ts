@@ -2,13 +2,18 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { serveStatic } from "@hono/node-server/serve-static";
-import type { Hono } from "hono";
+import type { Context, Hono } from "hono";
 
-export function montarUi(app: Hono, uiDist: string): boolean {
+export function montarUi(app: Hono<any>, uiDist: string): boolean {
   if (!existsSync(path.join(uiDist, "index.html"))) return false;
   const html = () => readFileSync(path.join(uiDist, "index.html"), "utf8");
-  app.get("/", (c) => c.html(html()));
-  app.get("/index.html", (c) => c.html(html()));
+  const documento = (c: Context) => {
+    c.header("Cache-Control", "no-store, no-cache, must-revalidate");
+    c.header("Pragma", "no-cache");
+    return c.html(html());
+  };
+  app.get("/", documento);
+  app.get("/index.html", documento);
   const root = path.relative(process.cwd(), uiDist) || ".";
   app.use("/*", serveStatic({ root }));
   return true;

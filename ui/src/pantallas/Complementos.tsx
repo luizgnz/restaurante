@@ -1,20 +1,12 @@
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card.tsx";
-
 type Props = { mensajes: string[] };
 
 export function Complementos({ mensajes }: Props) {
   return (
-    <section>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Complementos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {mensajes.map((m) => (
-            <p key={m}>{m}</p>
-          ))}
-        </CardContent>
-      </Card>
+    <section className="page-shell">
+      <header className="page-header"><div><span className="page-eyebrow">Extensiones</span><h1>Complementos</h1><p>Integraciones disponibles para el restaurante.</p></div></header>
+      {mensajes.map((m) => (
+        <p key={m}>{m}</p>
+      ))}
     </section>
   );
 }

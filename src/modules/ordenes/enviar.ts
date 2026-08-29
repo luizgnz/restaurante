@@ -2,6 +2,7 @@ import type Database from "better-sqlite3";
 import type { AppConfig } from "../../config.ts";
 import { encolarJob, despacharJobs } from "../../print/queue.ts";
 import type { PrinterPort } from "../../print/types.ts";
+import { validarSelecciones } from "../contornos/contornos.ts";
 import { cuentaActivaPorMesa } from "../cuentas/cuentas.ts";
 import { empleadoPorId } from "../empleados/empleados.ts";
 import { registrarConsumoDeOrden, type LineaOrdenConsumo } from "../inventario/asientos.ts";
@@ -86,25 +87,52 @@ export async function enviarOrden(
     const insertLinea = db.prepare(
       "INSERT INTO orden_lineas (orden_id, producto_id, cantidad, precio_centavos, nota, linea_clave) VALUES (?, ?, ?, ?, ?, ?)",
     );
+    const insertContorno = db.prepare(
+      `INSERT INTO orden_linea_contornos
+        (orden_linea_id, slot_posicion, slot_nombre, variante_nombre, precio_centavos, es_extra, orden_extra)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    );
     const lineaIds: number[] = [];
-    const ticketLineas: { nombre: string; cantidad: number; nota: string | null }[] = [];
+    const ticketLineas: { nombre: string; cantidad: number; nota: string | null; contornos?: string[] }[] = [];
     const consumo: LineaOrdenConsumo[] = [];
     for (const linea of input.lineas) {
       const producto = productoStmt.get(linea.productoId) as ProductoPrecio | undefined;
       if (!producto) throw new OrdenError("producto_inexistente", "Producto inexistente");
+      const selecciones = validarSelecciones(db, linea.productoId, linea.contornos ?? []);
+      const adicionalCentavos = selecciones.reduce((suma, seleccion) => suma + seleccion.precioCentavos, 0);
       const lineaClave = crypto.randomUUID();
       const lineaId = Number(
         insertLinea.run(
           ordenId,
           linea.productoId,
           linea.cantidad,
-          producto.precio_centavos,
+          producto.precio_centavos + adicionalCentavos,
           linea.nota ?? null,
           lineaClave,
         ).lastInsertRowid,
       );
+      const contornosTexto: string[] = [];
+      for (const seleccion of selecciones) {
+        insertContorno.run(
+          lineaId,
+          seleccion.slotPosicion,
+          seleccion.slotNombre,
+          seleccion.varianteNombre,
+          seleccion.precioCentavos,
+          seleccion.esExtra ? 1 : 0,
+          seleccion.ordenExtra,
+        );
+        contornosTexto.push(
+          seleccion.esExtra ? `EXTRA: ${seleccion.varianteNombre}` : `${seleccion.slotNombre}: ${seleccion.varianteNombre}`,
+        );
+      }
       lineaIds.push(lineaId);
-      ticketLineas.push({ nombre: producto.nombre, cantidad: linea.cantidad, nota: linea.nota ?? null });
+      ticketLineas.push({
+        nombre: producto.nombre,
+        cantidad: linea.cantidad,
+        nota: linea.nota ?? null,
+        ...(contornosTexto.length > 0 ? { contornos: contornosTexto } : {}),
+      });
       consumo.push({ lineaClave, productoId: linea.productoId, cantidad: linea.cantidad });
     }
 

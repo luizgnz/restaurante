@@ -1,11 +1,15 @@
 import type Database from "better-sqlite3";
 import { indicacionesEfectivasOrden } from "../ordenes/ordenes.ts";
+import { incidenciasDeComanda, type IncidenciaCocina } from "./incidencias.ts";
 
 export type TipoComanda = "legacy" | "orden" | "correccion" | "anulacion";
 
 export class KdsError extends Error {
-  codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable";
-  constructor(codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable", message: string) {
+  codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable" | "incidencia_pendiente";
+  constructor(
+    codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable" | "incidencia_pendiente",
+    message: string,
+  ) {
     super(message);
     this.name = "KdsError";
     this.codigo = codigo;
@@ -116,12 +120,23 @@ export function avanzarEtapa(db: Database.Database, comandaLineaId: number, etap
   if (!(ETAPAS_DESTINO as readonly string[]).includes(etapa)) {
     throw new KdsError("etapa_invalida", `Etapa desconocida: ${etapa}`);
   }
-  const linea = db.prepare("SELECT etapa FROM comanda_lineas WHERE id = ?").get(comandaLineaId) as
-    | { etapa: string }
+  const linea = db.prepare("SELECT etapa, comanda_id FROM comanda_lineas WHERE id = ?").get(comandaLineaId) as
+    | { etapa: string; comanda_id: number }
     | undefined;
   if (!linea) throw new KdsError("linea_inexistente", "Línea de comanda inexistente");
   if (!(ETAPAS_TAREA as readonly string[]).includes(linea.etapa)) {
     throw new KdsError("etapa_no_avanzable", `Una línea en ${linea.etapa} ya no avanza`);
+  }
+  const incidencia = db
+    .prepare(
+      `SELECT id FROM cocina_incidencias
+       WHERE comanda_id = ? AND estado = 'pendiente'
+         AND (comanda_linea_id IS NULL OR comanda_linea_id = ?)
+       LIMIT 1`,
+    )
+    .get(linea.comanda_id, comandaLineaId);
+  if (incidencia) {
+    throw new KdsError("incidencia_pendiente", "El mesero debe responder la solicitud antes de preparar");
   }
   db.prepare("UPDATE comanda_lineas SET etapa = ? WHERE id = ?").run(etapa, comandaLineaId);
 }
@@ -163,6 +178,8 @@ export type LineaTarjetaKds = {
   delta: number | null;
   nota: string | null;
   notaAnterior: string | null;
+  /** Selecciones de contorno de la línea (vacío en legacy y correcciones). */
+  contornos: string[];
 };
 
 export type TarjetaKds = {
@@ -184,6 +201,7 @@ export type TarjetaKds = {
   indicaciones: string | null;
   indicacionesCambiadas: boolean;
   lineas: LineaTarjetaKds[];
+  incidencias: IncidenciaCocina[];
 };
 
 type ComandaRow = {
@@ -204,6 +222,10 @@ type ComandaRow = {
 };
 
 type LineaLegacyRow = { id: number; etapa: string; nombre: string; cantidad: number; nota: string | null };
+
+type LineaOrdenKdsRow = LineaLegacyRow & { orden_linea_id: number };
+
+type ContornoLineaRow = { slot_nombre: string; variante_nombre: string; es_extra: number };
 
 type LineaCorreccionRow = {
   id: number;
@@ -236,7 +258,12 @@ function lineaSimple(row: LineaLegacyRow): LineaTarjetaKds {
     delta: null,
     nota: row.nota,
     notaAnterior: null,
+    contornos: [],
   };
+}
+
+function textoContorno(row: ContornoLineaRow): string {
+  return row.es_extra ? `EXTRA: ${row.variante_nombre}` : `${row.slot_nombre}: ${row.variante_nombre}`;
 }
 
 /**
@@ -278,12 +305,15 @@ export function tarjetasKds(db: Database.Database): TarjetaKds[] {
      ORDER BY cl.id`,
   );
   const lineasOrden = db.prepare(
-    `SELECT cl.id, cl.etapa, pr.nombre, ol.cantidad, ol.nota
+    `SELECT cl.id, cl.etapa, pr.nombre, ol.cantidad, ol.nota, ol.id AS orden_linea_id
      FROM comanda_lineas cl
      JOIN orden_lineas ol ON ol.id = cl.orden_linea_id
      JOIN productos pr ON pr.id = ol.producto_id
      WHERE cl.comanda_id = ?
      ORDER BY cl.id`,
+  );
+  const contornosDeLinea = db.prepare(
+    "SELECT slot_nombre, variante_nombre, es_extra FROM orden_linea_contornos WHERE orden_linea_id = ? ORDER BY id",
   );
   const lineasCorreccion = db.prepare(
     `SELECT cl.id, cl.etapa, pr.nombre, ocl.cantidad_nueva, ocl.cantidad_anterior, ocl.nota_nueva, ocl.nota_anterior
@@ -307,10 +337,14 @@ export function tarjetasKds(db: Database.Database): TarjetaKds[] {
           delta: l.cantidad_nueva - l.cantidad_anterior,
           nota: l.nota_nueva,
           notaAnterior: l.nota_anterior,
+          contornos: [],
         }))
-      : (
-          (row.orden_id != null ? lineasOrden.all(row.id) : lineasLegacy.all(row.id)) as LineaLegacyRow[]
-        ).map(lineaSimple);
+      : row.orden_id != null
+        ? (lineasOrden.all(row.id) as LineaOrdenKdsRow[]).map((l) => ({
+            ...lineaSimple(l),
+            contornos: (contornosDeLinea.all(l.orden_linea_id) as ContornoLineaRow[]).map(textoContorno),
+          }))
+        : (lineasLegacy.all(row.id) as LineaLegacyRow[]).map(lineaSimple);
 
     const indicaciones = esCorreccion
       ? row.correccion_indicaciones || null
@@ -334,6 +368,7 @@ export function tarjetasKds(db: Database.Database): TarjetaKds[] {
       indicaciones,
       indicacionesCambiadas: esCorreccion && row.correccion_indicaciones !== null,
       lineas,
+      incidencias: incidenciasDeComanda(db, row.id),
     };
   });
 }

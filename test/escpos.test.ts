@@ -24,6 +24,26 @@ describe("escpos", () => {
     expect(text).toContain("servir junto");
   });
 
+  it("comanda con contornos lista las selecciones bajo la línea", () => {
+    const bytes = renderComanda({
+      mesaNumero: 7,
+      ordenNumero: 1,
+      mesero: "Ana",
+      lineas: [
+        {
+          nombre: "Menú del día",
+          cantidad: 1,
+          contornos: ["Proteína: Pollo", "Contorno: Papas fritas", "EXTRA: Pollo"],
+        },
+      ],
+    });
+    const text = new TextDecoder().decode(bytes);
+    expect(text).toContain("1 x Menú del día");
+    expect(text).toContain("Proteína: Pollo");
+    expect(text).toContain("Contorno: Papas fritas");
+    expect(text).toContain("EXTRA: Pollo");
+  });
+
   it("precuenta aclara que no es boleta", () => {
     const text = new TextDecoder().decode(
       renderPrecuenta({

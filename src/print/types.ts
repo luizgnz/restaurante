@@ -1,10 +1,17 @@
 export type PrintJobKind = "comanda" | "precuenta" | "anulacion" | "correccion";
 
 export type PrinterPort = {
-  print(bytes: Uint8Array): Promise<void>;
+  print(bytes: Uint8Array, contexto?: { kind: PrintJobKind }): Promise<void>;
 };
 
-export type TicketLinea = { nombre: string; cantidad: number; precio_centavos?: number; nota?: string | null };
+export type TicketLinea = {
+  nombre: string;
+  cantidad: number;
+  precio_centavos?: number;
+  nota?: string | null;
+  /** Selecciones de contorno ya formateadas ("Proteína: Pollo", "EXTRA: Pollo"). */
+  contornos?: string[];
+};
 
 export type TicketComanda = {
   mesaNumero: number | null;

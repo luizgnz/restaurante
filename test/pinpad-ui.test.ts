@@ -12,7 +12,9 @@ describe("teclado del PIN", () => {
         onCancelar: () => undefined,
       }),
     );
-    expect(html).toContain("modal-fondo");
+    // Se afirma el comportamiento accesible, no el nombre de la clase CSS:
+    // `modal-fondo` se eliminó al migrar PinPad al componente Dialog.
+    expect(html).toContain('aria-label="PIN para anular"');
     expect(html).toContain('role="dialog"');
     expect(html).toContain('aria-modal="true"');
     expect(html).toContain("PIN para anular");
