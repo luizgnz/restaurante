@@ -279,7 +279,7 @@ export function Plano({
       ) : null}
       <div
         ref={mapaRef}
-        className="plano-mapa"
+        className="plano-mapa plano-mapa--operativo"
         style={{
           backgroundColor: pisos?.find((p) => p.id === pisoId)?.fondo_color || undefined,
           backgroundImage: fondoUrl ? `url("${fondoUrl}")` : undefined,
@@ -298,7 +298,7 @@ export function Plano({
             key={m.id}
             type="button"
             variant="ghost"
-            className={`mesa-odoo mesa-odoo--${m.estado} mesa-odoo--${m.forma}${atrasada(m) ? " mesa-odoo--atrasada" : ""} tactil`}
+            className={`mesa-odoo mesa-odoo--operativa mesa-odoo--${m.estado} mesa-odoo--${m.forma}${atrasada(m) ? " mesa-odoo--atrasada" : ""} tactil`}
             style={{
               left: `${m.pos_x}%`,
               top: `${m.pos_y}%`,
