@@ -4608,3 +4608,28 @@ button.icono:focus-visible {
   .cocina-accion { padding-inline: 0; justify-content: center; }
   .cocina-accion .cocina-accion-texto { display: none; }
 }
+
+/* Salón con semáforo real (fase 3.3): mesa atrasada en rojo suave y
+   resumen del salón clicable que filtra. */
+.salon-odoo__metricas { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.salon-odoo__metricas .button, .salon-odoo__metricas button { display: inline-flex; align-items: center; gap: 0.4rem; }
+.salon-odoo__metricas button.is-on.espera-alto {
+  border-color: var(--destructive);
+  color: var(--destructive);
+  background: var(--destructive-soft);
+}
+.mesa-odoo--atrasada {
+  border: 2px solid color-mix(in oklab, var(--destructive) 60%, transparent);
+  box-shadow: 0 0 0 4px var(--destructive-soft);
+}
+.mesa-odoo--atrasada .mesa-odoo__num { color: var(--destructive); }
+.mesa-odoo__atraso {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--destructive-soft);
+  color: var(--destructive);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}

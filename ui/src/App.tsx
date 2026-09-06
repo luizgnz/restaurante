@@ -619,6 +619,11 @@ export function App() {
   const puedeMesas = puedeAdministrar || roles.includes("mesero");
   const puedeCocina = puedeAdministrar || roles.includes("cocina");
   const puedeOrdenes = puedeMesas || roles.includes("caja");
+  const esperaPorMesa: Record<number, { espera: number; nivel: ReturnType<typeof nivelEspera> }> = {};
+  for (const cuenta of cuentasEnCurso) {
+    const espera = cuenta.espera_min ?? esperaMinutos(cuenta.abiertaEn ?? new Date().toISOString());
+    esperaPorMesa[cuenta.mesaId] = { espera, nivel: nivelEspera(espera) };
+  }
 
   return (
     <div className="pos-odoo ui-v2">
@@ -787,6 +792,7 @@ export function App() {
         {vista === "plano" ? (
           <Plano
             cargando={carga.plano}
+            esperaPorMesa={esperaPorMesa}
             piso={piso}
             pisoId={pisoId}
             pisos={pisos}
