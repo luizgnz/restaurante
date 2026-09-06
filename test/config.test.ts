@@ -11,7 +11,6 @@ describe("config", () => {
     expect(c.extra_nube).toBe(false);
     expect(c.acceso_directo).toBe(false);
     expect(c.politica_inventario).toBe("reserva_al_enviar_firme_al_enviar_caja");
-    expect(c.pin_al_enviar).toBe(true);
     expect(c.pin_al_emitir_precuenta).toBe(true);
     expect(c.pin_al_enviar_caja).toBe(true);
     expect(c.tablet_cocina).toBe(false);
@@ -26,7 +25,6 @@ describe("config", () => {
     expect(c.tipografia).toBe("sans");
     expect(c.tamano_ui).toBe("normal");
     expect(c.pin_habilitado).toBe(true);
-    expect(c.pin_momento).toBe("enviar");
     expect(c.confirmar_comanda).toBe(false);
     expect(c.pin_al_anular).toBe(true);
   });

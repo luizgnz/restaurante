@@ -12,7 +12,6 @@ export type OpcionesValores = {
   tipografia: "sans" | "serif" | "redondeada";
   tamano_ui: "compacto" | "normal" | "grande";
   pin_habilitado: boolean;
-  pin_momento: "crear_orden" | "enviar";
   pin_al_emitir_precuenta: boolean;
   pin_al_enviar_caja: boolean;
   confirmar_comanda: boolean;
@@ -240,13 +239,12 @@ export function Opciones({ valores, onCambiar }: Props) {
     <fieldset className="form-odoo__tarjeta settings-card settings-card--wide">
       <legend>Seguridad y autorizaciones</legend>
       <div className="security-grid">
-        <label className="switch-tablet"><input type="checkbox" checked={valores.pin_habilitado} onChange={(event) => onCambiar({ pin_habilitado: event.target.checked })} />Solicitar PIN</label>
-        {valores.pin_habilitado ? <label>Momento<select value={valores.pin_momento} onChange={(event) => onCambiar({ pin_momento: event.target.value as OpcionesValores["pin_momento"] })}><option value="crear_orden">Antes de crear la orden</option><option value="enviar">Al hacer clic en Enviar</option></select></label> : null}
-        <label className="switch-tablet"><input type="checkbox" checked={valores.pin_al_emitir_precuenta} onChange={(event) => onCambiar({ pin_al_emitir_precuenta: event.target.checked })} />PIN al emitir precuenta</label>
-        <label className="switch-tablet"><input type="checkbox" checked={valores.pin_al_enviar_caja} onChange={(event) => onCambiar({ pin_al_enviar_caja: event.target.checked })} />PIN al enviar a caja</label>
-        <label className="switch-tablet"><input type="checkbox" checked={valores.confirmar_comanda} onChange={(event) => onCambiar({ confirmar_comanda: event.target.checked })} />Confirmar comanda antes de enviar</label>
+        <label className="switch-tablet"><input type="checkbox" checked={valores.pin_habilitado} onChange={(event) => onCambiar({ pin_habilitado: event.target.checked })} />Pedir PIN al enviar cada orden</label>
+        <label className="switch-tablet"><input type="checkbox" checked={valores.pin_al_emitir_precuenta} onChange={(event) => onCambiar({ pin_al_emitir_precuenta: event.target.checked })} />Pedir PIN al emitir precuenta</label>
+        <label className="switch-tablet"><input type="checkbox" checked={valores.pin_al_enviar_caja} onChange={(event) => onCambiar({ pin_al_enviar_caja: event.target.checked })} />Pedir PIN al enviar a caja</label>
+        <label className="switch-tablet"><input type="checkbox" checked={valores.confirmar_comanda} onChange={(event) => onCambiar({ confirmar_comanda: event.target.checked })} />Mostrar vista previa de la comanda antes de enviar</label>
         <label className="switch-tablet"><input type="checkbox" checked={valores.precuenta_obligatoria_antes_de_caja} onChange={(event) => onCambiar({ precuenta_obligatoria_antes_de_caja: event.target.checked })} />Pedir precuenta antes de cerrar la cuenta</label>
-        <label className="switch-tablet"><input type="checkbox" checked={valores.enviar_a_caja_requiere_avanzado} onChange={(event) => onCambiar({ enviar_a_caja_requiere_avanzado: event.target.checked })} />Pedir permiso avanzado para cerrar la cuenta</label>
+        <label className="switch-tablet"><input type="checkbox" checked={valores.enviar_a_caja_requiere_avanzado} onChange={(event) => onCambiar({ enviar_a_caja_requiere_avanzado: event.target.checked })} />El PIN de caja debe ser de un usuario con rol de caja o administrador</label>
         <label className="switch-tablet"><input type="checkbox" checked={valores.auditoria_anulaciones} onChange={(event) => onCambiar({ auditoria_anulaciones: event.target.checked, ...(event.target.checked ? {} : { justificacion_anulacion: false }) })} />Guardar registro de órdenes anuladas</label>
         {valores.auditoria_anulaciones ? <label className="switch-tablet"><input type="checkbox" checked={valores.justificacion_anulacion} onChange={(event) => onCambiar({ justificacion_anulacion: event.target.checked })} />Pedir justificación al anular</label> : null}
         <label className="switch-tablet">

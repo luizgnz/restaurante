@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { Alerta } from "@/components/ui/alerta.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
 import { Checkbox } from "@/components/ui/checkbox.tsx";
+import { ConfirmarDialog } from "@/components/ui/confirmar.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Select } from "@/components/ui/select.tsx";
 import type { ProductoCarta } from "./ConstructorOrden.tsx";
@@ -49,6 +51,9 @@ export function Contornos({
   const [slots, setSlots] = useState<SlotEditorUi[]>([]);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
+  const [slotAQuitar, setSlotAQuitar] = useState<number | null>(null);
+
+  const slotEnConfirmacion = slotAQuitar !== null ? slots[slotAQuitar] : undefined;
 
   async function ejecutar(accion: () => Promise<void>) {
     setError("");
@@ -98,7 +103,7 @@ export function Contornos({
         <Button type="button" variant="outline" onClick={onVolver}>Volver</Button>
       </header>
 
-      {error ? <p role="alert">{error}</p> : null}
+      {error ? <Alerta>{error}</Alerta> : null}
 
       <div className="contornos-admin__columnas">
         <Card className="tarjeta">
@@ -235,7 +240,7 @@ export function Contornos({
                     />
                     Permite extras
                   </label>
-                  <Button type="button" variant="destructive" onClick={() => setSlots(slots.filter((_, i) => i !== indice))}>
+                  <Button type="button" variant="destructive" onClick={() => setSlotAQuitar(indice)}>
                     Quitar slot
                   </Button>
                 </fieldset>
@@ -274,6 +279,24 @@ export function Contornos({
           ) : <p className="login-odoo__ayuda">Elige un producto para configurar su armado.</p>}
         </Card>
       </div>
+
+      {slotEnConfirmacion && slotAQuitar !== null ? (
+        <ConfirmarDialog
+          titulo={
+            slotEnConfirmacion.nombre
+              ? `¿Quitar el slot ${slotAQuitar + 1} (${slotEnConfirmacion.nombre})?`
+              : `¿Quitar el slot ${slotAQuitar + 1}?`
+          }
+          descripcion="El slot deja de pedir contornos en este plato cuando guardes los cambios."
+          confirmarTexto="Sí, quitar slot"
+          peligro
+          onConfirmar={() => {
+            setSlots(slots.filter((_, i) => i !== slotAQuitar));
+            setSlotAQuitar(null);
+          }}
+          onCancelar={() => setSlotAQuitar(null)}
+        />
+      ) : null}
     </section>
   );
 }

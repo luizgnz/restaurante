@@ -3,6 +3,7 @@ import { api } from "./api.ts";
 import { pedidosAtrasados, ultimosPedidos } from "../../src/modules/salon/barras.ts";
 import { esperaMinutos, nivelEspera } from "../../src/modules/tiempo.ts";
 import { Barra, type Destino } from "./pantallas/Barra.tsx";
+import { Alerta } from "./components/ui/alerta.tsx";
 import { Backend } from "./pantallas/Backend.tsx";
 import { Categorias } from "./pantallas/Categorias.tsx";
 import { ComandaEnPantalla, type ComandaUi } from "./pantallas/ComandaEnPantalla.tsx";
@@ -78,7 +79,6 @@ function nombreDeVista(vista: Vista, area: "mesero" | "cocina"): string {
 }
 
 export function App() {
-  const uiVersion = "nueva" as const;
   const [sesion, setSesion] = useState<Sesion | null>(null);
   const [vista, setVista] = useState<Vista>("plano");
   const [area, setArea] = useState<"mesero" | "cocina">("mesero");
@@ -112,7 +112,6 @@ export function App() {
   const [tipografia, setTipografia] = useState<OpcionesValores["tipografia"]>("sans");
   const [tamanoUi, setTamanoUi] = useState<OpcionesValores["tamano_ui"]>("normal");
   const [pinHabilitado, setPinHabilitado] = useState(true);
-  const [pinMomento, setPinMomento] = useState<OpcionesValores["pin_momento"]>("enviar");
   const [confirmarComanda, setConfirmarComanda] = useState(false);
   const [auditoriaAnulaciones, setAuditoriaAnulaciones] = useState(false);
   const [devolverInsumosPreparados, setDevolverInsumosPreparados] = useState(true);
@@ -136,25 +135,31 @@ export function App() {
   const [errorCrearProducto, setErrorCrearProducto] = useState("");
   const [error, setError] = useState("");
   const [errorModal, setErrorModal] = useState("");
+  const [carga, setCarga] = useState({ plano: true, kds: true, cuentas: true, inventario: true });
   const envioEnCurso = useRef(false);
 
   async function cargarSesion() {
     setSesion(await api<Sesion>("/api/sesion"));
   }
   async function cargarPlano() {
-    const data = await api<{
-      mesas: Mesa[];
-      pisos: { id: number; nombre: string; tiene_fondo: number }[];
-    }>("/api/mesas");
-    setMesas(data.mesas);
-    setPisos(data.pisos);
-    const nextId =
-      pisoId != null && data.pisos.some((p) => p.id === pisoId) ? pisoId : (data.pisos[0]?.id ?? null);
-    setPisoId(nextId);
-    const actual = data.pisos.find((p) => p.id === nextId);
-    if (actual) {
-      setPiso(actual.nombre);
-      setTieneFondo(Boolean(actual.tiene_fondo));
+    setCarga((c) => ({ ...c, plano: true }));
+    try {
+      const data = await api<{
+        mesas: Mesa[];
+        pisos: { id: number; nombre: string; tiene_fondo: number }[];
+      }>("/api/mesas");
+      setMesas(data.mesas);
+      setPisos(data.pisos);
+      const nextId =
+        pisoId != null && data.pisos.some((p) => p.id === pisoId) ? pisoId : (data.pisos[0]?.id ?? null);
+      setPisoId(nextId);
+      const actual = data.pisos.find((p) => p.id === nextId);
+      if (actual) {
+        setPiso(actual.nombre);
+        setTieneFondo(Boolean(actual.tiene_fondo));
+      }
+    } finally {
+      setCarga((c) => ({ ...c, plano: false }));
     }
   }
   async function cargarCarta() {
@@ -166,12 +171,22 @@ export function App() {
     setProductosAdmin(data.productos);
   }
   async function cargarInventario() {
-    const data = await api<{ materiales: MaterialInventarioUi[] }>("/api/inventario");
-    setMaterialesInventario(data.materiales);
+    setCarga((c) => ({ ...c, inventario: true }));
+    try {
+      const data = await api<{ materiales: MaterialInventarioUi[] }>("/api/inventario");
+      setMaterialesInventario(data.materiales);
+    } finally {
+      setCarga((c) => ({ ...c, inventario: false }));
+    }
   }
   async function cargarKds() {
-    const data = await api<{ tarjetas: TarjetaKdsUi[] }>("/api/kds");
-    setTarjetasKds(data.tarjetas);
+    setCarga((c) => ({ ...c, kds: true }));
+    try {
+      const data = await api<{ tarjetas: TarjetaKdsUi[] }>("/api/kds");
+      setTarjetasKds(data.tarjetas);
+    } finally {
+      setCarga((c) => ({ ...c, kds: false }));
+    }
   }
   async function cargarIncidenciasCocina() {
     const data = await api<{ incidencias: IncidenciaCocinaUi[] }>("/api/cocina/incidencias");
@@ -183,8 +198,13 @@ export function App() {
     return data;
   }
   async function cargarCuentasEnCurso() {
-    const data = await api<{ cuentas: CuentaEnCursoUi[] }>("/api/cuentas");
-    setCuentasEnCurso(data.cuentas);
+    setCarga((c) => ({ ...c, cuentas: true }));
+    try {
+      const data = await api<{ cuentas: CuentaEnCursoUi[] }>("/api/cuentas");
+      setCuentasEnCurso(data.cuentas);
+    } finally {
+      setCarga((c) => ({ ...c, cuentas: false }));
+    }
   }
   async function cargarConfig() {
     const data = await api<OpcionesValores & { barra_ultimos_pedidos: boolean; barra_atrasados: boolean }>(
@@ -206,7 +226,6 @@ export function App() {
     if (data.tipografia) setTipografia(data.tipografia);
     if (data.tamano_ui) setTamanoUi(data.tamano_ui);
     if (typeof data.pin_habilitado === "boolean") setPinHabilitado(data.pin_habilitado);
-    if (data.pin_momento) setPinMomento(data.pin_momento);
     if (typeof data.confirmar_comanda === "boolean") setConfirmarComanda(data.confirmar_comanda);
     if (typeof data.auditoria_anulaciones === "boolean") setAuditoriaAnulaciones(data.auditoria_anulaciones);
     if (typeof data.devolver_insumos_preparados === "boolean") setDevolverInsumosPreparados(data.devolver_insumos_preparados);
@@ -601,9 +620,8 @@ export function App() {
   const puedeOrdenes = puedeMesas || roles.includes("caja");
 
   return (
-    <div className="pos-odoo ui-v2" data-ui-version="nueva">
+    <div className="pos-odoo ui-v2">
       <Barra
-        uiVersion={uiVersion}
         vista={vista}
         area={area}
         marca={nombreLocal}
@@ -646,7 +664,7 @@ export function App() {
         <span>Sección actual</span>
         <strong>{nombreDeVista(vista, area)}</strong>
       </div>
-      {error ? <p role="alert">{error}</p> : null}
+      {error ? <Alerta onCerrar={() => setError("")}>{error}</Alerta> : null}
       <main>
         {pinPendiente ? (
           <PinPad
@@ -767,7 +785,7 @@ export function App() {
         ) : null}
         {vista === "plano" ? (
           <Plano
-            uiVersion={uiVersion}
+            cargando={carga.plano}
             piso={piso}
             pisoId={pisoId}
             pisos={pisos}
@@ -811,7 +829,6 @@ export function App() {
         ) : null}
         {vista === "pedido" && contextoOrden && borradorOrden ? (
           <ConstructorOrden
-            uiVersion={uiVersion}
             productos={productos}
             borrador={borradorOrden}
             cuentaId={contextoOrden.tipo === "cuenta" ? contextoOrden.cuentaId : undefined}
@@ -858,6 +875,7 @@ export function App() {
         ) : null}
         {vista === "kds" ? (
           <Kds
+            cargando={carga.kds}
             tarjetas={tarjetasKds}
             productos={productos}
             onRecargar={cargarKds}
@@ -879,7 +897,7 @@ export function App() {
         ) : null}
         {vista === "pedidos" ? (
           <Pedidos
-            uiVersion={uiVersion}
+            cargando={carga.cuentas}
             cuentas={cuentasEnCurso}
             incidencias={incidenciasCocina}
             onAceptarSugerencia={async (incidenciaId, pin) => {
@@ -904,6 +922,7 @@ export function App() {
         ) : null}
         {vista === "inventario" ? (
           <Inventario
+            cargando={carga.inventario}
             materiales={materialesInventario}
             puedeIngresar={puedeAdministrar}
             onRecargar={cargarInventario}
@@ -1041,7 +1060,6 @@ export function App() {
               tipografia,
               tamano_ui: tamanoUi,
               pin_habilitado: pinHabilitado,
-              pin_momento: pinMomento,
               pin_al_emitir_precuenta: pinPrecuenta,
               pin_al_enviar_caja: pinCaja,
               confirmar_comanda: confirmarComanda,

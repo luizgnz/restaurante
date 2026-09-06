@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button.tsx";
+import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";
 import { dinero } from "../../../src/modules/formato.ts";
 
 export type PrecuentaUi = {
@@ -48,5 +50,3 @@ export function PrecuentaEnPantalla({ restaurante, precuenta, onCerrar }: Props)
     </Dialog>
   );
 }
-import { Button } from "@/components/ui/button.tsx";
-import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";

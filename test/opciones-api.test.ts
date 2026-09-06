@@ -23,10 +23,10 @@ describe("opciones API", () => {
       body: JSON.stringify({ nombre_local: "La Mesa", tipografia: "serif", pin_habilitado: false }),
     });
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { nombre_local: string; pin_al_enviar: boolean; tipografia: string };
+    const body = (await res.json()) as { nombre_local: string; pin_habilitado: boolean; tipografia: string };
     expect(body.nombre_local).toBe("La Mesa");
     expect(body.tipografia).toBe("serif");
-    expect(body.pin_al_enviar).toBe(false);
+    expect(body.pin_habilitado).toBe(false);
     db.close();
   });
 

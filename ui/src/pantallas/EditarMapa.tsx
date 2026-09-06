@@ -18,6 +18,8 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
+import { Alerta } from "@/components/ui/alerta.tsx";
+import { ConfirmarDialog } from "@/components/ui/confirmar.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { MESA_LADO, ordenarMesas } from "../../../src/modules/salon/orden.ts";
 import type { Mesa, Piso } from "./Plano.tsx";
@@ -107,6 +109,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
   const [sel, setSel] = useState<number | null>(null);
   const [arrastre, setArrastre] = useState<{ id: number; dx: number; dy: number } | null>(null);
   const [aviso, setAviso] = useState("");
+  const [confirmarQuitar, setConfirmarQuitar] = useState<{ tipo: "mesa"; mesa: MesaDraft } | { tipo: "piso" } | null>(null);
 
   const piso = pisos.find((p) => p.id === pisoId);
   const visibles = useMemo(
@@ -346,7 +349,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
           </Button>
         </div>
       </header>
-      {aviso ? <p role="alert">{aviso}</p> : null}
+      {aviso ? <Alerta>{aviso}</Alerta> : null}
 
       <div className="editor-grupos">
         <fieldset className="editor-grupo" disabled={Boolean(seleccion)}>
@@ -389,7 +392,17 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
           <Boton icono={<CopyPlus size={20} aria-hidden="true" />} onClick={duplicarPiso}>
             Duplicar piso
           </Boton>
-          <Boton icono={<Trash2 size={20} aria-hidden="true" />} onClick={eliminarPiso} peligro>
+          <Boton
+            icono={<Trash2 size={20} aria-hidden="true" />}
+            onClick={() => {
+              if (pisos.length <= 1) {
+                setAviso("Tiene que quedar al menos un piso");
+                return;
+              }
+              setConfirmarQuitar({ tipo: "piso" });
+            }}
+            peligro
+          >
             Eliminar piso
           </Boton>
         </fieldset>
@@ -449,7 +462,11 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
           <Boton icono={<Copy size={20} aria-hidden="true" />} onClick={() => seleccion && duplicarMesa(seleccion)}>
             Duplicar mesa
           </Boton>
-          <Boton icono={<Trash2 size={20} aria-hidden="true" />} onClick={() => seleccion && eliminarMesa(seleccion)} peligro>
+          <Boton
+            icono={<Trash2 size={20} aria-hidden="true" />}
+            onClick={() => seleccion && setConfirmarQuitar({ tipo: "mesa", mesa: seleccion })}
+            peligro
+          >
             Eliminar mesa
           </Boton>
         </fieldset>
@@ -490,6 +507,34 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
           </Button>
         ))}
       </div>
+
+      {confirmarQuitar ? (
+        confirmarQuitar.tipo === "piso" ? (
+          <ConfirmarDialog
+            titulo={`¿Eliminar el piso ${piso?.nombre ?? ""}?`}
+            descripcion="Se quitan también las mesas de este piso. Los cambios se aplican al guardar."
+            confirmarTexto="Sí, eliminar piso"
+            peligro
+            onConfirmar={() => {
+              eliminarPiso();
+              setConfirmarQuitar(null);
+            }}
+            onCancelar={() => setConfirmarQuitar(null)}
+          />
+        ) : (
+          <ConfirmarDialog
+            titulo={`¿Eliminar la mesa ${confirmarQuitar.mesa.numero}?`}
+            descripcion="La mesa se quita del salón. Los cambios se aplican al guardar."
+            confirmarTexto="Sí, eliminar mesa"
+            peligro
+            onConfirmar={() => {
+              eliminarMesa(confirmarQuitar.mesa);
+              setConfirmarQuitar(null);
+            }}
+            onCancelar={() => setConfirmarQuitar(null)}
+          />
+        )
+      ) : null}
     </section>
   );
 }

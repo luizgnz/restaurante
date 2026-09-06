@@ -77,7 +77,7 @@ export async function enviarACocina(
   cfg: AppConfig,
   sesionMeseroId?: number,
 ): Promise<{ comandaId: number; jobId: number }> {
-  const mesero = cfg.pin_al_enviar
+  const mesero = cfg.pin_habilitado
     ? await exigirPin(db, pin ?? "", "enviar")
     : empleadoPorId(db, sesionMeseroId ?? 0);
   if (!mesero) throw new PedidoError("sin_sesion", "Hace falta un mesero de sesión");
