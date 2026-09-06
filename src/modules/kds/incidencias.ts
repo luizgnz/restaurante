@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { versionEfectivaOrden, type LineaEfectiva } from "../ordenes/ordenes.ts";
+import { versionVigenteOrden, type LineaVigente } from "../ordenes/ordenes.ts";
 
 export type TipoIncidenciaCocina = "rechazo" | "sugerencia";
 export type AlcanceIncidenciaCocina = "linea" | "orden";
@@ -202,7 +202,7 @@ export function crearIncidenciaCocina(
 export function prepararSustitucion(
   db: Database.Database,
   id: number,
-): { incidencia: IncidenciaCocina; linea: LineaEfectiva; productoReemplazoId: number } {
+): { incidencia: IncidenciaCocina; linea: LineaVigente; productoReemplazoId: number } {
   const incidencia = incidenciaPorId(db, id);
   if (incidencia.estado !== "pendiente" || incidencia.tipo !== "sugerencia") {
     throw new IncidenciaCocinaError("incidencia_resuelta", "La sugerencia ya fue respondida");
@@ -211,7 +211,7 @@ export function prepararSustitucion(
     throw new IncidenciaCocinaError("sustitucion_no_estructurada", "La sugerencia no tiene un producto de reemplazo");
   }
   const objetivo = db.prepare("SELECT orden_linea_id FROM comanda_lineas WHERE id = ?").get(incidencia.comandaLineaId) as { orden_linea_id: number | null } | undefined;
-  const linea = versionEfectivaOrden(db, incidencia.ordenId).find((actual) => actual.ordenLineaId === objetivo?.orden_linea_id);
+  const linea = versionVigenteOrden(db, incidencia.ordenId).find((actual) => actual.ordenLineaId === objetivo?.orden_linea_id);
   if (!linea) throw new IncidenciaCocinaError("linea_inexistente", "El producto ya no forma parte de la orden");
   return { incidencia, linea, productoReemplazoId: incidencia.productoReemplazoId };
 }
@@ -250,12 +250,12 @@ export function aceptarSugerencia(db: Database.Database, id: number): Incidencia
 export function prepararEliminacion(
   db: Database.Database,
   id: number,
-): { incidencia: IncidenciaCocina; lineas: LineaEfectiva[] } {
+): { incidencia: IncidenciaCocina; lineas: LineaVigente[] } {
   const incidencia = incidenciaPorId(db, id);
   if (incidencia.estado !== "pendiente") {
     throw new IncidenciaCocinaError("incidencia_resuelta", "La solicitud ya fue respondida");
   }
-  const actuales = versionEfectivaOrden(db, incidencia.ordenId);
+  const actuales = versionVigenteOrden(db, incidencia.ordenId);
   if (incidencia.alcance === "orden") return { incidencia, lineas: actuales };
 
   const objetivo = db

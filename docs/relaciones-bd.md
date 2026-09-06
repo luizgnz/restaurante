@@ -99,7 +99,7 @@ Ciclo de una cuenta con mesa:
 2. Primer envío → cuenta `abierta` + `Orden #1` + comanda; la mesa queda ocupada.  
 3. Segundo pedido del cliente → `Orden #2`; cocina recibe solo sus productos.  
 4. Editar una orden enviada → corrección con PIN; cocina recibe solo diferencias.  
-5. Precuenta → foto de todas las versiones efectivas de las órdenes.  
+5. Precuenta → foto de todas las versiones vigentes de las órdenes.
 6. Enviar a caja → cuenta `en_caja` y mesa libre.
 
 Este producto **no cobra**; caja es handoff.
@@ -138,7 +138,7 @@ orden_linea          1 ── 0..N  orden_linea_contornos (snapshot)
 
 Un producto sin slots conserva el flujo normal. Un producto con slots exige una selección válida por cada posición antes de enviarse. Cada slot declara qué grupos acepta y si permite extras. Las selecciones enviadas guardan nombre y precio como snapshot, por lo que un cambio posterior de configuración no altera cuentas históricas.
 
-El precio guardado en `orden_lineas.precio_centavos` ya incorpora los suplementos y extras seleccionados por unidad; por eso precuenta, cuenta y caja usan el mismo total efectivo. El inventario por variante y la corrección directa de contornos permanecen diferidos.
+El precio guardado en `orden_lineas.precio_centavos` ya incorpora los suplementos y extras seleccionados por unidad; por eso precuenta, cuenta y caja usan el mismo total vigente. El inventario por variante y la corrección directa de contornos permanecen diferidos.
 
 El seed incluye `Menú del día`, con proteína y dos contornos, y el producto independiente `Extra`, que abre un selector de Pollo, Carne o Longaniza.
 

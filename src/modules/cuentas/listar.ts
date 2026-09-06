@@ -1,8 +1,8 @@
 import type Database from "better-sqlite3";
-import type { LineaEfectiva } from "../ordenes/ordenes.ts";
+import type { LineaVigente } from "../ordenes/ordenes.ts";
 import { haceCuanto } from "../tiempo.ts";
 import { obtenerCuenta, type EstadoCuenta } from "./cuentas.ts";
-import { totalEfectivoCuenta } from "./totales.ts";
+import { totalVigenteCuenta } from "./totales.ts";
 
 /** Estado de la orden visto desde cocina: lo que muestra la tabla de Órdenes. */
 export type EtapaOrden = "enviado" | "en_preparacion" | "listo" | "entregado";
@@ -42,7 +42,7 @@ export type CuentaEnCurso = {
     numero: number;
     creadaEn: string;
     etapa: EtapaOrden;
-    lineas: LineaEfectiva[];
+    lineas: LineaVigente[];
   }[];
 };
 
@@ -69,7 +69,7 @@ export function listarCuentasActivas(db: Database.Database, ahoraMs = Date.now()
       estado: detalle.estado,
       abiertaEn: row.abierta_en,
       hace: haceCuanto(row.abierta_en, ahoraMs),
-      totalCentavos: totalEfectivoCuenta(db, detalle.id),
+      totalCentavos: totalVigenteCuenta(db, detalle.id),
       ordenes: detalle.ordenes.map((orden) => ({
         id: orden.id,
         numero: orden.numero,
