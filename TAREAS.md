@@ -13,8 +13,8 @@ Lista viva del proyecto. Marcar con `[x]` al completar; agregar nuevos pendiente
 - [ ] Hacer push de los commits locales de la rama `prototype/ui-responsive`.
 - [x] Marca creada: sistema "Turno" (campana) y local "La Olla de Casa" (olla), SVGs en `ui/public/marcas/`, logo en login, favicon y barra; guía en `docs/MARCA.md`.
 - [x] Fotos reales de carta para la demo: 13 platos descargados con licencia libre (`assets/fotos-carta/` + manifest con fuente/licencia) y cargadas a la base con `scripts/cargar-fotos-carta.ts`. El seed ya no pisa `foto_data` al reiniciar.
-- [ ] Catálogo ampliado: seed con 18 productos nuevos (chorrillana, pastel de choclo, cazuela, salmón, lomo a lo pobre, pisco sour, etc. — 32 en total); fotos de los nuevos en camino a `assets/fotos-carta/` vía el mismo pipeline.
-- [ ] Decidir si las fotos de `assets/fotos-carta/` (~2.9 MB) se integran al repo (misma decisión que `capturas/`).
+- [x] Catálogo ampliado — COMPLETADO: seed con 32 productos (18 nuevos: chorrillana, pastel de choclo, cazuela de vacuno, salmón, lomo a lo pobre, pisco sour, etc.); "Sándwich de palta" reemplaza a "Palta reina" (sin foto libre disponible). 31 fotos reales cargadas a la base vía `scripts/cargar-fotos-carta.ts`.
+- [x] Fotos de `assets/fotos-carta/` integradas al repo (~8 MB, 31 JPG + manifest con fuente/licencia) para que el pipeline sea reproducible en cualquier máquina. La decisión sobre `capturas/` sigue pendiente (ver arriba).
 - [ ] Día operativo (nuevo, surgió del KDS): filtrar las consultas de cocina/órdenes por día de servicio y agregar un cierre de día explícito con respaldo y auditoría — evita pedidos fantasma de días anteriores en producción.
 
 ## Después

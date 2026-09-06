@@ -150,7 +150,7 @@ export function asegurarProductosDemo(db: Database.Database): void {
     { nombre: "Lomo a lo pobre", precio: 10900, categoria: principales, letra: "M", color: "#7a4a2b" },
     { nombre: "Asado de tira", precio: 11500, categoria: principales, letra: "D", color: "#96442e" },
     { nombre: "Barros Luco", precio: 6200, categoria: principales, letra: "B", color: "#a86a32" },
-    { nombre: "Palta reina", precio: 5900, categoria: principales, letra: "A", color: "#4a7a3d" },
+    { nombre: "Sándwich de palta", precio: 4900, categoria: principales, letra: "A", color: "#4a7a3d" },
     { nombre: "Ceviche de salmón", precio: 7900, categoria: principales, letra: "E", color: "#d07a3f" },
     { nombre: "Gaseosa", precio: 1900, categoria: bebidas, letra: "S", color: "#8a3d2e" },
     { nombre: "Pisco sour", precio: 5500, categoria: bebidas, letra: "P", color: "#c9b267" },
