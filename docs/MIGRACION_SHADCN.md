@@ -166,3 +166,23 @@ Los cinco archivos tocados: `styles.css`, `Barra.tsx`, `ConstructorOrden.tsx`, `
 - **`switch.tsx`** para `Opciones.tsx`.
 - **Copia de seguridad** del estado previo al rediseño en `ui/_backup_pre_turno/` — borrar cuando ya no haga falta.
 - La carpeta `tmp/shot/` son artefactos de captura para revisar el diseño; no forma parte de la app.
+
+## 9. 3.5 — consolidación de deudas introducidas en la fase 3 (2026-09-05)
+
+La fase 3 (marca, carta, semáforo, cocina operable) dejó el patrón viejo otra vez: 27 reglas sueltas
+al final del archivo, fuera de `@layer components` — incluidas las 4 de la fase 1. Estado corregido:
+
+- **0 reglas fuera de capa.** Todo lo de la fase 3.3/3.4 vive dentro de `@layer components` junto a
+  su familia: franja de espera y chip en la familia `.cocina-tarjeta`, `.mesa-odoo--atrasada` y
+  `.mesa-odoo__atraso` en la familia de mesa, `.cocina-entregadas` en cocina.
+- **Estado activo de botones shadcn por variante, no por clase** (lección de la §8 bis aplicada):
+  "Comenzar" usa la variante nueva `brand` (cobre `--brand`), "Listo" la `success`, y el filtro
+  "atrasadas" activo la `destructive`. Se borraron `.cocina-accion` (colores) y
+  `.cocina-accion-icono.is-start/.is-ready` (sin usuarios).
+- **Muertas borradas:** las 4 definiciones de `.modal-fondo` (sin usuarios desde la migración a
+  Radix de la fase 2.2) y las 5 de `.salon-odoo__metricas` (los `> div` apuntaban a nada desde que
+  el resumen pasó a Button; el layout ahora son utilidades `flex flex-wrap gap-2` en el JSX).
+  `styles.css`: 4.637 → 4.500 líneas.
+- El texto de espera visible usa `textoEspera()` de `src/modules/tiempo.ts` (días/horas/minutos).
+- Pendientes que siguen: `switch.tsx` para Opciones, ~96 hex sueltos, migración de las pantallas
+  pendientes de la tabla §5 (los estados de mesa siguen en 4 generaciones en media queries).

@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Propuesta Cocina · Restaurante</title>
+  <style>
+    :root {
+      --bg: #0a0d0c;
+      --panel: #111614;
+      --panel-2: #171d1a;
+      --line: #2a332f;
+      --text: #f4f7f5;
+      --muted: #95a29c;
+      --mint: #59e39b;
+      --mint-dark: #173c2a;
+      --amber: #ffbd59;
+      --amber-dark: #3b2a0d;
+      --red: #ff6b64;
+      --red-dark: #401a19;
+      --blue: #6cb7ff;
+      --blue-dark: #142d45;
+      --radius: 18px;
+      --shadow: 0 18px 50px rgb(0 0 0 / 0.28);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(circle at 30% -10%, rgb(89 227 155 / 0.08), transparent 34rem),
+        var(--bg);
+      color: var(--text);
+    }
+
+    button { font: inherit; }
+
+    button:focus-visible {
+      outline: 3px solid var(--blue);
+      outline-offset: 3px;
+    }
+
+    .app-shell { min-height: 100vh; }
+
+    .topbar {
+      position: sticky;
+      z-index: 20;
+      top: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 1rem;
+      min-height: 76px;
+      padding: 0.8rem 1.25rem;
+      border-bottom: 1px solid var(--line);
+      background: rgb(10 13 12 / 0.92);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand,
+    .service-state,
+    .top-actions,
+    .metric,
+    .ticket-meta,
+    .lane-heading,
+    .item-main,
+    .ticket-action,
+    .live-pill {
+      display: flex;
+      align-items: center;
+    }
+
+    .brand { gap: 0.75rem; }
+
+    .brand-mark {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border-radius: 13px;
+      background: var(--mint);
+      color: #08130d;
+      font-size: 1.35rem;
+      font-weight: 900;
+      transform: rotate(-2deg);
+    }
+
+    .brand-copy { display: grid; gap: 0.05rem; }
+    .brand-copy strong { font-size: 1.08rem; letter-spacing: -0.02em; }
+    .brand-copy span { color: var(--muted); font-size: 0.8rem; }
+
+    .service-state { justify-content: center; gap: 0.6rem; }
+
+    .live-pill {
+      gap: 0.45rem;
+      padding: 0.45rem 0.7rem;
+      border: 1px solid rgb(89 227 155 / 0.25);
+      border-radius: 999px;
+      background: rgb(89 227 155 / 0.08);
+      color: var(--mint);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--mint);
+      box-shadow: 0 0 0 5px rgb(89 227 155 / 0.1);
+    }
+
+    .clock {
+      min-width: 74px;
+      font-variant-numeric: tabular-nums;
+      font-size: 1.35rem;
+      font-weight: 820;
+      letter-spacing: -0.04em;
+    }
+
+    .top-actions { justify-content: flex-end; gap: 0.6rem; }
+
+    .icon-button,
+    .filter-button {
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel-2);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .icon-button {
+      display: grid;
+      width: 44px;
+      place-items: center;
+      font-size: 1.1rem;
+    }
+
+    .filter-button { padding: 0.65rem 0.9rem; font-weight: 760; }
+    .filter-button[aria-pressed="true"] { border-color: var(--mint); background: var(--mint-dark); color: var(--mint); }
+
+    main { padding: 1.1rem 1.25rem 1.5rem; }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.75rem;
+      max-width: 660px;
+      margin: 0 0 1rem;
+    }
+
+    .metric {
+      gap: 0.75rem;
+      min-height: 66px;
+      padding: 0.65rem 0.8rem;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--panel);
+    }
+
+    .metric-icon {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      flex: 0 0 auto;
+      place-items: center;
+      border-radius: 11px;
+      font-weight: 900;
+    }
+
+    .metric:nth-child(1) .metric-icon { background: var(--blue-dark); color: var(--blue); }
+    .metric:nth-child(2) .metric-icon { background: var(--amber-dark); color: var(--amber); }
+    .metric:nth-child(3) .metric-icon { background: var(--mint-dark); color: var(--mint); }
+    .metric-copy { display: grid; line-height: 1.05; }
+    .metric-copy strong { font-size: 1.45rem; font-variant-numeric: tabular-nums; }
+    .metric-copy span { margin-top: 0.25rem; color: var(--muted); font-size: 0.75rem; font-weight: 650; }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(310px, 1fr));
+      gap: 0.9rem;
+      align-items: start;
+    }
+
+    .lane {
+      min-height: calc(100vh - 182px);
+      padding: 0.7rem;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgb(17 22 20 / 0.72);
+    }
+
+    .lane-heading {
+      position: sticky;
+      z-index: 5;
+      top: 88px;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.7rem;
+      padding: 0.45rem 0.35rem 0.65rem;
+      background: linear-gradient(var(--panel), rgb(17 22 20 / 0.86));
+    }
+
+    .lane-title { display: flex; align-items: center; gap: 0.55rem; }
+    .lane-title h2 { margin: 0; font-size: 0.92rem; letter-spacing: 0.01em; }
+    .lane-dot { width: 10px; height: 10px; border-radius: 999px; }
+    .lane-new .lane-dot { background: var(--blue); }
+    .lane-making .lane-dot { background: var(--amber); }
+    .lane-ready .lane-dot { background: var(--mint); }
+
+    .lane-count {
+      display: grid;
+      min-width: 28px;
+      height: 28px;
+      place-items: center;
+      border-radius: 9px;
+      background: var(--panel-2);
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tickets { display: grid; gap: 0.7rem; }
+
+    .ticket {
+      overflow: hidden;
+      border: 1px solid #303a35;
+      border-radius: var(--radius);
+      background: #141a17;
+      box-shadow: 0 1px 0 rgb(255 255 255 / 0.025), var(--shadow);
+      transition: opacity 180ms ease, transform 180ms ease, border-color 180ms ease;
+    }
+
+    .ticket:hover { border-color: #46534d; transform: translateY(-1px); }
+    .ticket.is-urgent { border-color: rgb(255 107 100 / 0.72); box-shadow: 0 0 0 1px rgb(255 107 100 / 0.12), var(--shadow); }
+    .ticket.is-hidden { display: none; }
+
+    .ticket-head { padding: 0.9rem 0.95rem 0.75rem; }
+
+    .ticket-topline {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 0.75rem;
+    }
+
+    .table-label { display: grid; gap: 0.12rem; }
+    .table-label strong { font-size: 1.3rem; letter-spacing: -0.035em; }
+    .table-label span { color: var(--muted); font-size: 0.78rem; font-weight: 650; }
+
+    .age {
+      display: grid;
+      justify-items: end;
+      gap: 0.18rem;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 750;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .age strong { color: var(--text); font-size: 1rem; }
+    .is-urgent .age strong { color: var(--red); }
+
+    .urgent-flag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      width: fit-content;
+      margin: 0.65rem 0 0;
+      padding: 0.3rem 0.48rem;
+      border-radius: 7px;
+      background: var(--red-dark);
+      color: var(--red);
+      font-size: 0.7rem;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0.055em;
+    }
+
+    .note {
+      margin: 0 0.95rem 0.75rem;
+      padding: 0.65rem 0.75rem;
+      border-left: 3px solid var(--amber);
+      border-radius: 0 10px 10px 0;
+      background: rgb(255 189 89 / 0.09);
+      color: #ffe1ad;
+      font-size: 0.86rem;
+      font-weight: 680;
+      line-height: 1.35;
+    }
+
+    .items { border-top: 1px solid var(--line); }
+
+    .item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.65rem;
+      padding: 0.82rem 0.95rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .item:last-child { border-bottom: 0; }
+    .item-main { align-items: flex-start; gap: 0.62rem; }
+
+    .qty {
+      display: grid;
+      min-width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: 10px;
+      background: #25302b;
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .item-copy { display: grid; gap: 0.28rem; padding-top: 0.1rem; }
+    .item-copy strong { font-size: 0.98rem; line-height: 1.2; }
+    .item-copy small { color: var(--amber); font-size: 0.76rem; font-weight: 700; line-height: 1.35; }
+    .item-copy em { color: var(--muted); font-size: 0.75rem; font-style: normal; line-height: 1.35; }
+
+    .item-check {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border: 1px solid #39453f;
+      border-radius: 13px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.15rem;
+    }
+
+    .item-check[aria-pressed="true"] { border-color: var(--mint); background: var(--mint-dark); color: var(--mint); }
+
+    .ticket-foot {
+      display: grid;
+      grid-template-columns: 46px minmax(0, 1fr);
+      gap: 0.55rem;
+      padding: 0.75rem;
+      border-top: 1px solid var(--line);
+      background: #101512;
+    }
+
+    .problem-button {
+      min-height: 50px;
+      border: 1px solid rgb(255 107 100 / 0.28);
+      border-radius: 13px;
+      background: var(--red-dark);
+      color: var(--red);
+      cursor: pointer;
+      font-size: 1.15rem;
+      font-weight: 900;
+    }
+
+    .ticket-action {
+      justify-content: center;
+      gap: 0.55rem;
+      min-height: 50px;
+      border: 0;
+      border-radius: 13px;
+      background: var(--text);
+      color: #111512;
+      cursor: pointer;
+      font-weight: 850;
+    }
+
+    .lane-making .ticket-action { background: var(--amber); color: #2a1b03; }
+    .lane-ready .ticket-action { background: var(--mint); color: #082516; }
+
+    .toast {
+      position: fixed;
+      z-index: 50;
+      right: 1.25rem;
+      bottom: 1.25rem;
+      max-width: min(360px, calc(100vw - 2rem));
+      padding: 0.85rem 1rem;
+      border: 1px solid rgb(89 227 155 / 0.3);
+      border-radius: 13px;
+      background: #183426;
+      color: #c9ffe0;
+      box-shadow: var(--shadow);
+      font-size: 0.88rem;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: 180ms ease;
+    }
+
+    .toast.is-on { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 1050px) {
+      .board { grid-template-columns: repeat(3, minmax(340px, 1fr)); overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 0.5rem; }
+      .lane { scroll-snap-align: start; }
+    }
+
+    @media (max-width: 720px) {
+      .topbar { grid-template-columns: 1fr auto; padding-inline: 0.8rem; }
+      .service-state { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; }
+      .brand-copy span { display: none; }
+      .filter-button { padding-inline: 0.7rem; font-size: 0.82rem; }
+      main { padding: 0.8rem; }
+      .summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .metric { display: grid; justify-items: center; gap: 0.35rem; padding: 0.55rem 0.25rem; text-align: center; }
+      .metric-icon { width: 32px; height: 32px; }
+      .metric-copy strong { font-size: 1.2rem; }
+      .metric-copy span { font-size: 0.66rem; }
+      .board { grid-template-columns: 1fr; overflow: visible; }
+      .lane { min-height: auto; }
+      .lane-heading { top: 124px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">R</div>
+        <div class="brand-copy">
+          <strong>Cocina</strong>
+          <span>Turno de cena · Pase principal</span>
+        </div>
+      </div>
+
+      <div class="service-state">
+        <span class="live-pill"><i class="pulse" aria-hidden="true"></i> Servicio activo</span>
+        <time class="clock" id="clock">20:42</time>
+      </div>
+
+      <div class="top-actions">
+        <button class="filter-button" id="urgentFilter" type="button" aria-pressed="false">Solo urgentes</button>
+        <button class="icon-button" type="button" aria-label="Actualizar pedidos" title="Actualizar pedidos">↻</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="summary" aria-label="Resumen del servicio">
+        <div class="metric"><span class="metric-icon" aria-hidden="true">↓</span><div class="metric-copy"><strong id="newMetric">3</strong><span>por comenzar</span></div></div>
+        <div class="metric"><span class="metric-icon" aria-hidden="true">◷</span><div class="metric-copy"><strong id="makingMetric">2</strong><span>en preparación</span></div></div>
+        <div class="metric"><span class="metric-icon" aria-hidden="true">✓</span><div class="metric-copy"><strong id="readyMetric">1</strong><span>listas para salir</span></div></div>
+      </section>
+
+      <section class="board" aria-label="Tablero de pedidos de cocina">
+        <section class="lane lane-new" data-lane="new">
+          <header class="lane-heading"><div class="lane-title"><i class="lane-dot"></i><h2>POR COMENZAR</h2></div><span class="lane-count">3</span></header>
+          <div class="tickets">
+            <article class="ticket is-urgent" data-urgent="true">
+              <header class="ticket-head">
+                <div class="ticket-topline">
+                  <div class="table-label"><strong>Mesa 08</strong><span>Orden #184 · Camila</span></div>
+                  <div class="age"><strong>18 min</strong><span>20:24</span></div>
+                </div>
+                <span class="urgent-flag">▲ Demorada</span>
+              </header>
+              <p class="note">⚠ Sin cebolla en toda la orden</p>
+              <div class="items">
+                <div class="item"><div class="item-main"><b class="qty">2</b><div class="item-copy"><strong>Hamburguesa de la casa</strong><small>SIN CEBOLLA · término medio</small><em>Papas rústicas</em></div></div><button class="item-check" type="button" aria-label="Marcar hamburguesas preparadas" aria-pressed="false">✓</button></div>
+                <div class="item"><div class="item-main"><b class="qty">1</b><div class="item-copy"><strong>Ensalada César</strong><small>ADEREZO APARTE</small></div></div><button class="item-check" type="button" aria-label="Marcar ensalada preparada" aria-pressed="false">✓</button></div>
+              </div>
+              <footer class="ticket-foot"><button class="problem-button" type="button" aria-label="Reportar problema">!</button><button class="ticket-action" type="button" data-next="making">▶ Iniciar orden</button></footer>
+            </article>
+
+            <article class="ticket" data-urgent="false">
+              <header class="ticket-head"><div class="ticket-topline"><div class="table-label"><strong>Mesa 03</strong><span>Orden #187 · Diego</span></div><div class="age"><strong>07 min</strong><span>20:35</span></div></div></header>
+              <div class="items">
+                <div class="item"><div class="item-main"><b class="qty">3</b><div class="item-copy"><strong>Tacos de pescado</strong><em>2 papas · 1 ensalada</em></div></div><button class="item-check" type="button" aria-label="Marcar tacos preparados" aria-pressed="false">✓</button></div>
+                <div class="item"><div class="item-main"><b class="qty">1</b><div class="item-copy"><strong>Sopa del día</strong></div></div><button class="item-check" type="button" aria-label="Marcar sopa preparada" aria-pressed="false">✓</button></div>
+              </div>
+              <footer class="ticket-foot"><button class="problem-button" type="button" aria-label="Reportar problema">!</button><button class="ticket-action" type="button" data-next="making">▶ Iniciar orden</button></footer>
+            </article>
+
+            <article class="ticket" data-urgent="false">
+              <header class="ticket-head"><div class="ticket-topline"><div class="table-label"><strong>Barra 02</strong><span>Orden #190 · Camila</span></div><div class="age"><strong>03 min</strong><span>20:39</span></div></div></header>
+              <div class="items"><div class="item"><div class="item-main"><b class="qty">1</b><div class="item-copy"><strong>Tabla para compartir</strong><small>ALERGIA: MANÍ</small><em>Pan tostado · salsas aparte</em></div></div><button class="item-check" type="button" aria-label="Marcar tabla preparada" aria-pressed="false">✓</button></div></div>
+              <footer class="ticket-foot"><button class="problem-button" type="button" aria-label="Reportar problema">!</button><button class="ticket-action" type="button" data-next="making">▶ Iniciar orden</button></footer>
+            </article>
+          </div>
+        </section>
+
+        <section class="lane lane-making" data-lane="making">
+          <header class="lane-heading"><div class="lane-title"><i class="lane-dot"></i><h2>EN PREPARACIÓN</h2></div><span class="lane-count">2</span></header>
+          <div class="tickets">
+            <article class="ticket is-urgent" data-urgent="true">
+              <header class="ticket-head"><div class="ticket-topline"><div class="table-label"><strong>Mesa 12</strong><span>Orden #181 · Andrés</span></div><div class="age"><strong>24 min</strong><span>20:18</span></div></div><span class="urgent-flag">▲ Prioridad alta</span></header>
+              <p class="note">Cumpleaños — enviar todos los platos juntos</p>
+              <div class="items">
+                <div class="item"><div class="item-main"><b class="qty">2</b><div class="item-copy"><strong>Salmón a la plancha</strong><em>Puré de papa · vegetales</em></div></div><button class="item-check" type="button" aria-label="Marcar salmones preparados" aria-pressed="true">✓</button></div>
+                <div class="item"><div class="item-main"><b class="qty">2</b><div class="item-copy"><strong>Lomo grillado</strong><small>1 TRES CUARTOS · 1 BIEN COCIDO</small><em>Papas rústicas</em></div></div><button class="item-check" type="button" aria-label="Marcar lomos preparados" aria-pressed="false">✓</button></div>
+              </div>
+              <footer class="ticket-foot"><button class="problem-button" type="button" aria-label="Reportar problema">!</button><button class="ticket-action" type="button" data-next="ready">✓ Orden lista</button></footer>
+            </article>
+
+            <article class="ticket" data-urgent="false">
+              <header class="ticket-head"><div class="ticket-topline"><div class="table-label"><strong>Mesa 05</strong><span>Orden #185 · Sofía</span></div><div class="age"><strong>12 min</strong><span>20:30</span></div></div></header>
+              <div class="items">
+                <div class="item"><div class="item-main"><b class="qty">1</b><div class="item-copy"><strong>Risotto de hongos</strong><small>SIN PARMESANO</small></div></div><button class="item-check" type="button" aria-label="Marcar risotto preparado" aria-pressed="false">✓</button></div>
+                <div class="item"><div class="item-main"><b class="qty">1</b><div class="item-copy"><strong>Pasta fresca</strong><em>Salsa pomodoro</em></div></div><button class="item-check" type="button" aria-label="Marcar pasta preparada" aria-pressed="false">✓</button></div>
+              </div>
+              <footer class="ticket-foot"><button class="problem-button" type="button" aria-label="Reportar problema">!</button><button class="ticket-action" type="button" data-next="ready">✓ Orden lista</button></footer>
+            </article>
+          </div>
+        </section>
+
+        <section class="lane lane-ready" data-lane="ready">
+          <header class="lane-heading"><div class="lane-title"><i class="lane-dot"></i><h2>LISTAS PARA SALIR</h2></div><span class="lane-count">1</span></header>
+          <div class="tickets">
+            <article class="ticket" data-urgent="false">
+              <header class="ticket-head"><div class="ticket-topline"><div class="table-label"><strong>Mesa 10</strong><span>Orden #183 · Diego</span></div><div class="age"><strong>16 min</strong><span>20:26</span></div></div></header>
+              <div class="items">
+                <div class="item"><div class="item-main"><b class="qty">2</b><div class="item-copy"><strong>Pollo al limón</strong><em>Arroz · ensalada</em></div></div><button class="item-check" type="button" aria-label="Pollo preparado" aria-pressed="true">✓</button></div>
+                <div class="item"><div class="item-main"><b class="qty">1</b><div class="item-copy"><strong>Menú infantil</strong><em>Papas fritas</em></div></div><button class="item-check" type="button" aria-label="Menú preparado" aria-pressed="true">✓</button></div>
+              </div>
+              <footer class="ticket-foot"><button class="problem-button" type="button" aria-label="Reportar problema">!</button><button class="ticket-action" type="button" data-next="done">↗ Entregada al mesero</button></footer>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const laneInfo = {
+      new: { metric: "newMetric", action: "▶ Iniciar orden" },
+      making: { metric: "makingMetric", action: "✓ Orden lista" },
+      ready: { metric: "readyMetric", action: "↗ Entregada al mesero" }
+    };
+
+    function updateClock() {
+      document.querySelector("#clock").textContent = new Intl.DateTimeFormat("es-CL", {
+        hour: "2-digit", minute: "2-digit", hour12: false
+      }).format(new Date());
+    }
+
+    function updateCounts() {
+      Object.entries(laneInfo).forEach(([key, info]) => {
+        const lane = document.querySelector(`[data-lane="${key}"]`);
+        const count = lane.querySelectorAll(".ticket").length;
+        lane.querySelector(".lane-count").textContent = count;
+        document.querySelector(`#${info.metric}`).textContent = count;
+      });
+    }
+
+    function showToast(message) {
+      const toast = document.querySelector("#toast");
+      toast.textContent = message;
+      toast.classList.add("is-on");
+      window.clearTimeout(showToast.timeout);
+      showToast.timeout = window.setTimeout(() => toast.classList.remove("is-on"), 2200);
+    }
+
+    document.addEventListener("click", (event) => {
+      const check = event.target.closest(".item-check");
+      if (check) {
+        const active = check.getAttribute("aria-pressed") === "true";
+        check.setAttribute("aria-pressed", String(!active));
+        return;
+      }
+
+      const action = event.target.closest(".ticket-action");
+      if (action) {
+        const ticket = action.closest(".ticket");
+        const destination = action.dataset.next;
+        const reference = ticket.querySelector(".table-label strong").textContent;
+        if (destination === "done") {
+          ticket.remove();
+          showToast(`${reference} entregada al mesero`);
+        } else {
+          const lane = document.querySelector(`[data-lane="${destination}"]`);
+          lane.querySelector(".tickets").append(ticket);
+          action.dataset.next = destination === "making" ? "ready" : "done";
+          action.textContent = laneInfo[destination].action;
+          showToast(`${reference} movida a ${destination === "making" ? "preparación" : "lista para salir"}`);
+        }
+        updateCounts();
+        return;
+      }
+
+      const problem = event.target.closest(".problem-button");
+      if (problem) showToast("Aquí se abriría el flujo para avisar al mesero");
+    });
+
+    document.querySelector("#urgentFilter").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      const active = button.getAttribute("aria-pressed") !== "true";
+      button.setAttribute("aria-pressed", String(active));
+      document.querySelectorAll(".ticket").forEach((ticket) => {
+        ticket.classList.toggle("is-hidden", active && ticket.dataset.urgent !== "true");
+      });
+    });
+
+    updateClock();
+    updateCounts();
+    window.setInterval(updateClock, 30000);
+  </script>
+</body>
+</html>
