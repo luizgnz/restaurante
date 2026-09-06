@@ -8,7 +8,7 @@ import { cancelarCuenta } from "../../modules/cuentas/cancelar.ts";
 import { listarCuentasActivas } from "../../modules/cuentas/listar.ts";
 import { PinError } from "../../modules/empleados/empleados.ts";
 import { sesionAbierta } from "../../modules/empleados/sesion.ts";
-import { totalEfectivoCuenta } from "../../modules/cuentas/totales.ts";
+import { totalVigenteCuenta } from "../../modules/cuentas/totales.ts";
 import { OrdenError } from "../../modules/ordenes/enviar.ts";
 import { emitirPrecuentaCuenta, quienEmite } from "../../modules/precuenta/precuenta.ts";
 
@@ -39,7 +39,7 @@ export function rutasCuentas(deps: RutasDeps): Hono {
   rutas.get("/:id", (c) => {
     const cuentaId = idDeRuta(c);
     const cuenta = obtenerCuenta(db, cuentaId);
-    return c.json({ ...cuenta, totalCentavos: totalEfectivoCuenta(db, cuentaId) });
+    return c.json({ ...cuenta, totalCentavos: totalVigenteCuenta(db, cuentaId) });
   });
 
   rutas.post("/:id/nota-privada", async (c) => {

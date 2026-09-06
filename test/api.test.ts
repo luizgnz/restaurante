@@ -391,7 +391,7 @@ describe("POST /api/cuentas/:id/ordenes", () => {
 });
 
 describe("POST /api/ordenes/:id/correcciones", () => {
-  it("baja una cantidad, cambia la nota y la cuenta refleja la versión efectiva", async () => {
+  it("baja una cantidad, cambia la nota y la cuenta refleja la versión vigente", async () => {
     const e = await entornoApi();
     const orden = await crearOrden(e);
     const linea = (await verCuenta(e.app, orden.cuentaId)).ordenes[0].lineas[0];

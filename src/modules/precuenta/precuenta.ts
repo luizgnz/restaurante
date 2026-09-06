@@ -146,7 +146,7 @@ function lineasParaTicket(snapshot: SnapshotCuenta): TicketLinea[] {
 }
 
 /**
- * Emite la precuenta de una cuenta sobre la suma efectiva de todas sus órdenes.
+ * Emite la precuenta de una cuenta sobre la suma vigente de todas sus órdenes.
  *
  * Reemitir es normal: cada orden o corrección posterior invalida la precuenta
  * vigente, así que la cuenta acumula varias y solo la última cuenta. La firma no

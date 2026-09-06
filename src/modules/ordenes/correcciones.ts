@@ -13,9 +13,9 @@ import {
   type MermaAnulacion,
 } from "../inventario/asientos.ts";
 import { cancelarLineasDeOrden, crearComanda, ETAPA_AVISO, lineaPreparada, type LineaComanda } from "../kds/kds.ts";
-import { indicacionesEfectivasOrden, versionEfectivaOrden, type LineaEfectiva } from "./ordenes.ts";
+import { indicacionesVigentesOrden, versionVigenteOrden, type LineaVigente } from "./ordenes.ts";
 
-export { indicacionesEfectivasOrden };
+export { indicacionesVigentesOrden };
 
 export class CorreccionError extends Error {
   codigo: string;
@@ -100,7 +100,7 @@ function normalizarCambios(lineas: CambioOrdenInput[]): CambioOrdenInput[] {
   return lineas.map((l) => ({ ...l, lineaClave: l.lineaClave?.trim() ?? "" }));
 }
 
-export function calcularDiferencias(actuales: LineaEfectiva[], nuevas: CambioOrdenInput[]): DiferenciaCocina[] {
+export function calcularDiferencias(actuales: LineaVigente[], nuevas: CambioOrdenInput[]): DiferenciaCocina[] {
   const porClave = new Map(actuales.map((l) => [l.lineaClave, l]));
   const diferencias: DiferenciaCocina[] = [];
   for (const nueva of normalizarCambios(nuevas)) {
@@ -151,7 +151,7 @@ function ordenParaCorregir(db: Database.Database, ordenId: number): OrdenRow {
 function validarCambios(
   db: Database.Database,
   ordenId: number,
-  actuales: LineaEfectiva[],
+  actuales: LineaVigente[],
   lineas: CambioOrdenInput[],
 ): void {
   const porClave = new Map(actuales.map((l) => [l.lineaClave, l]));
@@ -254,7 +254,7 @@ export async function corregirOrden(
     if (yaHecha) return resultadoIdempotente(db, input.ordenId, yaHecha.id);
 
     const orden = ordenParaCorregir(db, input.ordenId);
-    const actuales = versionEfectivaOrden(db, input.ordenId);
+    const actuales = versionVigenteOrden(db, input.ordenId);
     validarCambios(db, input.ordenId, actuales, lineas);
 
     const productoStmt = db.prepare("SELECT nombre, precio_centavos FROM productos WHERE id = ?");
@@ -273,7 +273,7 @@ export async function corregirOrden(
 
     const indicacionesPedidas = input.indicaciones === undefined ? undefined : textoOpcional(input.indicaciones);
     const cambiaIndicaciones =
-      indicacionesPedidas !== undefined && indicacionesPedidas !== indicacionesEfectivasOrden(db, input.ordenId);
+      indicacionesPedidas !== undefined && indicacionesPedidas !== indicacionesVigentesOrden(db, input.ordenId);
     if (diferencias.length === 0 && !cambiaIndicaciones) {
       throw new CorreccionError("correccion_sin_cambios", "La corrección no cambia cantidades, notas ni indicaciones");
     }
@@ -470,7 +470,7 @@ export async function corregirOrden(
       ordenNumero: orden.numero,
       mesero: empleado.nombre,
       esAnulacion: ordenEnCero,
-      indicaciones: indicacionesEfectivasOrden(db, input.ordenId),
+      indicaciones: indicacionesVigentesOrden(db, input.ordenId),
       indicacionesCambiadas: cambiaIndicaciones,
       lineas: ticketLineas,
     });
