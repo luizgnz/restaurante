@@ -13,7 +13,8 @@ Lista viva del proyecto. Marcar con `[x]` al completar; agregar nuevos pendiente
 ## Después
 
 - [x] Fase 1 del plan — COMPLETADA: formato compartido de dinero/fechas, precios y total en el resumen, comanda legible y atribuida por PIN, reimprimir precuenta, PIN configurable por flujo.
-- [ ] Fases 2–4 del plan: consistencia UI (modales/errores/vocabulario), identidad visual, táctil/responsive.
+- [x] Fase 2 del plan — COMPLETADA: 2.1 mapa central de estados/vocabulario, 2.2 modales Radix + Alerta + ConfirmarDialog, 2.3 skeletons carga≠vacío, 2.4 opciones honestas (fuera pin_momento), 2.5 limpieza de muertos.
+- [ ] Fases 3–4 del plan: identidad visual, táctil/responsive.
 - [x] Skill `revision-ui` creada (`.agents/skills/revision-ui/`) e instalada `frontend-design` de Anthropic (`~/.agents/skills/`) para la Fase 3.
 - [ ] Crear skills a medida restantes: `auditor-pos`, `capturas-release`.
 - [ ] Integrar `prototype/ui-responsive` en `feat/nucleo-pos-v1` cuando el prototipo de UI esté estable.
