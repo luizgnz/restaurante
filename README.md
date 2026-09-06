@@ -2,6 +2,18 @@
 
 Sistema de gestión para restaurantes diseñado para operar en la red local del negocio. Centraliza el salón, las órdenes, la cocina, el inventario y la configuración administrativa en una interfaz táctil y responsive.
 
+## Arranque normal (sin contenedores)
+
+La aplicación se ejecuta directamente con Node.js y guarda sus datos en SQLite; no necesita Docker ni otros servicios.
+
+Desde la carpeta del proyecto:
+
+```bash
+npm start
+```
+
+En macOS también puedes abrir `Iniciar Restaurante.command` con doble clic. El iniciador funciona aunque la carpeta del proyecto cambie de ubicación y abre la interfaz en el navegador automáticamente.
+
 ## Qué permite hacer
 
 - Visualizar las mesas y su estado en tiempo real.
@@ -119,4 +131,3 @@ Capturas realizadas el **29 de agosto de 2026**, correspondientes al trabajo ini
 ![Panel de cuenta del usuario](screenshots/2026-08-29_feeb899/19-panel-cuenta.png)
 
 ![Menú principal de navegación](screenshots/2026-08-29_feeb899/20-menu-navegacion.png)
-
