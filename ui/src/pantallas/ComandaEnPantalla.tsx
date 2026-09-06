@@ -31,7 +31,7 @@ export function ComandaEnPantalla({ restaurante, comanda, onCerrar }: Props) {
                 </strong>
                 {linea.nota ? <span className="ticket-papel__nota"> ({linea.nota})</span> : null}
                 {(linea.contornos ?? []).length > 0 ? (
-                  <span className="ticket-papel__nota">{linea.contornos!.join(" · ")}</span>
+                  <span className="ticket-papel__nota ticket-papel__nota--contornos">{linea.contornos!.join(" · ")}</span>
                 ) : null}
               </span>
             </li>

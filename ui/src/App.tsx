@@ -529,8 +529,8 @@ export function App() {
       snapshot: {
         mesaNumero: number | null;
         mesero?: string;
-        lineas?: Array<{ nombre: string; cantidad: number; precio_centavos: number; nota: string | null }>;
-        ordenes?: Array<{ lineas: Array<{ nombre: string; cantidad: number; precio_centavos: number; nota: string | null }> }>;
+        lineas?: Array<{ nombre: string; cantidad: number; precio_centavos?: number; precioCentavos?: number; nota: string | null }>;
+        ordenes?: Array<{ lineas: Array<{ nombre: string; cantidad: number; precio_centavos?: number; precioCentavos?: number; nota: string | null }> }>;
         totalCentavos: number;
       };
     }>(`/api/cuentas/${cuentaActual.id}/precuenta/reimprimir`, { method: "POST" });
@@ -545,7 +545,7 @@ export function App() {
       lineas: lineas.map((linea) => ({
         nombre: linea.nombre,
         cantidad: linea.cantidad,
-        precioCentavos: linea.precio_centavos,
+        precioCentavos: linea.precioCentavos ?? linea.precio_centavos ?? 0,
         nota: linea.nota,
       })),
       totalCentavos: snap.totalCentavos,

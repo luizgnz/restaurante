@@ -51,7 +51,7 @@ describe("fase 1 · borrador con adicional de contornos", () => {
         datos[k] = v;
       },
       removeItem: (k: string) => delete datos[k],
-    } as Storage;
+    } as unknown as Storage;
     const datos: Record<string, string> = {};
     guardarBorrador(storage, "test", borradorDeEjemplo());
     const cargado = cargarBorrador(storage, "test");
@@ -66,7 +66,7 @@ describe("fase 1 · borrador con adicional de contornos", () => {
         datos[k] = v;
       },
       removeItem: (k: string) => delete datos[k],
-    } as Storage;
+    } as unknown as Storage;
     const datos: Record<string, string> = {};
     const malo = borradorDeEjemplo();
     (malo.lineas[0] as { adicionalCentavos: number }).adicionalCentavos = -5;

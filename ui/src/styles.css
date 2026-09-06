@@ -4477,3 +4477,24 @@ button.icono:focus-visible {
 }
 
 }
+
+.constructor-orden__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+.constructor-orden__total strong {
+  font-size: 1.05rem;
+}
+.constructor-linea__precio {
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+.ticket-papel__nota--contornos {
+  display: block;
+  margin-top: 2px;
+}
