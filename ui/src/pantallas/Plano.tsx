@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { etiquetaMesa, tonoMesa } from "../lib/estados.ts";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
 
 export type Mesa = {
   id: number;
@@ -50,6 +51,7 @@ type Props = {
   fondoUrl?: string | null;
   asignando?: boolean;
   bloqueado?: boolean;
+  cargando?: boolean;
   onMesa: (mesa: Mesa) => void;
   onPiso?: (piso: Piso) => void;
   onNuevoPedido?: () => void;
@@ -73,6 +75,7 @@ export function Plano({
   fondoUrl,
   asignando,
   bloqueado,
+  cargando,
   onMesa,
   onPiso,
   onNuevoPedido,
@@ -264,7 +267,14 @@ export function Plano({
           backgroundSize: "cover",
         }}
       >
-        {mesasDelPiso.map((m) => (
+        {cargando && mesasDelPiso.length === 0 ? (
+          <div className="flex flex-wrap content-start gap-6 p-6" aria-hidden="true">
+            {Array.from({ length: 8 }, (_, i) => (
+              <Skeleton key={i} className="h-[88px] w-[88px] rounded-2xl" />
+            ))}
+          </div>
+        ) : (
+          mesasDelPiso.map((m) => (
           <Button
             key={m.id}
             type="button"
@@ -291,7 +301,8 @@ export function Plano({
             </Badge>
             <span className="mesa-odoo__asientos">{m.asientos} asientos</span>
           </Button>
-        ))}
+          ))
+        )}
       </div>
       {mostrarUltimos ? (
         <aside className="barra-pedidos">

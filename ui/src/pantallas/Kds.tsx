@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card.tsx";
 import { Select } from "@/components/ui/select.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { etiquetaEtapa, tonoEtapa } from "../lib/estados.ts";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
 
 export type IncidenciaCocinaUi = {
   id: number;
@@ -60,6 +61,7 @@ type NuevaIncidencia = {
 
 type Props = {
   tarjetas: TarjetaKdsUi[];
+  cargando?: boolean;
   onCambiarEtapa: (lineaId: number, etapa: "en_proceso" | "listo") => Promise<void>;
   onCrearIncidencia: (incidencia: NuevaIncidencia) => Promise<void>;
   onRecargar: () => Promise<void>;
@@ -79,7 +81,7 @@ function cantidad(linea: LineaKdsUi): string {
   return `${linea.delta > 0 ? "+" : ""}${linea.delta}`;
 }
 
-export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar, productos = [] }: Props) {
+export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onRecargar, productos = [] }: Props) {
   const [modal, setModal] = useState<ModalIncidencia | null>(null);
   const [motivo, setMotivo] = useState("");
   const [propuesta, setPropuesta] = useState("");
@@ -164,7 +166,14 @@ export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar, p
       </div>
 
       <div className="kds cocina-grid">
-        {tarjetas.map((tarjeta) => {
+        {cargando && tarjetas.length === 0 ? (
+          <div className="flex flex-wrap gap-4" aria-hidden="true">
+            {Array.from({ length: 3 }, (_, i) => (
+              <Skeleton key={i} className="h-56 min-w-[260px] flex-1 rounded-2xl" />
+            ))}
+          </div>
+        ) : (
+          tarjetas.map((tarjeta) => {
           const tareas = tarjeta.lineas.filter((linea) => !linea.esAviso && linea.etapa !== "cancelado");
           const ordenCompletaDisponible = tarjeta.tipo === "orden" && tareas.length > 0 && tareas.every((linea) => linea.etapa === "por_preparar");
           const incidenciaOrden = tarjeta.incidencias.find((incidencia) => incidencia.comandaLineaId == null);
@@ -216,8 +225,9 @@ export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar, p
               ) : null}
             </Card>
           );
-        })}
-        {tarjetas.length === 0 ? <div className="empty-state"><ChefHat size={32} aria-hidden="true" /><strong>No hay pedidos en cocina</strong><span>Los pedidos nuevos aparecerán automáticamente.</span></div> : null}
+          })
+        )}
+        {!cargando && tarjetas.length === 0 ? <div className="empty-state"><ChefHat size={32} aria-hidden="true" /><strong>No hay pedidos en cocina</strong><span>Los pedidos nuevos aparecerán automáticamente.</span></div> : null}
       </div>
 
       {modal ? (

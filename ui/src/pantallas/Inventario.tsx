@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Select } from "@/components/ui/select.tsx";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
 
 export type MaterialInventarioUi = {
   id: number;
@@ -20,6 +21,7 @@ export type MaterialInventarioUi = {
 
 type Props = {
   materiales: MaterialInventarioUi[];
+  cargando?: boolean;
   puedeIngresar: boolean;
   onRecargar: () => Promise<void>;
   onRegistrarEntrada: (productoId: number, cantidad: number, pin: string) => Promise<void>;
@@ -42,6 +44,7 @@ function estado(material: MaterialInventarioUi): { texto: string; variante: "suc
 
 export function Inventario({
   materiales,
+  cargando,
   puedeIngresar,
   onRecargar,
   onRegistrarEntrada,
@@ -185,7 +188,16 @@ export function Inventario({
             <span role="columnheader">Disponible</span>
             <span role="columnheader">Estado</span>
           </div>
-          {visibles.map((material) => {
+          {cargando && visibles.length === 0 ? (
+            <div aria-hidden="true">
+              {Array.from({ length: 5 }, (_, i) => (
+                <div className="inventario-fila" role="row" key={i}>
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            visibles.map((material) => {
             const estadoMaterial = estado(material);
             return (
               <div className="inventario-fila" role="row" key={material.id}>
@@ -217,8 +229,9 @@ export function Inventario({
                 </span>
               </div>
             );
-          })}
-          {visibles.length === 0 ? <div className="empty-state">No hay materiales que coincidan con el filtro.</div> : null}
+          })
+          )}
+          {!cargando && visibles.length === 0 ? <div className="empty-state">No hay materiales que coincidan con el filtro.</div> : null}
         </div>
       </Card>
 

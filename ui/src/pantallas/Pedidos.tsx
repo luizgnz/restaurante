@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import type { IncidenciaCocinaUi } from "./Kds.tsx";
 import { etiquetaCuenta, tonoCuenta } from "../lib/estados.ts";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
 
 export type LineaCuentaUi = {
   lineaClave: string;
@@ -36,6 +37,7 @@ export type CuentaEnCursoUi = {
 
 type Props = {
   cuentas: CuentaEnCursoUi[];
+  cargando?: boolean;
   incidencias?: IncidenciaCocinaUi[];
   onAbrir: (cuentaId: number, ordenId?: number) => void;
   onAceptarSugerencia?: (incidenciaId: number, pin: string) => Promise<void>;
@@ -44,6 +46,7 @@ type Props = {
 
 export function Pedidos({
   cuentas,
+  cargando,
   incidencias = [],
   onAbrir,
   onAceptarSugerencia = async () => undefined,
@@ -126,7 +129,14 @@ export function Pedidos({
       {error && !eliminando ? <Alerta>{error}</Alerta> : null}
 
       <div className="kds pedidos-grid">
-        {cuentas.map((cuenta) => (
+        {cargando && cuentas.length === 0 ? (
+          <div className="flex flex-wrap gap-4" aria-hidden="true">
+            {Array.from({ length: 3 }, (_, i) => (
+              <Skeleton key={i} className="h-44 min-w-[280px] flex-1 rounded-2xl" />
+            ))}
+          </div>
+        ) : (
+          cuentas.map((cuenta) => (
           <Card className="tarjeta pedido-card" key={cuenta.id}>
             <div className="pedido-cabecera">
               <span className="pedido-card__mesa"><strong>Mesa {cuenta.mesa}</strong><Badge variant={tonoCuenta(cuenta.estado)}>{etiquetaCuenta(cuenta.estado)}</Badge></span>
@@ -173,8 +183,9 @@ export function Pedidos({
             </div>
             {cuenta.ordenes.length === 0 ? <p className="login-odoo__ayuda">Sin órdenes aún</p> : null}
           </Card>
-        ))}
-        {cuentas.length === 0 ? <div className="empty-state"><ReceiptText size={30} aria-hidden="true" /><strong>No hay cuentas en curso</strong><span>Las nuevas órdenes aparecerán aquí.</span></div> : null}
+          ))
+        )}
+        {!cargando && cuentas.length === 0 ? <div className="empty-state"><ReceiptText size={30} aria-hidden="true" /><strong>No hay cuentas en curso</strong><span>Las nuevas órdenes aparecerán aquí.</span></div> : null}
       </div>
 
       {eliminando ? (
