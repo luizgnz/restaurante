@@ -138,7 +138,7 @@ export function Barra({
       <div className="pos-nav__identity">
         <span className="pos-odoo__marca">
           {logo ? <img src={logo} alt="" className="pos-odoo__logo" /> : null}
-          {marca}
+          <span className="hidden max-w-[28vw] truncate min-[420px]:inline-block">{marca}</span>
         </span>
       </div>
       <div className="pos-nav__right">
