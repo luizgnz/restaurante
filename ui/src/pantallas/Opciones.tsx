@@ -16,6 +16,7 @@ export type OpcionesValores = {
   confirmar_comanda: boolean;
   auditoria_anulaciones: boolean;
   justificacion_anulacion: boolean;
+  devolver_insumos_preparados: boolean;
   precuenta_obligatoria_antes_de_caja: boolean;
   enviar_a_caja_requiere_avanzado: boolean;
   impresora_comanda: ImpresoraConfigUi;
@@ -244,6 +245,13 @@ export function Opciones({ valores, onCambiar }: Props) {
         <label className="switch-tablet"><input type="checkbox" checked={valores.enviar_a_caja_requiere_avanzado} onChange={(event) => onCambiar({ enviar_a_caja_requiere_avanzado: event.target.checked })} />Pedir permiso avanzado para cerrar la cuenta</label>
         <label className="switch-tablet"><input type="checkbox" checked={valores.auditoria_anulaciones} onChange={(event) => onCambiar({ auditoria_anulaciones: event.target.checked, ...(event.target.checked ? {} : { justificacion_anulacion: false }) })} />Guardar registro de órdenes anuladas</label>
         {valores.auditoria_anulaciones ? <label className="switch-tablet"><input type="checkbox" checked={valores.justificacion_anulacion} onChange={(event) => onCambiar({ justificacion_anulacion: event.target.checked })} />Pedir justificación al anular</label> : null}
+        <label className="switch-tablet">
+          <input type="checkbox" checked={valores.devolver_insumos_preparados} onChange={(event) => onCambiar({ devolver_insumos_preparados: event.target.checked })} />
+          Devolver ingredientes de platos anulados o cancelados ya preparados (para reutilizarlos)
+        </label>
+        {valores.devolver_insumos_preparados ? null : (
+          <p>Los insumos de lo ya cocinado no vuelven al stock: se registran como merma en el inventario.</p>
+        )}
       </div>
     </fieldset>
     <fieldset className="form-odoo__tarjeta settings-card settings-card--wide printing-settings" id="impresion">

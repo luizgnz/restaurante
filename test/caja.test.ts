@@ -6,7 +6,7 @@ import { crearEmpleado } from "../src/modules/empleados/empleados.ts";
 import { pendienteDeFirmar } from "../src/modules/inventario/asientos.ts";
 import { corregirOrden, type CambioOrdenInput } from "../src/modules/ordenes/correcciones.ts";
 import { enviarOrden } from "../src/modules/ordenes/enviar.ts";
-import { versionEfectivaOrden, type LineaEfectiva, type NuevaLineaOrden } from "../src/modules/ordenes/ordenes.ts";
+import { versionVigenteOrden, type LineaVigente, type NuevaLineaOrden } from "../src/modules/ordenes/ordenes.ts";
 import { agregarLinea, enviarACocina } from "../src/modules/pedidos/pedidos.ts";
 import { emitirPrecuenta, emitirPrecuentaCuenta } from "../src/modules/precuenta/precuenta.ts";
 import { seedCartaDemo, type SeedIds } from "../src/modules/productos/seed.ts";
@@ -119,10 +119,10 @@ async function cuentaAbierta(lineas: (ids: SeedIds) => NuevaLineaOrden[], cfg: A
     new MemoryPrinter(),
     cfg,
   );
-  return { db, ids, cuentaId: envio.cuentaId, ordenId: envio.ordenId, lineas: versionEfectivaOrden(db, envio.ordenId) };
+  return { db, ids, cuentaId: envio.cuentaId, ordenId: envio.ordenId, lineas: versionVigenteOrden(db, envio.ordenId) };
 }
 
-function cambio(linea: LineaEfectiva, cantidad: number): CambioOrdenInput {
+function cambio(linea: LineaVigente, cantidad: number): CambioOrdenInput {
   return {
     lineaClave: linea.lineaClave,
     productoId: linea.productoId,

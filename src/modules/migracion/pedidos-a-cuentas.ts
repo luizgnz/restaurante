@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type Database from "better-sqlite3";
 import { defaultConfig, type AppConfig } from "../../config.ts";
-import { snapshotCuenta, totalEfectivoCuenta } from "../cuentas/totales.ts";
+import { snapshotCuenta, totalVigenteCuenta, totalLineaCentavos } from "../cuentas/totales.ts";
 
 export type ResultadoMigracion = {
   cuentas: number;
@@ -310,8 +310,8 @@ function migrarUno(
 
   const legacyTotal = todas
     .filter((l) => migradas.has(l.id) && !l.estado.startsWith("anulada"))
-    .reduce((suma, l) => suma + l.cantidad * l.precio_centavos, 0);
-  const nuevoTotal = totalEfectivoCuenta(db, cuentaId);
+    .reduce((suma, l) => suma + totalLineaCentavos(l.cantidad, l.precio_centavos), 0);
+  const nuevoTotal = totalVigenteCuenta(db, cuentaId);
   if (legacyTotal !== nuevoTotal) {
     throw new MigracionError(`Total distinto en pedido ${pedido.id}: legacy=${legacyTotal}, cuenta=${nuevoTotal}`);
   }

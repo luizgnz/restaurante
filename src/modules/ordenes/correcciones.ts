@@ -5,13 +5,17 @@ import type { PrinterPort, TicketDiferencia } from "../../print/types.ts";
 import { exigirPin } from "../empleados/empleados.ts";
 import {
   ajustarConsumoDeCorreccion,
+  controlarStock,
+  firmarReservasDeLineas,
   lineasSinTrazabilidad,
+  registrarMermaDeAnulacion,
   type CambioOrdenConsumo,
+  type MermaAnulacion,
 } from "../inventario/asientos.ts";
-import { cancelarLineasDeOrden, crearComanda, ETAPA_AVISO, type LineaComanda } from "../kds/kds.ts";
-import { indicacionesEfectivasOrden, versionEfectivaOrden, type LineaEfectiva } from "./ordenes.ts";
+import { cancelarLineasDeOrden, crearComanda, ETAPA_AVISO, lineaPreparada, type LineaComanda } from "../kds/kds.ts";
+import { indicacionesVigentesOrden, versionVigenteOrden, type LineaVigente } from "./ordenes.ts";
 
-export { indicacionesEfectivasOrden };
+export { indicacionesVigentesOrden };
 
 export class CorreccionError extends Error {
   codigo: string;
@@ -64,6 +68,8 @@ export type ResultadoCorreccion = {
   correccionId: number;
   comandaId: number;
   repetida: boolean;
+  /** Avisos de stock bajo por las líneas nuevas de esta corrección. */
+  avisos: string[];
 };
 
 type OrdenRow = {
@@ -94,7 +100,7 @@ function normalizarCambios(lineas: CambioOrdenInput[]): CambioOrdenInput[] {
   return lineas.map((l) => ({ ...l, lineaClave: l.lineaClave?.trim() ?? "" }));
 }
 
-export function calcularDiferencias(actuales: LineaEfectiva[], nuevas: CambioOrdenInput[]): DiferenciaCocina[] {
+export function calcularDiferencias(actuales: LineaVigente[], nuevas: CambioOrdenInput[]): DiferenciaCocina[] {
   const porClave = new Map(actuales.map((l) => [l.lineaClave, l]));
   const diferencias: DiferenciaCocina[] = [];
   for (const nueva of normalizarCambios(nuevas)) {
@@ -145,7 +151,7 @@ function ordenParaCorregir(db: Database.Database, ordenId: number): OrdenRow {
 function validarCambios(
   db: Database.Database,
   ordenId: number,
-  actuales: LineaEfectiva[],
+  actuales: LineaVigente[],
   lineas: CambioOrdenInput[],
 ): void {
   const porClave = new Map(actuales.map((l) => [l.lineaClave, l]));
@@ -223,7 +229,7 @@ function resultadoIdempotente(
   if (!comanda) {
     throw new CorreccionError("comanda_inexistente", "La corrección idempotente no tiene comanda");
   }
-  return { ordenId, correccionId, comandaId: comanda.id, repetida: true };
+  return { ordenId, correccionId, comandaId: comanda.id, repetida: true, avisos: [] };
 }
 
 export async function corregirOrden(
@@ -248,7 +254,7 @@ export async function corregirOrden(
     if (yaHecha) return resultadoIdempotente(db, input.ordenId, yaHecha.id);
 
     const orden = ordenParaCorregir(db, input.ordenId);
-    const actuales = versionEfectivaOrden(db, input.ordenId);
+    const actuales = versionVigenteOrden(db, input.ordenId);
     validarCambios(db, input.ordenId, actuales, lineas);
 
     const productoStmt = db.prepare("SELECT nombre, precio_centavos FROM productos WHERE id = ?");
@@ -267,7 +273,7 @@ export async function corregirOrden(
 
     const indicacionesPedidas = input.indicaciones === undefined ? undefined : textoOpcional(input.indicaciones);
     const cambiaIndicaciones =
-      indicacionesPedidas !== undefined && indicacionesPedidas !== indicacionesEfectivasOrden(db, input.ordenId);
+      indicacionesPedidas !== undefined && indicacionesPedidas !== indicacionesVigentesOrden(db, input.ordenId);
     if (diferencias.length === 0 && !cambiaIndicaciones) {
       throw new CorreccionError("correccion_sin_cambios", "La corrección no cambia cantidades, notas ni indicaciones");
     }
@@ -278,6 +284,29 @@ export async function corregirOrden(
     const ordenEnCero = finales.size > 0 && [...finales.values()].every((c) => c === 0);
 
     const motivo = textoOpcional(input.motivo);
+
+    // Guarda de etapa (lo que cocina ya empezó no se toca a escondidas): bajar
+    // una línea en preparación está bloqueado; anularla es la única salida y
+    // exige motivo, porque sus insumos ya se consumieron y van a merma.
+    const preparadas = new Map<string, boolean>();
+    for (const d of diferencias) {
+      if (d.delta >= 0) continue;
+      const preparada = lineaPreparada(db, d.lineaClave, d.ordenLineaId);
+      preparadas.set(d.lineaClave, preparada);
+      if (!preparada) continue;
+      if (d.cantidadNueva > 0) {
+        throw new CorreccionError(
+          "linea_preparada",
+          `${d.nombre} ya está en preparación o servida: cocina debe responder antes de cambiarla`,
+        );
+      }
+      if (!motivo) {
+        throw new CorreccionError(
+          "justificacion_requerida",
+          `Para anular ${d.nombre} ya preparado hay que registrar el motivo (sus insumos van a merma)`,
+        );
+      }
+    }
     if (cfg.auditoria_anulaciones && cfg.justificacion_anulacion && anulaLineas && !motivo) {
       throw new CorreccionError("justificacion_requerida", "Hay que escribir por qué se anula");
     }
@@ -364,7 +393,36 @@ export async function corregirOrden(
       input.ordenId,
     );
 
-    ajustarConsumoDeCorreccion(db, input.ordenId, consumo, cfg.politica_inventario);
+    // Lo que cocina no empezó: el stock reservado/firmado vuelve. Lo que ya se
+    // cocinó: no se devuelve nada (sería stock fantasma); queda consumido y se
+    // documenta como merma en el kardex.
+    // Antes de mover un gramo: las líneas nuevas de esta corrección también
+    // comprometen bodega, con la misma política que un envío.
+    const avisos = controlarStock(
+      db,
+      cfg,
+      consumo.filter((c) => c.delta > 0).map((c) => ({ productoId: c.productoId, cantidad: c.delta })),
+    );
+
+    // Lo que cocina no empezó: el stock reservado/firmado vuelve. Lo que ya se
+    // cocinó depende de la política del negocio (`devolver_insumos_preparados`):
+    // con reutilización los insumos vuelven por el camino normal de devolución;
+    // si no, quedan consumidos y se documenta merma en el kardex.
+    const usarMerma = !cfg.devolver_insumos_preparados;
+    const consumoLibre = usarMerma ? consumo.filter((c) => !preparadas.get(c.lineaClave)) : consumo;
+    const mermas: MermaAnulacion[] = usarMerma
+      ? consumo
+          .filter((c) => c.delta < 0 && preparadas.get(c.lineaClave))
+          .map((c) => ({ lineaClave: c.lineaClave, productoId: c.productoId, unidades: Math.abs(c.delta) }))
+      : [];
+
+    ajustarConsumoDeCorreccion(db, input.ordenId, consumoLibre, cfg.politica_inventario);
+    if (mermas.length > 0) {
+      // El stock de lo ya cocinado sale una sola vez (reserva → firmado) y el
+      // kardex documenta la merma.
+      firmarReservasDeLineas(db, input.ordenId, mermas.map((m) => m.lineaClave));
+      registrarMermaDeAnulacion(db, input.ordenId, mermas, empleado.id);
+    }
 
     db.prepare("UPDATE precuentas SET vigente = 0 WHERE cuenta_id = ?").run(orden.cuenta_id);
     if (orden.cuenta_estado === "precuenta_emitida") {
@@ -412,11 +470,11 @@ export async function corregirOrden(
       ordenNumero: orden.numero,
       mesero: empleado.nombre,
       esAnulacion: ordenEnCero,
-      indicaciones: indicacionesEfectivasOrden(db, input.ordenId),
+      indicaciones: indicacionesVigentesOrden(db, input.ordenId),
       indicacionesCambiadas: cambiaIndicaciones,
       lineas: ticketLineas,
     });
-    return { ordenId: input.ordenId, correccionId, comandaId, repetida: false };
+    return { ordenId: input.ordenId, correccionId, comandaId, repetida: false, avisos };
   })();
 
   await despacharJobs(db, printer);

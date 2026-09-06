@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 import type { AppConfig } from "../../config.ts";
-import { snapshotCuenta, type SnapshotCuenta } from "../cuentas/totales.ts";
+import { snapshotCuenta, totalLineaCentavos, type SnapshotCuenta } from "../cuentas/totales.ts";
 import { empleadoPorId, exigirPin, PinError, type Empleado } from "../empleados/empleados.ts";
 import { sesionAbierta } from "../empleados/sesion.ts";
 import { firmaReservaEn, firmar, firmarReservadoDeCuenta } from "../inventario/asientos.ts";
@@ -68,7 +68,7 @@ export async function emitirPrecuenta(
     ? (db.prepare("SELECT numero FROM mesas WHERE id = ?").get(pedido.mesa_id) as { numero: number })
     : null;
   const lineas = lineasDePedido(db, pedidoId);
-  const totalCentavos = lineas.reduce((acc, l) => acc + l.precio_centavos * l.cantidad, 0);
+  const totalCentavos = lineas.reduce((acc, l) => acc + totalLineaCentavos(l.cantidad, l.precio_centavos), 0);
   const snapshot = {
     mesaNumero: mesa?.numero ?? null,
     cubiertos: pedido.cubiertos,
@@ -146,7 +146,7 @@ function lineasParaTicket(snapshot: SnapshotCuenta): TicketLinea[] {
 }
 
 /**
- * Emite la precuenta de una cuenta sobre la suma efectiva de todas sus órdenes.
+ * Emite la precuenta de una cuenta sobre la suma vigente de todas sus órdenes.
  *
  * Reemitir es normal: cada orden o corrección posterior invalida la precuenta
  * vigente, así que la cuenta acumula varias y solo la última cuenta. La firma no

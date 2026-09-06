@@ -240,7 +240,7 @@ Las reservas vencidas no bloquean una mesa. Se muestran separadas como vencidas 
 `Editar orden`:
 
 1. Solicita PIN.
-2. Abre la orden completa con sus cantidades y notas efectivas.
+2. Abre la orden completa con sus cantidades y notas vigentes.
 3. Permite agregar productos, aumentar o reducir cantidades, cambiar notas y dejar una línea en cero.
 4. Muestra una vista previa de diferencias.
 5. Al confirmar, inserta una corrección; nunca sobrescribe la versión original.
@@ -256,9 +256,9 @@ ANULADO: 1 Café
 NOTA CAMBIADA: Pizza sin cebolla
 ```
 
-`Anular orden` es una corrección que deja todas las cantidades efectivas en cero. Siempre exige PIN y genera aviso de anulación a cocina.
+`Anular orden` es una corrección que deja todas las cantidades vigentes en cero. Siempre exige PIN y genera aviso de anulación a cocina.
 
-Si una corrección posterior vuelve a editar la orden, se compara contra la última versión efectiva, no contra la original.
+Si una corrección posterior vuelve a editar la orden, se compara contra la última versión vigente, no contra la original.
 
 ## 7.1 Auditoría de anulaciones (opcional)
 
@@ -279,7 +279,7 @@ El registro no borra la orden: la orden queda `anulada` y se puede ver en la cue
 
 ## 8. Precuenta y caja
 
-La precuenta se emite sobre la suma efectiva de todas las órdenes y correcciones de la cuenta.
+La precuenta se emite sobre la suma vigente de todas las órdenes y correcciones de la cuenta.
 
 Si se crea una orden o corrección después de una precuenta:
 
@@ -311,7 +311,7 @@ Etapas de `comanda_lineas`:
 - Terminales: `listo`, `servido`, `cancelado`. No se reescriben nunca: son el dato que dice si hubo merma o si se le cobra al cliente.
 - `aviso`: el evento de una corrección que no genera trabajo nuevo (una baja, una anulación, un cambio de nota). La pantalla lo muestra y no lo cuenta como tarea. Una corrección de solo indicaciones no tiene líneas: la comanda de corrección **es** el aviso.
 
-Las cantidades y notas vigentes que muestra la pantalla salen de la versión efectiva de la orden; `comanda_lineas` aporta el avance de cocina y el evento, no el estado del pedido.
+Las cantidades y notas vigentes que muestra la pantalla salen de la versión vigente de la orden; `comanda_lineas` aporta el avance de cocina y el evento, no el estado del pedido.
 
 `GET /api/kds` lista un evento por tarjeta y mezcla los dos modelos en la misma forma: comandas legacy, órdenes, correcciones y anulaciones. Cocina no tiene por qué saber de qué modelo viene lo que está mirando. La referencia es `Mesa #X · Orden #N`, más `· Corrección #V` o `· Anulación #V` cuando el evento es una corrección; en una comanda legacy el `N` es su `envio_n`, que es el mismo número que la migración usa para reconstruir órdenes (§11.3). La corrección muestra su `delta` además de la cantidad nueva: es la diferencia lo que cocina tiene que atender.
 
@@ -411,7 +411,7 @@ Las rutas de `pedidos` siguen operativas como adaptadores de respaldo; la UI ya 
 - Editar/anular exige PIN, conserva historial y comunica diferencias.
 - Auditoría y justificación de anulaciones están apagadas por defecto; si se encienden, el registro y el motivo (si aplica) quedan guardados.
 - Una orden puede quedar completamente en cero mediante corrección.
-- La precuenta suma la versión efectiva de todas las órdenes.
+- La precuenta suma la versión vigente de todas las órdenes.
 - Una mesa reservada o bloqueada no acepta órdenes hasta liberación explícita.
 - Una reserva exige fecha/hora futura y no admite más de 12 meses.
 - Nombre, RUT y contacto son opcionales y aparecen solo si su opción está habilitada.

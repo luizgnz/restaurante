@@ -1,13 +1,24 @@
 import type Database from "better-sqlite3";
-import { versionEfectivaOrden } from "../ordenes/ordenes.ts";
+import { versionVigenteOrden } from "../ordenes/ordenes.ts";
 import { obtenerCuenta } from "./cuentas.ts";
 
-export function totalEfectivoCuenta(db: Database.Database, cuentaId: number): number {
+/**
+ * El importe de una línea es siempre un entero de centavos. La cantidad es REAL
+ * (piensa en kg) y multiplicarla por el precio entero puede dar fracciones de
+ * centavo: sumadas en crudo, el ticket imprime `329.66999...` y caja no cuadra.
+ * El redondeo va por línea, no sobre el total, para que cada renglón impreso
+ * coincida con lo que se suma.
+ */
+export function totalLineaCentavos(cantidad: number, precioCentavos: number): number {
+  return Math.round(cantidad * precioCentavos);
+}
+
+export function totalVigenteCuenta(db: Database.Database, cuentaId: number): number {
   const ordenes = db.prepare("SELECT id FROM ordenes WHERE cuenta_id = ?").all(cuentaId) as { id: number }[];
   let total = 0;
   for (const orden of ordenes) {
-    for (const linea of versionEfectivaOrden(db, orden.id)) {
-      if (linea.cantidad > 0) total += linea.cantidad * linea.precioCentavos;
+    for (const linea of versionVigenteOrden(db, orden.id)) {
+      if (linea.cantidad > 0) total += totalLineaCentavos(linea.cantidad, linea.precioCentavos);
     }
   }
   return total;
@@ -68,7 +79,7 @@ export function selloCuenta(db: Database.Database, cuentaId: number): string {
 }
 
 /**
- * La cuenta como la ve el cliente: cada orden con su versión efectiva y sus
+ * La cuenta como la ve el cliente: cada orden con su versión vigente y sus
  * indicaciones vigentes.
  *
  * Las líneas en cero quedan en la historia de la cuenta pero no en la
@@ -90,7 +101,7 @@ export function snapshotCuenta(db: Database.Database, cuentaId: number): Snapsho
         precioCentavos: linea.precioCentavos,
         nota: linea.nota,
       });
-      totalCentavos += linea.cantidad * linea.precioCentavos;
+      totalCentavos += totalLineaCentavos(linea.cantidad, linea.precioCentavos);
     }
     if (lineas.length === 0) continue;
     ordenes.push({ numero: orden.numero, indicaciones: orden.indicaciones, lineas });

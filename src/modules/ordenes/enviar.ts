@@ -5,7 +5,7 @@ import type { PrinterPort } from "../../print/types.ts";
 import { validarSelecciones } from "../contornos/contornos.ts";
 import { cuentaActivaPorMesa } from "../cuentas/cuentas.ts";
 import { empleadoPorId } from "../empleados/empleados.ts";
-import { registrarConsumoDeOrden, type LineaOrdenConsumo } from "../inventario/asientos.ts";
+import { controlarStock, registrarConsumoDeOrden, type LineaOrdenConsumo } from "../inventario/asientos.ts";
 import { crearComanda } from "../kds/kds.ts";
 import type { NuevaOrden } from "./ordenes.ts";
 
@@ -23,6 +23,8 @@ export type ResultadoEnvio = {
   ordenId: number;
   comandaId: number;
   repetida: boolean;
+  /** Avisos de stock bajo: la orden entra, pero no hay respaldo para todo. */
+  avisos: string[];
 };
 
 type OrdenExistente = { id: number; cuenta_id: number };
@@ -34,7 +36,7 @@ function resultadoIdempotente(db: Database.Database, orden: OrdenExistente): Res
     .prepare("SELECT id FROM comandas WHERE orden_id = ? AND tipo = 'orden'")
     .get(orden.id) as { id: number } | undefined;
   if (!comanda) throw new OrdenError("comanda_inexistente", "La orden idempotente no tiene comanda");
-  return { cuentaId: orden.cuenta_id, ordenId: orden.id, comandaId: comanda.id, repetida: true };
+  return { cuentaId: orden.cuenta_id, ordenId: orden.id, comandaId: comanda.id, repetida: true, avisos: [] };
 }
 
 export async function enviarOrden(
@@ -141,6 +143,10 @@ export async function enviarOrden(
       db.prepare("UPDATE cuentas SET estado = 'abierta' WHERE id = ?").run(cuenta.id);
     }
 
+    // Antes de mover un gramo: la política `bloqueo_sin_stock` decide si esta
+    // orden puede comprometer lo que hay en bodega.
+    const avisos = controlarStock(db, cfg, consumo);
+
     registrarConsumoDeOrden(db, ordenId, consumo, cfg.politica_inventario);
 
     const mesa = db.prepare("SELECT numero FROM mesas WHERE id = ?").get(input.mesaId) as MesaNumero;
@@ -158,7 +164,7 @@ export async function enviarOrden(
       indicaciones: input.indicaciones ?? null,
       lineas: ticketLineas,
     });
-    return { cuentaId: cuenta.id, ordenId, comandaId, repetida: false };
+    return { cuentaId: cuenta.id, ordenId, comandaId, repetida: false, avisos };
   })();
 
   await despacharJobs(db, printer);

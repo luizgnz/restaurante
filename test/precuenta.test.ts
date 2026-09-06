@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { defaultConfig, type AppConfig } from "../src/config.ts";
 import { obtenerCuenta } from "../src/modules/cuentas/cuentas.ts";
-import { selloCuenta, snapshotCuenta, totalEfectivoCuenta } from "../src/modules/cuentas/totales.ts";
+import { selloCuenta, snapshotCuenta, totalVigenteCuenta } from "../src/modules/cuentas/totales.ts";
 import { crearEmpleado } from "../src/modules/empleados/empleados.ts";
 import { pendienteDeFirmar } from "../src/modules/inventario/asientos.ts";
 import { corregirOrden, type CambioOrdenInput } from "../src/modules/ordenes/correcciones.ts";
 import { enviarOrden } from "../src/modules/ordenes/enviar.ts";
-import { versionEfectivaOrden, type LineaEfectiva, type NuevaLineaOrden } from "../src/modules/ordenes/ordenes.ts";
+import { versionVigenteOrden, type LineaVigente, type NuevaLineaOrden } from "../src/modules/ordenes/ordenes.ts";
 import { agregarLinea, enviarACocina } from "../src/modules/pedidos/pedidos.ts";
 import { emitirPrecuenta, emitirPrecuentaCuenta, reimprimirPrecuenta } from "../src/modules/precuenta/precuenta.ts";
 import { seedCartaDemo, type SeedIds } from "../src/modules/productos/seed.ts";
@@ -137,10 +137,10 @@ async function cuentaConUnaOrden(lineas: (ids: SeedIds) => NuevaLineaOrden[], cf
     new MemoryPrinter(),
     cfg,
   );
-  return { db, ids, cuentaId: envio.cuentaId, ordenId: envio.ordenId, lineas: versionEfectivaOrden(db, envio.ordenId) };
+  return { db, ids, cuentaId: envio.cuentaId, ordenId: envio.ordenId, lineas: versionVigenteOrden(db, envio.ordenId) };
 }
 
-function cambio(linea: LineaEfectiva, cantidad: number): CambioOrdenInput {
+function cambio(linea: LineaVigente, cantidad: number): CambioOrdenInput {
   return {
     lineaClave: linea.lineaClave,
     productoId: linea.productoId,
@@ -169,9 +169,9 @@ const AL_CAJA: AppConfig = { ...defaultConfig(), politica_inventario: "reserva_a
 const AL_ENVIAR: AppConfig = { ...defaultConfig(), politica_inventario: "descuento_al_enviar" };
 
 describe("precuenta por cuenta", () => {
-  it("suma la versión efectiva de todas las órdenes de la cuenta", async () => {
+  it("suma la versión vigente de todas las órdenes de la cuenta", async () => {
     const e = await cuentaConDosOrdenes();
-    const lineasUno = versionEfectivaOrden(e.db, e.ordenUno);
+    const lineasUno = versionVigenteOrden(e.db, e.ordenUno);
     await corregirOrden(
       e.db,
       { ordenId: e.ordenUno, lineas: [cambio(lineasUno[0], 4)], claveIdempotencia: clave("corr"), pin: "1234" },
@@ -183,12 +183,12 @@ describe("precuenta por cuenta", () => {
 
     // 4 hamburguesas + 2 jugos + 3 aguas
     expect(emitida.totalCentavos).toBe(4 * 8900 + 2 * 2500 + 3 * 1500);
-    expect(emitida.totalCentavos).toBe(totalEfectivoCuenta(e.db, e.cuentaId));
+    expect(emitida.totalCentavos).toBe(totalVigenteCuenta(e.db, e.cuentaId));
     expect(emitida.numero).toBe(1);
     e.db.close();
   });
 
-  it("el snapshot guarda cuenta, mesa, órdenes con líneas efectivas y total", async () => {
+  it("el snapshot guarda cuenta, mesa, órdenes con líneas vigentes y total", async () => {
     const e = await cuentaConDosOrdenes();
     const emitida = await emitirPrecuentaCuenta(e.db, e.cuentaId, "1234", e.printer, defaultConfig());
 
@@ -222,7 +222,7 @@ describe("precuenta por cuenta", () => {
 
   it("el snapshot toma las indicaciones vigentes, no las del envío", async () => {
     const e = await cuentaConUnaOrden((ids) => [{ productoId: ids.jugo, cantidad: 2 }]);
-    const lineas = versionEfectivaOrden(e.db, e.ordenId);
+    const lineas = versionVigenteOrden(e.db, e.ordenId);
     await corregirOrden(
       e.db,
       {
@@ -246,18 +246,30 @@ describe("precuenta por cuenta", () => {
 
   it("no cobra líneas en cero y omite las órdenes que quedaron vacías", async () => {
     const e = await cuentaConDosOrdenes();
-    const lineasDos = versionEfectivaOrden(e.db, e.ordenDos);
+    const lineasDos = versionVigenteOrden(e.db, e.ordenDos);
     // Jugo a cero deja la línea en la historia; el agua sigue viva.
     await corregirOrden(
       e.db,
-      { ordenId: e.ordenDos, lineas: [cambio(lineasDos[0], 0)], claveIdempotencia: clave("corr"), pin: "1234" },
+      {
+        ordenId: e.ordenDos,
+        lineas: [cambio(lineasDos[0], 0)],
+        claveIdempotencia: clave("corr"),
+        pin: "1234",
+        motivo: "error del mesero",
+      },
       new MemoryPrinter(),
       defaultConfig(),
     );
-    const lineasUno = versionEfectivaOrden(e.db, e.ordenUno);
+    const lineasUno = versionVigenteOrden(e.db, e.ordenUno);
     await corregirOrden(
       e.db,
-      { ordenId: e.ordenUno, lineas: [cambio(lineasUno[0], 0)], claveIdempotencia: clave("corr"), pin: "1234" },
+      {
+        ordenId: e.ordenUno,
+        lineas: [cambio(lineasUno[0], 0)],
+        claveIdempotencia: clave("corr"),
+        pin: "1234",
+        motivo: "error del mesero",
+      },
       new MemoryPrinter(),
       defaultConfig(),
     );
@@ -397,10 +409,16 @@ describe("precuenta por cuenta", () => {
 
   it("una cuenta sin consumo cobrable no emite precuenta", async () => {
     const e = await cuentaConUnaOrden((ids) => [{ productoId: ids.jugo, cantidad: 2 }]);
-    const lineas = versionEfectivaOrden(e.db, e.ordenId);
+    const lineas = versionVigenteOrden(e.db, e.ordenId);
     await corregirOrden(
       e.db,
-      { ordenId: e.ordenId, lineas: [cambio(lineas[0], 0)], claveIdempotencia: clave("corr"), pin: "1234" },
+      {
+        ordenId: e.ordenId,
+        lineas: [cambio(lineas[0], 0)],
+        claveIdempotencia: clave("corr"),
+        pin: "1234",
+        motivo: "error del mesero",
+      },
       new MemoryPrinter(),
       defaultConfig(),
     );

@@ -3,7 +3,7 @@ import { defaultConfig } from "../src/config.ts";
 import { crearEmpleado } from "../src/modules/empleados/empleados.ts";
 import { enviarOrden } from "../src/modules/ordenes/enviar.ts";
 import type { NuevaOrden } from "../src/modules/ordenes/ordenes.ts";
-import { versionEfectivaOrden } from "../src/modules/ordenes/ordenes.ts";
+import { versionVigenteOrden } from "../src/modules/ordenes/ordenes.ts";
 import { seedCartaDemo } from "../src/modules/productos/seed.ts";
 import { MemoryPrinter } from "../src/print/memory.ts";
 import { openTestDb } from "./helpers.ts";
@@ -89,17 +89,17 @@ function insertCorreccionLinea(
   );
 }
 
-describe("versión efectiva de órdenes", () => {
+describe("versión vigente de órdenes", () => {
   it("aplica correcciones por linea_clave sobre las líneas originales (2 → 1)", async () => {
     const db = openTestDb();
     const ids = seedCartaDemo(db);
     await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });
     const cuentaId = insertCuenta(db, ids.mesa7, 1);
-    const ordenId = insertOrden(db, cuentaId, 1, "orden-efectiva");
+    const ordenId = insertOrden(db, cuentaId, 1, "orden-vigente");
     const lineaId = insertLinea(db, ordenId, ids.hamburguesa, 2, 8900, "orig-h", "sin cebolla");
     insertCorreccionLinea(db, ordenId, 1, "orig-h", ids.hamburguesa, 2, 1, lineaId, "sin cebolla", "extra queso");
 
-    const lineas = versionEfectivaOrden(db, ordenId);
+    const lineas = versionVigenteOrden(db, ordenId);
     expect(lineas).toEqual([
       {
         lineaClave: "orig-h",
@@ -120,7 +120,7 @@ describe("versión efectiva de órdenes", () => {
     db.close();
   });
 
-  it("aplica correcciones posteriores sobre la última versión efectiva", async () => {
+  it("aplica correcciones posteriores sobre la última versión vigente", async () => {
     const db = openTestDb();
     const ids = seedCartaDemo(db);
     await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });
@@ -130,7 +130,7 @@ describe("versión efectiva de órdenes", () => {
     insertCorreccionLinea(db, ordenId, 1, "orig-h", ids.hamburguesa, 2, 1, lineaId);
     insertCorreccionLinea(db, ordenId, 2, "orig-h", ids.hamburguesa, 1, 3, lineaId);
 
-    const lineas = versionEfectivaOrden(db, ordenId);
+    const lineas = versionVigenteOrden(db, ordenId);
     expect(lineas[0].cantidad).toBe(3);
     expect(lineas[0].lineaClave).toBe("orig-h");
     db.close();
@@ -155,7 +155,7 @@ describe("versión efectiva de órdenes", () => {
     const segundaId = insertLinea(db, ordenId, enviada.lineas[1].productoId, enviada.lineas[1].cantidad, 8900, "h-b", enviada.lineas[1].nota ?? null);
     insertCorreccionLinea(db, ordenId, 1, "h-b", ids.hamburguesa, 1, 3, segundaId, "extra queso", "sin tomate");
 
-    const lineas = versionEfectivaOrden(db, ordenId);
+    const lineas = versionVigenteOrden(db, ordenId);
     expect(lineas).toHaveLength(2);
     expect(lineas[0]).toMatchObject({
       lineaClave: "h-a",
@@ -183,7 +183,7 @@ describe("versión efectiva de órdenes", () => {
     const hamburguesaId = insertLinea(db, ordenId, ids.hamburguesa, 2, 8900, "orig-h");
     insertCorreccionLinea(db, ordenId, 1, "add-j", ids.jugo, 0, 2, null);
 
-    const lineas = versionEfectivaOrden(db, ordenId);
+    const lineas = versionVigenteOrden(db, ordenId);
     expect(lineas).toHaveLength(2);
     expect(lineas[0]).toMatchObject({
       lineaClave: "orig-h",
@@ -216,7 +216,7 @@ describe("versión efectiva de órdenes", () => {
     insertCorreccionLinea(db, ordenId, 1, "add-j", ids.jugo, 0, 2, null);
     insertCorreccionLinea(db, ordenId, 2, "add-j", ids.jugo, 2, 1, null, null, "sin hielo");
 
-    const lineas = versionEfectivaOrden(db, ordenId);
+    const lineas = versionVigenteOrden(db, ordenId);
     expect(lineas).toHaveLength(2);
     expect(lineas[0]).toMatchObject({ lineaClave: "orig-h", cantidad: 2, ordenLineaId: expect.any(Number) });
     expect(lineas[1]).toMatchObject({
@@ -229,14 +229,14 @@ describe("versión efectiva de órdenes", () => {
     db.close();
   });
 
-  it("persiste linea_clave generada al enviar y la usa en la versión efectiva", async () => {
+  it("persiste linea_clave generada al enviar y la usa en la versión vigente", async () => {
     const db = openTestDb();
     const ids = seedCartaDemo(db);
     await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });
     const enviada: NuevaOrden = {
       mesaId: ids.mesa7,
       empleadoId: 1,
-      claveIdempotencia: "efectiva-envio",
+      claveIdempotencia: "vigente-envio",
       lineas: [
         { productoId: ids.hamburguesa, cantidad: 2, nota: "sin cebolla" },
         { productoId: ids.hamburguesa, cantidad: 1 },
@@ -249,9 +249,9 @@ describe("versión efectiva de órdenes", () => {
     expect(persistidas).toHaveLength(2);
     expect(persistidas[0].linea_clave).not.toBe(persistidas[1].linea_clave);
 
-    const efectivas = versionEfectivaOrden(db, result.ordenId);
-    expect(efectivas.map((l) => l.lineaClave)).toEqual(persistidas.map((l) => l.linea_clave));
-    expect(efectivas.map((l) => l.ordenLineaId)).toEqual(persistidas.map((l) => l.id));
+    const vigentes = versionVigenteOrden(db, result.ordenId);
+    expect(vigentes.map((l) => l.lineaClave)).toEqual(persistidas.map((l) => l.linea_clave));
+    expect(vigentes.map((l) => l.ordenLineaId)).toEqual(persistidas.map((l) => l.id));
     db.close();
   });
 });

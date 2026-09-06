@@ -258,7 +258,7 @@ describe("cuenta de mesa", () => {
     expect(html).toContain("Cerrar cuenta");
   });
 
-  it("oculta líneas efectivas en cero como consumo", () => {
+  it("oculta líneas vigentes en cero como consumo", () => {
     const html = renderToStaticMarkup(
       createElement(CuentaMesa, {
         cuenta: {

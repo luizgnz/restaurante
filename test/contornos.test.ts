@@ -83,15 +83,44 @@ describe("contornos: validación de selecciones", () => {
     const ok = validarSelecciones(e.db, e.ids.hamburguesa, [
       { slotPosicion: 1, varianteId: e.carne.id },
       { slotPosicion: 2, varianteId: e.papas.id },
+      { slotPosicion: 3, varianteId: e.arroz.id },
       { slotPosicion: 3, varianteId: e.rusa.id },
       { slotPosicion: 1, varianteId: e.pollo.id },
     ]);
-    expect(ok).toHaveLength(4);
+    expect(ok).toHaveLength(5);
     const proteina = ok.find((s) => s.slotPosicion === 1 && !s.esExtra)!;
     expect(proteina.precioCentavos).toBe(500);
     const extra = ok.find((s) => s.slotPosicion === 1 && s.esExtra)!;
     expect(extra.varianteNombre).toBe("Pollo");
     expect(extra.precioCentavos).toBe(1500);
+    e.db.close();
+  });
+
+  it("un slot con varios grupos exige una elección por grupo y no cobra extra por cada grupo", () => {
+    const e = escenario();
+    const ok = validarSelecciones(e.db, e.ids.hamburguesa, [
+      { slotPosicion: 1, varianteId: e.pollo.id },
+      { slotPosicion: 2, varianteId: e.papas.id },
+      { slotPosicion: 3, varianteId: e.arroz.id },
+      { slotPosicion: 3, varianteId: e.rusa.id },
+    ]);
+    expect(ok.filter((s) => s.slotPosicion === 3 && !s.esExtra)).toHaveLength(2);
+    expect(ok.every((s) => !s.esExtra)).toBe(true);
+    expect(ok.filter((s) => s.slotPosicion === 3).every((s) => s.precioCentavos === 0)).toBe(true);
+    e.db.close();
+  });
+
+  it("rechaza un slot con varios grupos si falta la elección de un grupo", () => {
+    const e = escenario();
+    expect(
+      codigoDe(() =>
+        validarSelecciones(e.db, e.ids.hamburguesa, [
+          { slotPosicion: 1, varianteId: e.pollo.id },
+          { slotPosicion: 2, varianteId: e.papas.id },
+          { slotPosicion: 3, varianteId: e.rusa.id },
+        ]),
+      ),
+    ).toBe("contornos_incompletos");
     e.db.close();
   });
 

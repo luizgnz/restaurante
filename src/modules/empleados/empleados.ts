@@ -3,7 +3,15 @@ import { hashPin, verifyPin } from "./pin.ts";
 
 export type Derecho = "minimo" | "basico" | "avanzado";
 export type RolClave = "administrador" | "mesero" | "cocina" | "caja" | "inventario";
-export type AccionPin = "enviar" | "precuenta" | "caja" | "abrir_sesion" | "crear_pedido" | "anular" | "inventario";
+export type AccionPin =
+  | "enviar"
+  | "precuenta"
+  | "caja"
+  | "abrir_sesion"
+  | "crear_pedido"
+  | "anular"
+  | "inventario"
+  | "cancelar_cuenta";
 
 export type Empleado = {
   id: number;
@@ -209,6 +217,7 @@ export async function probarPin(db: Database.Database, pin: string): Promise<Emp
 function puede(derecho: Derecho, accion: AccionPin, roles: RolClave[]): boolean {
   if (roles.length === 0) {
     if (accion === "caja" || accion === "abrir_sesion" || accion === "inventario") return derecho === "avanzado";
+    if (accion === "cancelar_cuenta") return derecho === "avanzado";
     return derecho === "basico" || derecho === "avanzado";
   }
   if (roles.includes("administrador")) return true;

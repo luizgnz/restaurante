@@ -14,7 +14,7 @@ import {
 } from "../entrada.ts";
 import { corregirOrden, type ResultadoCorreccion } from "../../modules/ordenes/correcciones.ts";
 import { enviarOrden, type ResultadoEnvio } from "../../modules/ordenes/enviar.ts";
-import { versionEfectivaOrden } from "../../modules/ordenes/ordenes.ts";
+import { versionVigenteOrden } from "../../modules/ordenes/ordenes.ts";
 
 /** Un envío nuevo devuelve 201; un reintento con la misma clave, 200. */
 function respuestaEnvio(db: Database.Database, envio: ResultadoEnvio) {
@@ -26,6 +26,7 @@ function respuestaEnvio(db: Database.Database, envio: ResultadoEnvio) {
       ordenNumero: orden.numero,
       comandaId: envio.comandaId,
       repetida: envio.repetida,
+      avisos: envio.avisos,
     },
     status: (envio.repetida ? 200 : 201) as 200 | 201,
   };
@@ -110,7 +111,7 @@ export function rutasOrdenes(deps: RutasDeps): Hono {
   });
 
   /**
-   * Anular es la corrección que deja todas las cantidades efectivas en cero. Se
+   * Anular es la corrección que deja todas las cantidades vigentes en cero. Se
    * arma desde la versión vigente, no desde el envío original: lo que se anula
    * es lo que el cliente tiene delante.
    *
@@ -124,7 +125,7 @@ export function rutasOrdenes(deps: RutasDeps): Hono {
     const ordenId = idDeRuta(c);
     const cuerpo = await leerJson<CuerpoCorreccion>(c);
     const clave = claveIdempotencia(cuerpo.claveIdempotencia);
-    const lineas = versionEfectivaOrden(db, ordenId).map((linea) => ({
+    const lineas = versionVigenteOrden(db, ordenId).map((linea) => ({
       lineaClave: linea.lineaClave,
       productoId: linea.productoId,
       ordenLineaId: linea.ordenLineaId,

@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { indicacionesEfectivasOrden } from "../ordenes/ordenes.ts";
+import { indicacionesVigentesOrden } from "../ordenes/ordenes.ts";
 import { incidenciasDeComanda, type IncidenciaCocina } from "./incidencias.ts";
 
 export type TipoComanda = "legacy" | "orden" | "correccion" | "anulacion";
@@ -139,6 +139,26 @@ export function avanzarEtapa(db: Database.Database, comandaLineaId: number, etap
     throw new KdsError("incidencia_pendiente", "El mesero debe responder la solicitud antes de preparar");
   }
   db.prepare("UPDATE comanda_lineas SET etapa = ? WHERE id = ?").run(etapa, comandaLineaId);
+}
+
+/**
+ * ¿Cocina ya empezó (o terminó) alguna tarea de esta línea? Las tareas
+ * canceladas no cuentan —nunca se cocinaron— y un aviso no es tarea: es la
+ * historia de una corrección anterior.
+ *
+ * La identidad de la línea puede ser original (`orden_linea_id`) o nacida de una
+ * corrección anterior (`linea_clave` de `orden_correccion_lineas`).
+ */
+export function lineaPreparada(db: Database.Database, lineaClave: string, ordenLineaId: number | null): boolean {
+  const filas = db
+    .prepare(
+      `SELECT cl.etapa FROM comanda_lineas cl
+       LEFT JOIN orden_correccion_lineas ocl ON ocl.id = cl.orden_correccion_linea_id
+       WHERE (cl.orden_linea_id = ? OR ocl.linea_clave = ?)
+         AND cl.etapa IN ('por_preparar', 'en_proceso', 'listo', 'servido')`,
+    )
+    .all(ordenLineaId ?? -1, lineaClave) as { etapa: string }[];
+  return filas.some((f) => f.etapa !== "por_preparar");
 }
 
 /**
@@ -349,7 +369,7 @@ export function tarjetasKds(db: Database.Database): TarjetaKds[] {
     const indicaciones = esCorreccion
       ? row.correccion_indicaciones || null
       : row.orden_id != null
-        ? indicacionesEfectivasOrden(db, row.orden_id)
+        ? indicacionesVigentesOrden(db, row.orden_id)
         : row.pedido_indicaciones;
 
     return {
@@ -403,7 +423,7 @@ export type EventoCorreccion = {
  * Lo que la pantalla de cocina necesita de una corrección: el evento con sus
  * cantidades anterior y nueva, las notas y la etapa de cada línea. La comanda
  * de corrección existe siempre —incluso si solo cambian las indicaciones— y es
- * la notificación; las cantidades vigentes salen de la versión efectiva, no de
+ * la notificación; las cantidades vigentes salen de la versión vigente, no de
  * sumar etapas.
  */
 export function eventosDeCorreccion(db: Database.Database, ordenId: number): EventoCorreccion[] {
