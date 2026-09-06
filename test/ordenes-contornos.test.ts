@@ -17,13 +17,14 @@ async function escenario() {
   const pollo = proteina.variantes.find((item) => item.nombre === "Pollo")!;
   const carne = proteina.variantes.find((item) => item.nombre === "Carne")!;
   const papas = carbohidrato.variantes.find((item) => item.nombre === "Papas fritas")!;
+  const arroz = carbohidrato.variantes.find((item) => item.nombre === "Arroz")!;
   const rusa = ensalada.variantes.find((item) => item.nombre === "Ensalada rusa")!;
   configurarSlots(db, ids.hamburguesa, [
     { posicion: 1, nombre: "Proteína", permiteExtra: true, grupoIds: [proteina.id] },
     { posicion: 2, nombre: "Contorno", grupoIds: [carbohidrato.id] },
     { posicion: 3, nombre: "Segundo contorno", grupoIds: [carbohidrato.id, ensalada.id] },
   ]);
-  return { db, ids, pollo, carne, papas, rusa };
+  return { db, ids, pollo, carne, papas, arroz, rusa };
 }
 
 const CONFIG = defaultConfig();
@@ -45,6 +46,7 @@ describe("envío de órdenes con contornos", () => {
               { slotPosicion: 1, varianteId: e.carne.id },
               { slotPosicion: 2, varianteId: e.papas.id },
               { slotPosicion: 3, varianteId: e.rusa.id },
+              { slotPosicion: 3, varianteId: e.arroz.id },
               { slotPosicion: 1, varianteId: e.pollo.id },
             ],
           },
@@ -61,7 +63,8 @@ describe("envío de órdenes con contornos", () => {
       { slot_posicion: 1, variante_nombre: "Carne", precio_centavos: 500, orden_extra: 0 },
       { slot_posicion: 1, variante_nombre: "Pollo", precio_centavos: 1500, orden_extra: 1 },
       { slot_posicion: 2, variante_nombre: "Papas fritas", precio_centavos: 0, orden_extra: 0 },
-      { slot_posicion: 3, variante_nombre: "Ensalada rusa", precio_centavos: 0, orden_extra: 0 },
+      { slot_posicion: 3, variante_nombre: "Arroz", precio_centavos: 0, orden_extra: 0 },
+      { slot_posicion: 3, variante_nombre: "Ensalada rusa", precio_centavos: 0, orden_extra: 1 },
     ]);
 
     // 8900 + 500 (suplemento carne) + 1500 (extra pollo) por unidad, × 2.
@@ -116,6 +119,7 @@ describe("envío de órdenes con contornos", () => {
         { slotPosicion: 1, varianteId: e.pollo.id },
         { slotPosicion: 2, varianteId: e.papas.id },
         { slotPosicion: 3, varianteId: e.rusa.id },
+        { slotPosicion: 3, varianteId: e.arroz.id },
       ],
     };
     const primero = await enviarOrden(
@@ -133,7 +137,7 @@ describe("envío de órdenes con contornos", () => {
     expect(segundo.ordenId).toBe(primero.ordenId);
     expect(segundo.repetida).toBe(true);
     const n = e.db.prepare("SELECT count(*) AS c FROM orden_linea_contornos").get() as { c: number };
-    expect(n.c).toBe(3);
+    expect(n.c).toBe(4);
     e.db.close();
   });
 

@@ -13,6 +13,7 @@ const valores = {
   pin_momento: "enviar" as const,
   confirmar_comanda: false,
   auditoria_anulaciones: false,
+  devolver_insumos_preparados: false,
   justificacion_anulacion: false,
   precuenta_obligatoria_antes_de_caja: true,
   enviar_a_caja_requiere_avanzado: true,
@@ -55,7 +56,8 @@ describe("opciones", () => {
 
     const conAuditoria = renderToStaticMarkup(
       createElement(Opciones, {
-        valores: { ...valores, auditoria_anulaciones: true, justificacion_anulacion: true },
+        valores: { ...valores, auditoria_anulaciones: true,
+  devolver_insumos_preparados: true, justificacion_anulacion: true },
         onCambiar: () => undefined,
       }),
     );

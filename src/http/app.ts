@@ -6,6 +6,7 @@ import { saveConfig, normalizarConfig, type AppConfig, type ImpresoraRedConfig }
 import { CajaError, enviarACaja } from "../modules/caja/caja.ts";
 import { listarPlugins, mensajesVacios } from "../modules/complementos/complementos.ts";
 import { ContornoError, configurarSlots, slotsDeProducto } from "../modules/contornos/contornos.ts";
+import { CancelarCuentaError } from "../modules/cuentas/cancelar.ts";
 import { CuentaError } from "../modules/cuentas/cuentas.ts";
 import {
   actualizarUsuario,
@@ -170,6 +171,7 @@ function codigoStatus(err: unknown): StatusError {
   if (err instanceof PinError) return 403;
   if (
     err instanceof CuentaError ||
+    err instanceof CancelarCuentaError ||
     err instanceof OrdenError ||
     err instanceof CorreccionError ||
     err instanceof PrecuentaError ||
@@ -183,6 +185,7 @@ function codigoStatus(err: unknown): StatusError {
     return statusPorCodigo(err.codigo);
   }
   if (
+    err instanceof CancelarCuentaError ||
     err instanceof SolicitudError ||
     err instanceof SalonError ||
     err instanceof PedidoError ||
@@ -201,6 +204,7 @@ function codigoDe(err: unknown): string {
     err instanceof PedidoError ||
     err instanceof ProductoError ||
     err instanceof CuentaError ||
+    err instanceof CancelarCuentaError ||
     err instanceof OrdenError ||
     err instanceof CorreccionError ||
     err instanceof PrecuentaError ||
@@ -247,6 +251,7 @@ function configPublica(config: AppConfig) {
     pin_al_anular: config.pin_al_anular,
     auditoria_anulaciones: config.auditoria_anulaciones,
     justificacion_anulacion: config.justificacion_anulacion,
+    devolver_insumos_preparados: config.devolver_insumos_preparados,
     precuenta_obligatoria_antes_de_caja: config.precuenta_obligatoria_antes_de_caja,
     enviar_a_caja_requiere_avanzado: config.enviar_a_caja_requiere_avanzado,
     impresora_comanda: config.impresora_comanda,
@@ -617,6 +622,7 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
       confirmar_comanda?: boolean;
       auditoria_anulaciones?: boolean;
       justificacion_anulacion?: boolean;
+      devolver_insumos_preparados?: boolean;
       precuenta_obligatoria_antes_de_caja?: boolean;
       enviar_a_caja_requiere_avanzado?: boolean;
       impresora_comanda?: unknown;
@@ -646,6 +652,7 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
     if (typeof body.confirmar_comanda === "boolean") config.confirmar_comanda = body.confirmar_comanda;
     if (typeof body.auditoria_anulaciones === "boolean") config.auditoria_anulaciones = body.auditoria_anulaciones;
     if (typeof body.justificacion_anulacion === "boolean") config.justificacion_anulacion = body.justificacion_anulacion;
+    if (typeof body.devolver_insumos_preparados === "boolean") config.devolver_insumos_preparados = body.devolver_insumos_preparados;
     if (typeof body.precuenta_obligatoria_antes_de_caja === "boolean") {
       config.precuenta_obligatoria_antes_de_caja = body.precuenta_obligatoria_antes_de_caja;
     }

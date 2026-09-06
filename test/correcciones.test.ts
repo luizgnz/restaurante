@@ -88,7 +88,9 @@ function corregir(
 ) {
   return corregirOrden(
     db,
-    { pin: "1234", claveIdempotencia: nuevaClave(), ...entrada },
+    // La auditoría de anulaciones viene encendida por defecto (fase 0): salvo
+    // que el test la esté probando expresamente, el motivo va incluido.
+    { pin: "1234", claveIdempotencia: nuevaClave(), motivo: "corrección de prueba", ...entrada },
     printer,
     cfg,
   );
@@ -611,12 +613,18 @@ describe("corregirOrden", () => {
   });
 
   it("escribe auditoría solo cuando auditoria_anulaciones está encendida", async () => {
-    const apagada = await ordenEnviada((ids) => [{ productoId: ids.jugo, cantidad: 2 }]);
-    await corregir(apagada.db, {
-      ordenId: apagada.ordenId,
-      lineas: [cambio(apagada.lineas[0], 0)],
-      motivo: "sin auditoría",
-    });
+    const cfgApagada: AppConfig = { ...defaultConfig(), auditoria_anulaciones: false, justificacion_anulacion: false };
+    const apagada = await ordenEnviada((ids) => [{ productoId: ids.jugo, cantidad: 2 }], cfgApagada);
+    await corregir(
+      apagada.db,
+      {
+        ordenId: apagada.ordenId,
+        lineas: [cambio(apagada.lineas[0], 0)],
+        motivo: "sin auditoría",
+      },
+      undefined,
+      cfgApagada,
+    );
     expect(contar(apagada.db, "auditoria_anulaciones")).toBe(0);
     expect(contar(apagada.db, "orden_correcciones")).toBe(1);
     apagada.db.close();
@@ -625,7 +633,7 @@ describe("corregirOrden", () => {
     const encendida = await ordenEnviada((ids) => [{ productoId: ids.jugo, cantidad: 2 }], cfg);
     const result = await corregir(
       encendida.db,
-      { ordenId: encendida.ordenId, lineas: [cambio(encendida.lineas[0], 0)] },
+      { ordenId: encendida.ordenId, lineas: [cambio(encendida.lineas[0], 0)], motivo: "baja del producto" },
       undefined,
       cfg,
     );
@@ -648,7 +656,7 @@ describe("corregirOrden", () => {
       mesa_numero: 7,
       orden_numero: 1,
       empleado_id: 1,
-      justificacion: null,
+      justificacion: "baja del producto",
     });
     expect(auditoria.resumen).toContain("2 Jugo");
     expect(auditoria.creada_en).toEqual(expect.any(String));

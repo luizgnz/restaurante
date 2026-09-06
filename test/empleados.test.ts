@@ -26,7 +26,9 @@ describe("empleados", () => {
     db.close();
   });
 
-  it("mínimo no puede enviar ni precuenta; avanzado sí caja", async () => {
+  // Cada exigirPin verifica argon2 contra todos los empleados: bajo la carga
+  // del resto de la suite supera el timeout por defecto de 5s.
+  it("mínimo no puede enviar ni precuenta; avanzado sí caja", { timeout: 20000 }, async () => {
     const db = openTestDb();
     await crearEmpleado(db, { nombre: "Luis", pin: "1111", derecho: "minimo" });
     await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });

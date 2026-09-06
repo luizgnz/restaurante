@@ -142,6 +142,26 @@ export function avanzarEtapa(db: Database.Database, comandaLineaId: number, etap
 }
 
 /**
+ * ¿Cocina ya empezó (o terminó) alguna tarea de esta línea? Las tareas
+ * canceladas no cuentan —nunca se cocinaron— y un aviso no es tarea: es la
+ * historia de una corrección anterior.
+ *
+ * La identidad de la línea puede ser original (`orden_linea_id`) o nacida de una
+ * corrección anterior (`linea_clave` de `orden_correccion_lineas`).
+ */
+export function lineaPreparada(db: Database.Database, lineaClave: string, ordenLineaId: number | null): boolean {
+  const filas = db
+    .prepare(
+      `SELECT cl.etapa FROM comanda_lineas cl
+       LEFT JOIN orden_correccion_lineas ocl ON ocl.id = cl.orden_correccion_linea_id
+       WHERE (cl.orden_linea_id = ? OR ocl.linea_clave = ?)
+         AND cl.etapa IN ('por_preparar', 'en_proceso', 'listo', 'servido')`,
+    )
+    .all(ordenLineaId ?? -1, lineaClave) as { etapa: string }[];
+  return filas.some((f) => f.etapa !== "por_preparar");
+}
+
+/**
  * Cancela en cocina las tareas que quedaron sin efecto, sin borrar historia: lo
  * terminal (`listo`, `servido`, `cancelado`) y los avisos no se tocan, porque
  * son el dato que dice si hubo merma o si se le cobra al cliente.

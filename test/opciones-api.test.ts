@@ -98,9 +98,14 @@ describe("opciones API", () => {
     const app = createApp({ db, config, printer: new MemoryPrinter(), dataDir: dir });
 
     const get = await app.request("/api/config");
-    const inicial = (await get.json()) as { auditoria_anulaciones: boolean; justificacion_anulacion: boolean };
-    expect(inicial.auditoria_anulaciones).toBe(false);
-    expect(inicial.justificacion_anulacion).toBe(false);
+    const inicial = (await get.json()) as {
+      auditoria_anulaciones: boolean;
+      justificacion_anulacion: boolean;
+      devolver_insumos_preparados: boolean;
+    };
+    expect(inicial.auditoria_anulaciones).toBe(true);
+    expect(inicial.justificacion_anulacion).toBe(true);
+    expect(inicial.devolver_insumos_preparados).toBe(true);
 
     const res = await app.request("/api/config", {
       method: "POST",

@@ -201,6 +201,10 @@ export function validarSelecciones(
       lista.push(variante);
       porGrupo.set(variante.grupo_id, lista);
     });
+    // `orden_extra` es la posición de la selección dentro del slot (el esquema
+    // exige UNIQUE por línea+slot+orden). Con la semántica de una elección por
+    // grupo, un slot multi-grupo tiene varias "bases": la numeración corre sobre
+    // todas las filas del slot y la distinción base/extra vive en `esExtra`.
     let ordenExtraSlot = 0;
     for (const grupo of slot.grupos) {
       const delGrupo = porGrupo.get(grupo.id) ?? [];
@@ -219,7 +223,7 @@ export function validarSelecciones(
           varianteNombre: variante.nombre,
           precioCentavos: esExtra ? variante.extra_centavos : variante.suplemento_centavos,
           esExtra,
-          ordenExtra: esExtra ? ++ordenExtraSlot : 0,
+          ordenExtra: ordenExtraSlot++,
         });
       });
     }

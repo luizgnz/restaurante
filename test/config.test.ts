@@ -47,10 +47,11 @@ describe("config", () => {
     expect(loadConfig(dir).puerto).toBe(9090);
   });
 
-  it("desactiva auditoría y justificación por defecto", () => {
+  it("enciende auditoría y justificación por defecto (fase 0)", () => {
     const cfg = defaultConfig();
-    expect(cfg.auditoria_anulaciones).toBe(false);
-    expect(cfg.justificacion_anulacion).toBe(false);
+    expect(cfg.auditoria_anulaciones).toBe(true);
+    expect(cfg.justificacion_anulacion).toBe(true);
+    expect(cfg.devolver_insumos_preparados).toBe(true);
   });
 
   it("no permite justificación activa sin auditoría", () => {
