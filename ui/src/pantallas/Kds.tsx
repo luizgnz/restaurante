@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRightLeft, CheckCheck, ChefHat, CircleOff, Clock3, Play, RefreshCw } from "lucide-react";
+import { AlertTriangle, ArrowRightLeft, CheckCheck, ChefHat, CircleOff, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Alerta } from "@/components/ui/alerta.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -65,7 +65,6 @@ type Props = {
   cargando?: boolean;
   onCambiarEtapa: (comandaId: number, etapa: "en_proceso" | "listo") => Promise<void>;
   onCrearIncidencia: (incidencia: NuevaIncidencia) => Promise<void>;
-  onRecargar: () => Promise<void>;
   productos?: Array<{ id: number; nombre: string }>;
 };
 
@@ -89,32 +88,35 @@ function esEntregada(tarjeta: TarjetaKdsUi): boolean {
   return tareas.length > 0 && tareas.every((linea) => linea.etapa === "listo" || linea.etapa === "servido" || linea.etapa === "cancelado");
 }
 
-/** Estado agregado de la orden para la tabla: una sola palabra por fila. */
-function estadoOrden(tarjeta: TarjetaKdsUi): { etiqueta: string; tono: "secondary" | "warning" | "success" } {
-  const tareas = tarjeta.lineas.filter((linea) => !linea.esAviso && linea.etapa !== "cancelado");
-  if (tareas.length === 0) return { etiqueta: "Aviso", tono: "warning" };
-  if (tareas.every((linea) => linea.etapa === "listo" || linea.etapa === "servido")) {
-    return { etiqueta: "Lista para entregar", tono: "success" };
-  }
-  if (tareas.some((linea) => linea.etapa === "en_proceso")) return { etiqueta: "En preparación", tono: "warning" };
-  return { etiqueta: "Enviada", tono: "secondary" };
+/** Descripción acotada de lo pedido, para la fila de la tabla. */
+function descripcionOrden(tarjeta: TarjetaKdsUi): string {
+  return tarjeta.lineas
+    .filter((linea) => !linea.esAviso && linea.etapa !== "cancelado")
+    .map((linea) => {
+      const base = `${cantidad(linea)} × ${linea.nombre}`;
+      return linea.nota ? `${base} (${linea.nota})` : base;
+    })
+    .join(", ");
 }
 
-export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onRecargar, productos = [] }: Props) {
+export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, productos = [] }: Props) {
   const [modal, setModal] = useState<ModalIncidencia | null>(null);
   const [seleccionadaId, setSeleccionadaId] = useState<number | null>(null);
   const [nuevas, setNuevas] = useState<ReadonlySet<number>>(new Set());
   const conocidasRef = useRef<Set<number> | null>(null);
 
   // Alerta de llegada: una orden que no estaba en el tablero se enciende en
-  // ámbar unos segundos y después queda normal. La primera carga no parpadea.
+  // ámbar unos segundos y después queda normal. La primera tanda de datos
+  // (incluido el tablero vacío al montar) no parpadea.
   useEffect(() => {
-    const ids = new Set(tarjetas.map((tarjeta) => tarjeta.id));
+    if (tarjetas.length === 0) return;
     if (conocidasRef.current === null) {
-      conocidasRef.current = ids;
+      conocidasRef.current = new Set(tarjetas.map((tarjeta) => tarjeta.id));
       return;
     }
-    const entrantes = [...ids].filter((id) => !conocidasRef.current!.has(id));
+    const entrantes = [...new Set(tarjetas.map((tarjeta) => tarjeta.id))].filter(
+      (id) => !conocidasRef.current!.has(id),
+    );
     if (entrantes.length === 0) return;
     conocidasRef.current = new Set([...conocidasRef.current, ...entrantes]);
     setNuevas((prev) => {
@@ -141,12 +143,6 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onR
     .sort((a, b) => Date.parse(b.creadaEn) - Date.parse(a.creadaEn) || b.id - a.id)
     .filter((tarjeta) => !esEntregada(tarjeta));
   const seleccionada = activas.find((tarjeta) => tarjeta.id === seleccionadaId) ?? null;
-  const [recargando, setRecargando] = useState(false);
-
-  const lineas = tarjetas.flatMap((tarjeta) => tarjeta.lineas.filter((linea) => !linea.esAviso));
-  const enviados = lineas.filter((linea) => linea.etapa === "por_preparar").length;
-  const preparando = lineas.filter((linea) => linea.etapa === "en_proceso").length;
-  const listos = lineas.filter((linea) => linea.etapa === "listo").length;
 
   function abrirModal(tarjeta: TarjetaKdsUi, tipo: "rechazo" | "sugerencia", linea?: LineaKdsUi) {
     setModal({
@@ -204,26 +200,13 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onR
     <section className="page-shell kds-page cocina-page">
       <header className="page-header">
         <div><span className="page-eyebrow">Vista del cocinero</span><h1>Cocina</h1><p>Recibe pedidos, prepara cada producto y avisa al mesero cuando haya un problema.</p></div>
-        <Button type="button" variant="outline" disabled={recargando} onClick={async () => {
-          setRecargando(true);
-          try { await onRecargar(); } finally { setRecargando(false); }
-        }}>
-          <RefreshCw size={18} className={recargando ? "is-spinning" : ""} aria-hidden="true" /> Actualizar
-        </Button>
       </header>
-
-      <div className="cocina-resumen" aria-label="Resumen de cocina">
-        <Card><Clock3 size={20} aria-hidden="true" /><div><strong>{enviados}</strong><span>enviados a cocina</span></div></Card>
-        <Card><ChefHat size={20} aria-hidden="true" /><div><strong>{preparando}</strong><span>en preparación</span></div></Card>
-        <Card><CheckCheck size={20} aria-hidden="true" /><div><strong>{listos}</strong><span>listos para entregar</span></div></Card>
-      </div>
 
       <div className="cocina-tabla" role="table" aria-label="Órdenes en cocina, de la más nueva a la más vieja">
         <div role="row" className="cocina-tabla__fila cocina-tabla__fila--cabecera">
           <span role="columnheader">Orden</span>
           <span role="columnheader">Mesero</span>
           <span role="columnheader">Espera</span>
-          <span role="columnheader">Estado</span>
           <span role="columnheader">Productos</span>
         </div>
         {cargando && tarjetas.length === 0 ? (
@@ -236,9 +219,7 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onR
           activas.map((tarjeta) => {
             const espera = esperaMinutos(tarjeta.creadaEn);
             const nivel = nivelEspera(espera);
-            const estado = estadoOrden(tarjeta);
             const pendiente = tarjeta.incidencias.some((incidencia) => incidencia.estado === "pendiente");
-            const productos = tarjeta.lineas.filter((linea) => !linea.esAviso && linea.etapa !== "cancelado").length;
             return (
               <button
                 type="button"
@@ -251,8 +232,7 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onR
                 <span role="cell" className="cocina-tabla__orden"><strong>{tarjeta.referencia}</strong>{pendiente ? <Badge variant="danger">Cocina esperando respuesta</Badge> : null}</span>
                 <span role="cell">{tarjeta.mesero}</span>
                 <span role="cell"><span className={`cocina-tarjeta__espera espera-${nivel}`}>{textoEspera(espera)}</span></span>
-                <span role="cell"><Badge variant={estado.tono}>{estado.etiqueta}</Badge></span>
-                <span role="cell" className="cocina-tabla__productos">{productos} {productos === 1 ? "producto" : "productos"}</span>
+                <span role="cell" className="cocina-tabla__descripcion">{descripcionOrden(tarjeta)}</span>
               </button>
             );
           })

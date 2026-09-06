@@ -44,7 +44,6 @@ describe("vistas coordinadas de cocina y mesero", () => {
         tarjetas: [tarjeta],
         onCambiarEtapa: async () => undefined,
         onCrearIncidencia: async () => undefined,
-        onRecargar: async () => undefined,
       }),
     );
     expect(html).toContain("Vista del cocinero");
@@ -52,10 +51,14 @@ describe("vistas coordinadas de cocina y mesero", () => {
     expect(html).toContain('aria-label="Órdenes en cocina, de la más nueva a la más vieja"');
     expect(html).toContain("Orden");
     expect(html).toContain("Espera");
-    expect(html).toContain("Estado");
+    expect(html).toContain("Productos");
     expect(html).toContain('aria-label="Abrir la orden de la Mesa #7 · Orden #1"');
-    expect(html).toContain("Enviada");
-    expect(html).toContain("1 producto");
+    // la fila muestra la descripción acotada de lo pedido
+    expect(html).toContain("1 × Hamburguesa (sin cebolla)");
+    // sin contadores, sin estado "Enviada", sin botón de actualizar
+    expect(html).not.toContain("enviados a cocina");
+    expect(html).not.toContain("Enviada<");
+    expect(html).not.toContain("Actualizar");
     // las acciones NO viven en la tabla: van en la pantalla emergente al hacer clic
     expect(html).not.toContain("Comenzar orden");
     expect(html).not.toContain("Lista completa");
@@ -72,7 +75,6 @@ describe("vistas coordinadas de cocina y mesero", () => {
         tarjetas: [tarjeta, entregada],
         onCambiarEtapa: async () => undefined,
         onCrearIncidencia: async () => undefined,
-        onRecargar: async () => undefined,
       }),
     );
     // solo queda la fila activa; la entregada desaparece sin toggle
@@ -131,7 +133,6 @@ describe("vistas coordinadas de cocina y mesero", () => {
         }],
         onCambiarEtapa: async () => undefined,
         onCrearIncidencia: async () => undefined,
-        onRecargar: async () => undefined,
       }),
     );
     // respondida la incidencia, la fila se renderiza y deja de estar bloqueada

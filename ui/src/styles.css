@@ -2089,35 +2089,6 @@ button.icono {
   font-weight: 850;
 }
 
-.cocina-resumen {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-.cocina-resumen > div {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-}
-.cocina-resumen svg {
-  box-sizing: content-box;
-  padding: 0.55rem;
-  border-radius: 0.8rem;
-  background: var(--accent);
-  color: var(--accent-foreground);
-}
-.cocina-resumen div div {
-  display: flex;
-  flex-direction: column;
-}
-.cocina-resumen strong {
-  font-size: 1.35rem;
-}
-.cocina-resumen span {
-  color: var(--muted-foreground);
-  font-size: 0.78rem;
-}
 .cocina-indicaciones {
   margin: 0;
   padding: 0.7rem 1rem;
@@ -2246,12 +2217,6 @@ button.icono {
 }
 
 @media (max-width: 900px) {
-  .cocina-resumen {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .cocina-resumen > div {
-    padding: 0.75rem;
-  }
 }
 
 @media (max-width: 767px) {
@@ -2277,12 +2242,6 @@ button.icono {
   }
   .pos-nav__item {
     position: relative;
-  }
-  .cocina-resumen {
-    grid-template-columns: 1fr;
-  }
-  .cocina-resumen > div {
-    min-height: 70px;
   }
   .cocina-linea__principal {
     align-items: flex-start;
@@ -4408,7 +4367,7 @@ button.icono:focus-visible {
 }
 .cocina-tabla__fila {
   display: grid;
-  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr) auto auto auto;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.6fr) auto minmax(0, 2fr);
   gap: 0.75rem;
   align-items: center;
 }
@@ -4433,7 +4392,12 @@ button.cocina-tabla__fila {
 button.cocina-tabla__fila:hover { background: var(--muted); }
 button.cocina-tabla__fila.is-bloqueada { border-color: color-mix(in oklab, var(--warning) 55%, var(--border)); }
 .cocina-tabla__orden { display: inline-flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-weight: 600; }
-.cocina-tabla__productos { color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.cocina-tabla__descripcion {
+  overflow: hidden;
+  color: var(--muted-foreground);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .cocina-tabla__fila.is-nueva { animation: cocina-llegada 6s ease-out; }
 @keyframes cocina-llegada {
   0%, 65% {
@@ -4463,7 +4427,7 @@ button.cocina-tabla__fila.is-bloqueada { border-color: color-mix(in oklab, var(-
   padding: 0.6rem 0.75rem;
 }
 @media (max-width: 719px) {
-  .cocina-tabla__fila { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .cocina-tabla__fila { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.4fr); }
   .cocina-tabla__fila > :nth-child(2) { display: none; }
 }
 }

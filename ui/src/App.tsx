@@ -885,7 +885,6 @@ export function App() {
             cargando={carga.kds}
             tarjetas={tarjetasKds}
             productos={productos}
-            onRecargar={cargarKds}
             onCambiarEtapa={async (comandaId, etapa) => {
               await api(`/api/kds/comandas/${comandaId}/etapa`, {
                 method: "POST",
