@@ -1,4 +1,5 @@
 import { Ban, Clock3, Pencil, Plus, ReceiptText, Send, Trash2, UserRound } from "lucide-react";
+import { dinero, fechaCorta } from "../../../src/modules/formato.ts";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -45,6 +46,7 @@ type Props = {
   onPrecuenta: () => void;
   onCerrarCuenta: () => void;
   onCancelarCuenta?: () => void;
+  onReimprimir?: () => void;
   onNotaPrivada: (nota: string) => Promise<void>;
 };
 
@@ -57,6 +59,7 @@ export function CuentaMesa({
   onPrecuenta,
   onCerrarCuenta,
   onCancelarCuenta,
+  onReimprimir,
   onNotaPrivada,
 }: Props) {
   const aceptaConsumo = cuenta.estado === "abierta" || cuenta.estado === "precuenta_emitida";
@@ -77,7 +80,7 @@ export function CuentaMesa({
             <Badge variant={cuenta.estado === "precuenta_emitida" ? "warning" : "success"}>
               {cuenta.estado.replaceAll("_", " ")}
             </Badge>
-            <strong>Total ${cuenta.totalCentavos}</strong>
+            <strong>Total {dinero(cuenta.totalCentavos)}</strong>
           </div>
         </div>
         {aceptaConsumo ? (
@@ -124,7 +127,7 @@ export function CuentaMesa({
             </header>
             <p className="cuenta-orden__meta">
               <UserRound size={15} aria-hidden="true" /> {orden.empleado}
-              <Clock3 size={15} aria-hidden="true" /> {new Date(orden.creadaEn).toLocaleString("es")}
+              <Clock3 size={15} aria-hidden="true" /> {fechaCorta(orden.creadaEn)}
             </p>
             {orden.lineas.filter((linea) => linea.cantidad > 0).map((linea) => (
               <div className="pedido-linea" key={linea.lineaClave}>
@@ -132,7 +135,7 @@ export function CuentaMesa({
                   {linea.cantidad} × {linea.nombre}
                   {linea.nota ? ` (${linea.nota})` : ""}
                 </span>
-                <span>${linea.cantidad * linea.precioCentavos}</span>
+                <span>{dinero(linea.cantidad * linea.precioCentavos)}</span>
                 {(linea.contornos ?? []).length > 0 ? (
                   <span className="pedido-nota-fija">{linea.contornos!.join(" · ")}</span>
                 ) : null}
@@ -161,12 +164,17 @@ export function CuentaMesa({
       </label>
 
       <footer className="cuenta-mesa__pie">
-        <div><span>Total de la cuenta</span><strong>${cuenta.totalCentavos}</strong></div>
+        <div><span>Total de la cuenta</span><strong>{dinero(cuenta.totalCentavos)}</strong></div>
         {aceptaConsumo ? (
           <>
             <Button type="button" variant="outline" onClick={onPrecuenta}>
               <ReceiptText size={18} aria-hidden="true" /> Precuenta
             </Button>
+            {cuenta.estado === "precuenta_emitida" && onReimprimir ? (
+              <Button type="button" variant="outline" onClick={onReimprimir}>
+                <ReceiptText size={18} aria-hidden="true" /> Reimprimir
+              </Button>
+            ) : null}
             {puedeCerrar ? (
               <Button type="button" onClick={onCerrarCuenta}>
                 <Send size={18} aria-hidden="true" /> Cerrar cuenta

@@ -31,11 +31,11 @@ describe("precuenta en pantalla", () => {
     expect(html).toContain("Ana");
     expect(html).toContain("2 × Hamburguesa");
     expect(html).toContain("(sin cebolla)");
-    expect(html).toContain("$17800");
+    expect(html).toContain("$17.800");
     expect(html).toContain("1 × Jugo");
-    expect(html).toContain("$3500");
+    expect(html).toContain("$3.500");
     expect(html).toContain("TOTAL");
-    expect(html).toContain("$21300");
+    expect(html).toContain("$21.300");
     expect(html).toContain("Listo");
   });
 });

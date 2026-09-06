@@ -116,6 +116,9 @@ export function App() {
   const [confirmarComanda, setConfirmarComanda] = useState(false);
   const [auditoriaAnulaciones, setAuditoriaAnulaciones] = useState(false);
   const [devolverInsumosPreparados, setDevolverInsumosPreparados] = useState(true);
+  const [pinPrecuenta, setPinPrecuenta] = useState(true);
+  const [pinCaja, setPinCaja] = useState(true);
+  const [precuentaReimpresa, setPrecuentaReimpresa] = useState<PrecuentaUi | null>(null);
   const [confirmarCancelar, setConfirmarCancelar] = useState(false);
   const [justificacionAnulacion, setJustificacionAnulacion] = useState(false);
   const [precuentaObligatoria, setPrecuentaObligatoria] = useState(true);
@@ -207,6 +210,8 @@ export function App() {
     if (typeof data.confirmar_comanda === "boolean") setConfirmarComanda(data.confirmar_comanda);
     if (typeof data.auditoria_anulaciones === "boolean") setAuditoriaAnulaciones(data.auditoria_anulaciones);
     if (typeof data.devolver_insumos_preparados === "boolean") setDevolverInsumosPreparados(data.devolver_insumos_preparados);
+    if (typeof data.pin_al_emitir_precuenta === "boolean") setPinPrecuenta(data.pin_al_emitir_precuenta);
+    if (typeof data.pin_al_enviar_caja === "boolean") setPinCaja(data.pin_al_enviar_caja);
     if (typeof data.justificacion_anulacion === "boolean") setJustificacionAnulacion(data.justificacion_anulacion);
     if (typeof data.precuenta_obligatoria_antes_de_caja === "boolean") {
       setPrecuentaObligatoria(data.precuenta_obligatoria_antes_de_caja);
@@ -391,7 +396,7 @@ export function App() {
         contextoOrden.tipo === "cuenta"
           ? `/api/cuentas/${contextoOrden.cuentaId}/ordenes`
           : "/api/ordenes";
-      const respuesta = await api<{ cuentaId: number; ordenNumero: number }>(ruta, {
+      const respuesta = await api<{ cuentaId: number; ordenNumero: number; mesero?: string }>(ruta, {
         method: "POST",
         body: JSON.stringify({
           mesaId: borrador.mesaId,
@@ -410,7 +415,7 @@ export function App() {
       setComandaReciente({
         mesaNumero: mesas.find((mesa) => mesa.id === borrador.mesaId)?.numero ?? null,
         ordenNumero: respuesta.ordenNumero,
-        mesero: sesion?.usuario?.nombre ?? sesion?.administrador?.nombre ?? "",
+        mesero: respuesta.mesero ?? sesion?.usuario?.nombre ?? sesion?.administrador?.nombre ?? "",
         indicaciones: borrador.indicaciones.trim() ? borrador.indicaciones : null,
         lineas: borrador.lineas
           .filter((linea) => linea.cantidad > 0)
@@ -517,9 +522,40 @@ export function App() {
     }
   }
 
+  async function reimprimirPrecuentaActual() {
+    if (!cuentaActual) return;
+    const respuesta = await api<{
+      numero: number;
+      snapshot: {
+        mesaNumero: number | null;
+        mesero?: string;
+        lineas?: Array<{ nombre: string; cantidad: number; precio_centavos?: number; precioCentavos?: number; nota: string | null }>;
+        ordenes?: Array<{ lineas: Array<{ nombre: string; cantidad: number; precio_centavos?: number; precioCentavos?: number; nota: string | null }> }>;
+        totalCentavos: number;
+      };
+    }>(`/api/cuentas/${cuentaActual.id}/precuenta/reimprimir`, { method: "POST" });
+    const snap = respuesta.snapshot;
+    const lineas = snap.ordenes
+      ? snap.ordenes.flatMap((orden) => orden.lineas)
+      : (snap.lineas ?? []);
+    setPrecuentaReimpresa({
+      mesaNumero: snap.mesaNumero ?? cuentaActual.mesa.numero,
+      numero: respuesta.numero,
+      mesero: snap.mesero ?? sesion?.usuario?.nombre ?? sesion?.administrador?.nombre ?? "",
+      lineas: lineas.map((linea) => ({
+        nombre: linea.nombre,
+        cantidad: linea.cantidad,
+        precioCentavos: linea.precioCentavos ?? linea.precio_centavos ?? 0,
+        nota: linea.nota,
+      })),
+      totalCentavos: snap.totalCentavos,
+    });
+  }
+
   function empezarAccionCuenta(tipo: "precuenta" | "enviar-caja") {
     if (!cuentaActual || enviando || pinPendiente) return;
-    if (pinHabilitado) {
+    const requierePin = tipo === "precuenta" ? pinPrecuenta : pinCaja;
+    if (requierePin) {
       setErrorModal("");
       setPinPendiente({ tipo, cuentaId: cuentaActual.id });
       return;
@@ -650,6 +686,13 @@ export function App() {
             restaurante={nombreLocal}
             precuenta={precuentaReciente}
             onCerrar={() => setPrecuentaReciente(null)}
+          />
+        ) : null}
+        {precuentaReimpresa ? (
+          <PrecuentaEnPantalla
+            restaurante={nombreLocal}
+            precuenta={precuentaReimpresa}
+            onCerrar={() => setPrecuentaReimpresa(null)}
           />
         ) : null}
         {confirmarCierre && cuentaActual ? (
@@ -803,6 +846,7 @@ export function App() {
             onPrecuenta={() => empezarAccionCuenta("precuenta")}
             onCerrarCuenta={() => setConfirmarCierre(true)}
             onCancelarCuenta={() => setConfirmarCancelar(true)}
+            onReimprimir={() => conError(() => reimprimirPrecuentaActual())}
             onNotaPrivada={async (notaPrivada) => {
               await api(`/api/cuentas/${cuentaActual.id}/nota-privada`, {
                 method: "POST",
@@ -998,6 +1042,8 @@ export function App() {
               tamano_ui: tamanoUi,
               pin_habilitado: pinHabilitado,
               pin_momento: pinMomento,
+              pin_al_emitir_precuenta: pinPrecuenta,
+              pin_al_enviar_caja: pinCaja,
               confirmar_comanda: confirmarComanda,
               auditoria_anulaciones: auditoriaAnulaciones,
               devolver_insumos_preparados: devolverInsumosPreparados,
