@@ -145,12 +145,14 @@ export function asegurarProductosDemo(db: Database.Database): void {
   const insert = db.prepare(
     "INSERT INTO productos (nombre, precio_centavos, categoria_id, tipo_consumo, disponible_en_pos, activo, color, foto_data, rastrear_inventario) VALUES (?, ?, ?, 'no_almacenable', 1, 1, ?, ?, 0)",
   );
-  const update = db.prepare("UPDATE productos SET foto_data = ?, color = ?, disponible_en_pos = 1, activo = 1 WHERE id = ?");
+  // El seed solo pone la letra de relleno al CREAR el producto; nunca pisa la
+  // foto de un producto existente (fotos cargadas de carta o subidas por el
+  // administrador sobreviven a los reinicios del servidor).
+  const update = db.prepare("UPDATE productos SET color = ?, disponible_en_pos = 1, activo = 1 WHERE id = ?");
   for (const p of carta) {
-    const foto = fotoSvg(p.color, p.letra);
     const existing = db.prepare("SELECT id FROM productos WHERE nombre = ?").get(p.nombre) as { id: number } | undefined;
-    if (existing) update.run(foto, p.color, existing.id);
-    else insert.run(p.nombre, p.precio, p.categoria, p.color, foto);
+    if (existing) update.run(p.color, existing.id);
+    else insert.run(p.nombre, p.precio, p.categoria, p.color, fotoSvg(p.color, p.letra));
   }
   asegurarContornosDemo(db);
 }
