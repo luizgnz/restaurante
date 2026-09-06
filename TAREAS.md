@@ -8,6 +8,8 @@ Lista viva del proyecto. Marcar con `[x]` al completar; agregar nuevos pendiente
 - [x] Revisar la auditoría funcional/UX y el plan de trabajo: `docs/AUDITORIA_FUNCIONAL_UX_2026-09-05.md` y `docs/PLAN_TRABAJO_UI_2026-09-05.md`.
 - [x] Fase 0 del plan (correctitud) — COMPLETADA y verificada en GUI: armado multi-grupo (0.1), cancelar cuenta con motivo/PIN (0.2), merma o devolución de insumos configurable (0.3), guarda de etapa + auditoría (0.4), stock al vender (0.5), redondeo (0.6).
 - [x] 2.5 del plan — COMPLETADA: limpieza de código muerto (Pedido.tsx, Complementos.tsx, table.tsx, ramas uiVersion, imports al pie).
+- [x] Datos de ejemplo del día reiniciados (últimas 2 horas) con `scripts/reiniciar-dia-demo.ts` — respaldo automático de la base antes de tocar.
+- [ ] Botón "Reiniciar día de demostración" en Administración (envuelve el script; hoy se corre por terminal).
 - [ ] Hacer push de los commits locales de la rama `prototype/ui-responsive`.
 
 ## Después
