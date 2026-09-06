@@ -38,7 +38,7 @@ const cuenta: CuentaEnCursoUi = {
 };
 
 describe("vistas coordinadas de cocina y mesero", () => {
-  it("cocina muestra los tres estados y las acciones por producto u orden", () => {
+  it("cocina muestra la tabla de órdenes con una fila por orden", () => {
     const html = renderToStaticMarkup(
       createElement(Kds, {
         tarjetas: [tarjeta],
@@ -48,11 +48,36 @@ describe("vistas coordinadas de cocina y mesero", () => {
       }),
     );
     expect(html).toContain("Vista del cocinero");
-    expect(html).toContain("Enviado a cocina");
-    expect(html).toContain("Comenzar preparación");
-    expect(html).toContain("Sugerir cambio");
-    expect(html).toContain("No disponible");
-    expect(html).toContain("No disponible para toda la orden");
+    // la tabla: cabecera y una fila clicable con la orden
+    expect(html).toContain('aria-label="Órdenes en cocina, de la más nueva a la más vieja"');
+    expect(html).toContain("Orden");
+    expect(html).toContain("Espera");
+    expect(html).toContain("Estado");
+    expect(html).toContain('aria-label="Abrir la orden de la Mesa #7 · Orden #1"');
+    expect(html).toContain("Enviada");
+    expect(html).toContain("1 producto");
+    // las acciones NO viven en la tabla: van en la pantalla emergente al hacer clic
+    expect(html).not.toContain("Comenzar orden");
+    expect(html).not.toContain("Lista completa");
+  });
+
+  it("las órdenes sin nada por cocinar salen del tablero", () => {
+    const entregada = {
+      ...tarjeta,
+      id: 11,
+      lineas: [{ ...tarjeta.lineas[0], etapa: "listo" }],
+    };
+    const html = renderToStaticMarkup(
+      createElement(Kds, {
+        tarjetas: [tarjeta, entregada],
+        onCambiarEtapa: async () => undefined,
+        onCrearIncidencia: async () => undefined,
+        onRecargar: async () => undefined,
+      }),
+    );
+    // solo queda la fila activa; la entregada desaparece sin toggle
+    expect((html.match(/Abrir la orden de la /g) ?? []).length).toBe(1);
+    expect(html).not.toContain("Ocultar entregadas");
   });
 
   it("una sugerencia pendiente se presenta al mesero como notificación", () => {
@@ -109,7 +134,8 @@ describe("vistas coordinadas de cocina y mesero", () => {
         onRecargar: async () => undefined,
       }),
     );
-    expect(html).toContain("Sugerencia aceptada por el cliente");
-    expect(html).toContain("Comenzar preparación");
+    // respondida la incidencia, la fila se renderiza y deja de estar bloqueada
+    expect(html).toContain('aria-label="Abrir la orden de la Mesa #7 · Orden #1"');
+    expect(html).not.toContain("Cocina esperando respuesta");
   });
 });

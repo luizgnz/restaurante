@@ -1,4 +1,5 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { Fragment } from "react";
 import { X } from "lucide-react";
 import { createContext, useContext } from "react";
 import type { ComponentProps, HTMLAttributes } from "react";
@@ -15,7 +16,15 @@ import { cn } from "@/lib/utils.ts";
  * unico nodo DOM real es `DialogPrimitive.Content`, asi que se reenvia via
  * contexto hasta `DialogContent`. `aria-modal="true"` se fija explicito en
  * `DialogContent` porque Radix no lo agrega solo -- Cursor lo hacia igual.
+ *
+ * El Overlay y el Content van en un Portal al body: varias paginas tienen
+ * ancestros con `position: relative`/`transform`, y un `position: fixed`
+ * dentro de ellos se vuelve coordenadas del ancestro, no del viewport (el
+ * modal aparecia al pie de la pagina). En servidor (renderToStaticMarkup de
+ * los tests) no hay portal: queda en el arbol y el markup se puede afirmar.
  */
+const PortalEnCliente = typeof document === "undefined" ? Fragment : DialogPrimitive.Portal;
+
 const DialogLabelContext = createContext<string | undefined>(undefined);
 
 function Dialog({
@@ -39,8 +48,10 @@ function Dialog({
         }}
         {...rootProps}
       >
-        <DialogPrimitive.Overlay className="fixed inset-0 z-40 flex items-center justify-center bg-foreground/40 p-3" />
-        {children}
+        <PortalEnCliente>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-40 flex items-center justify-center bg-foreground/40 p-3" />
+          {children}
+        </PortalEnCliente>
       </DialogPrimitive.Root>
     </DialogLabelContext.Provider>
   );

@@ -2118,33 +2118,6 @@ button.icono {
   color: var(--muted-foreground);
   font-size: 0.78rem;
 }
-.cocina-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
-  align-items: start;
-  gap: 1rem;
-}
-.cocina-tarjeta__cabecera {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 1rem;
-  border-bottom: 1px solid var(--border);
-}
-.cocina-tarjeta__cabecera > div {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.2rem 0.6rem;
-}
-.cocina-tarjeta__cabecera > div > strong {
-  font-size: 1.05rem;
-}
-.cocina-tarjeta__cabecera > div > span {
-  color: var(--muted-foreground);
-  font-size: 0.8rem;
-}
 .cocina-indicaciones {
   margin: 0;
   padding: 0.7rem 1rem;
@@ -2180,40 +2153,6 @@ button.icono {
   margin: 0;
   color: var(--muted-foreground);
   font-size: 0.84rem;
-}
-.cocina-linea__acciones,
-.cocina-tarjeta__acciones {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.45rem;
-}
-.cocina-accion-icono {
-  width: 46px;
-  min-width: 46px;
-  height: 46px;
-  min-height: 46px;
-  padding: 0;
-  border-radius: 50%;
-}
-.cocina-accion-icono.is-suggest {
-  background: var(--card);
-  color: var(--primary);
-}
-.cocina-accion-icono.is-unavailable {
-  border: 1px solid color-mix(in oklab, var(--destructive) 30%, var(--border));
-  background: color-mix(in oklab, var(--destructive) 8%, var(--card));
-  color: var(--destructive);
-}
-.cocina-tarjeta__acciones {
-  padding: 0.8rem 1rem;
-  background: var(--muted);
-}
-.cocina-tarjeta__acciones > span {
-  margin-right: auto;
-  color: var(--muted-foreground);
-  font-size: 0.78rem;
-  font-weight: 700;
 }
 .cocina-incidencia {
   display: flex;
@@ -2349,17 +2288,8 @@ button.icono {
     align-items: flex-start;
     flex-direction: column;
   }
-  .cocina-linea__acciones button,
-  .cocina-tarjeta__acciones button,
   .mesero-incidencia__acciones button {
     width: 100%;
-  }
-  .cocina-linea__acciones .cocina-accion-icono,
-  .cocina-tarjeta__acciones .cocina-accion-icono {
-    width: 46px;
-  }
-  .cocina-tarjeta__acciones > span {
-    flex: 1 0 100%;
   }
   .pedidos-page__metricas {
     flex-wrap: wrap;
@@ -3784,11 +3714,6 @@ button.icono:focus-visible {
   .opciones-page .settings-card,
   .inventario-fila,
   .pedido-card,
-  .cocina-tarjeta {
-  position: relative;
-    border-radius: 0.95rem;
-  }
-
   .opciones-page .settings-card {
     padding: 0.85rem;
   }
@@ -4035,16 +3960,6 @@ button.icono:focus-visible {
 /* Tarjeta de comanda · una sola definición. Antes eran cuatro, y una de ellas
    tenía el selector partido por siete líneas en blanco (`.cocina-tarjeta,
    <vacío> .settings-nav`), resto de una edición a medias. */
-.cocina-tarjeta {
-  overflow: hidden;
-  padding: 0 !important;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--card);
-  color: var(--foreground);
-  box-shadow: none;
-}
-
 /* ==========================================================================
    Interfaz principal · enfoque transaction-first
    ========================================================================== */
@@ -4430,21 +4345,6 @@ button.icono:focus-visible {
 
 /* Cocina operable (3.4, consolidado en familia): franja de espera por
    tiempo, chip de espera y tarjetas entregadas atenuadas. */
-.cocina-tarjeta::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 5px;
-  border-top-left-radius: inherit;
-  border-bottom-left-radius: inherit;
-  background: var(--success);
-}
-.cocina-tarjeta.espera-medio::before { background: var(--warning); }
-.cocina-tarjeta.espera-alto::before { background: var(--destructive); }
-.cocina-tarjeta.espera-critico::before { background: color-mix(in oklab, var(--destructive) 70%, black); }
-.cocina-tarjeta.is-entregada { opacity: 0.55; }
 .cocina-tarjeta__espera {
   margin-left: auto;
   padding: 0.1rem 0.55rem;
@@ -4497,5 +4397,73 @@ button.icono:focus-visible {
   display: block;
   margin-top: 2px;
 }
-.cocina-entregadas { display: flex; justify-content: flex-end; margin-bottom: 0.75rem; }
+
+/* Tabla de órdenes en cocina: una fila por orden, las nuevas arriba.
+   Una orden recién llegada se enciende en ámbar unos segundos y se
+   apaga sola (animación cocina-llegada). */
+.cocina-tabla {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.cocina-tabla__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr) auto auto auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+.cocina-tabla__fila--cabecera {
+  padding: 0 0.9rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+button.cocina-tabla__fila {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--foreground);
+  text-align: left;
+  font: inherit;
+}
+button.cocina-tabla__fila:hover { background: var(--muted); }
+button.cocina-tabla__fila.is-bloqueada { border-color: color-mix(in oklab, var(--warning) 55%, var(--border)); }
+.cocina-tabla__orden { display: inline-flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-weight: 600; }
+.cocina-tabla__productos { color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.cocina-tabla__fila.is-nueva { animation: cocina-llegada 6s ease-out; }
+@keyframes cocina-llegada {
+  0%, 65% {
+    background: var(--warning-soft);
+    border-color: var(--warning);
+  }
+  100% {
+    background: var(--card);
+    border-color: var(--border);
+  }
+}
+.cocina-orden-modal__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--muted-foreground);
+}
+.cocina-orden-modal__lineas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0.9rem 0;
+}
+.cocina-orden-modal__lineas .cocina-linea {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+}
+@media (max-width: 719px) {
+  .cocina-tabla__fila { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .cocina-tabla__fila > :nth-child(2) { display: none; }
+}
 }

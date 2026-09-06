@@ -27,7 +27,7 @@ import {
   sesionUsuarioPorToken,
   type UsuarioSesion,
 } from "../modules/empleados/sesion.ts";
-import { avanzarEtapa, KdsError, tarjetasKds } from "../modules/kds/kds.ts";
+import { avanzarEtapa, avanzarEtapaDeComanda, KdsError, tarjetasKds } from "../modules/kds/kds.ts";
 import {
   aceptarSugerencia,
   crearIncidenciaCocina,
@@ -146,6 +146,7 @@ const CODIGOS_409 = new Set([
   "orden_anulada",
   "precuenta_desactualizada",
   "etapa_no_avanzable",
+  "nada_que_avanzar",
   "incidencia_pendiente",
   "incidencia_resuelta",
   "producto_ya_iniciado",
@@ -763,6 +764,14 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
     const etapa = textoRequerido(cuerpo.etapa, "etapa_invalida", "Hace falta la etapa");
     avanzarEtapa(db, comandaLineaId, etapa);
     return c.json({ ok: true, etapa });
+  });
+
+  app.post("/api/kds/comandas/:id/etapa", async (c) => {
+    const comandaId = idDeRuta(c);
+    const cuerpo = await leerJson<{ etapa: unknown }>(c);
+    const etapa = textoRequerido(cuerpo.etapa, "etapa_invalida", "Hace falta la etapa");
+    const afectadas = avanzarEtapaDeComanda(db, comandaId, etapa);
+    return c.json({ ok: true, etapa, afectadas });
   });
 
   app.get("/api/cocina/incidencias", (c) => {
