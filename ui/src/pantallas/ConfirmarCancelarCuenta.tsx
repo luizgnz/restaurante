@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Ban } from "lucide-react";
+import { dinero } from "../../../src/modules/formato.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "@/components/ui/dialog.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
@@ -19,7 +20,7 @@ export function ConfirmarCancelarCuenta({ mesaNumero, totalCentavos, onConfirmar
       <DialogContent>
         <DialogTitle>¿Cancelar la cuenta de la Mesa #{mesaNumero}?</DialogTitle>
         <DialogDescription>
-          La mesa queda libre y no se cobra nada (${totalCentavos}). Según la configuración del sistema, los
+          La mesa queda libre y no se cobra nada ({dinero(totalCentavos)}). Según la configuración del sistema, los
           ingredientes de lo ya preparado vuelven al inventario o se registran como merma.
         </DialogDescription>
         <label>
