@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 48" role="img" aria-label="Turno">
+  <!-- Turno · lockup horizontal. El wordmark usa Fraunces (self-hosted en la app);
+       fuera de la app cae a Georgia. -->
+  <rect x="0" y="4" width="40" height="40" rx="9.5" fill="#17191d"/>
+  <rect x="18.2" y="12" width="4.2" height="6.4" rx="2" fill="#8a4a26"/>
+  <path d="M10 28.4a10 10 0 0 1 20 0z" fill="#8a4a26"/>
+  <rect x="7.9" y="30.5" width="24.2" height="3.8" rx="1.9" fill="#8a4a26"/>
+  <text x="50" y="32.5" font-family="'Fraunces Variable', Georgia, serif" font-weight="560" font-size="25.5" letter-spacing="-0.5" fill="#17191d">Turno</text>
+</svg>

@@ -22,8 +22,11 @@ export function Login({ error, onEntrar }: Props) {
     <section className="flex min-h-full items-center justify-center bg-background p-4 sm:p-6">
       <Card className="w-full max-w-[380px]">
         <CardContent className="p-6 pt-6">
+          <div className="login-marca">
+            <img src="/marcas/olla-horizontal.svg" alt="La Olla de Casa" width={230} height={48} />
+          </div>
           <p className="m-0 text-xs font-medium tracking-[0.1em] text-muted-foreground uppercase">
-            Sistema de restaurante
+            Sistema Turno
           </p>
           <h1 className="m-0 mt-2 text-xl font-semibold tracking-[-0.02em] text-foreground">
             Iniciar sesión
