@@ -1,0 +1,188 @@
+[
+  {
+    "producto": "Hamburguesa",
+    "archivo": "hamburguesa.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Cheeseburger.jpg",
+    "licencia": "Public domain"
+  },
+  {
+    "producto": "Completo",
+    "archivo": "completo.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Completo_italiano_-_Flickr_-_B%C3%A1rb_Santelices.jpg",
+    "licencia": "CC0"
+  },
+  {
+    "producto": "Empanada",
+    "archivo": "empanada.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Empanada_de_pino.jpg",
+    "licencia": "CC BY 2.0"
+  },
+  {
+    "producto": "Papas fritas",
+    "archivo": "papas-fritas.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:French_fries_at_Chez_Jolie.jpg",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Ensalada César",
+    "archivo": "ensalada-cesar.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Caesar_Salad_from_Tony_Roma_Restaurant-_March_2024_02.jpg",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Pizza margarita",
+    "archivo": "pizza-margarita.jpg",
+    "fuente": "https://www.pexels.com/photo/top-view-of-a-pizza-margherita-20115306/",
+    "licencia": "Pexels License"
+  },
+  {
+    "producto": "Sopa del día",
+    "archivo": "sopa-del-dia.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Tomato_soup,_rye_bread_and_white_wine.jpg",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Menú del día",
+    "archivo": "menu-del-dia.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Casado_Tico.jpg",
+    "licencia": "CC BY 2.0"
+  },
+  {
+    "producto": "Jugo",
+    "archivo": "jugo.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Orange_juice_1_edit1.jpg",
+    "licencia": "Public domain"
+  },
+  {
+    "producto": "Agua con gas",
+    "archivo": "agua-con-gas.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Sparkling_Water_with_Mint_in_Glass_Cup.jpg",
+    "licencia": "CC BY 2.0"
+  },
+  {
+    "producto": "Café",
+    "archivo": "cafe.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:A_cup_of_espresso.jpg",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Cerveza",
+    "archivo": "cerveza.jpg",
+    "fuente": "https://images.pexels.com/photos/1552630/pexels-photo-1552630.jpeg",
+    "licencia": "Pexels License"
+  },
+  {
+    "producto": "Flan",
+    "archivo": "flan.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Flan-04926.jpg",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Chorrillana",
+    "archivo": "chorrillana.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Chorrillana.jpg",
+    "licencia": "CC BY 2.0 (imagen recortada)"
+  },
+  {
+    "producto": "Pastel de choclo",
+    "archivo": "pastel-de-choclo.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Pastel_de_choclo.jpg",
+    "licencia": "CC BY-SA 2.0"
+  },
+  {
+    "producto": "Cazuela de vacuno",
+    "archivo": "cazuela.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Cazuela_de_Vacuno.jpg",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Salmón a la plancha",
+    "archivo": "salmon.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Grilled_plated_salmon_fillet.jpg",
+    "licencia": "CC0"
+  },
+  {
+    "producto": "Pollo asado",
+    "archivo": "pollo-asado.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:02023_0153_Roasted_Chicken,_Cucumber_Salad_and_Potatoes.jpg",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Lomo a lo pobre",
+    "archivo": "lomo-a-lo-pobre.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Bistec_a_lo_pobre_(11246262064).jpg",
+    "licencia": "CC BY-SA 2.0"
+  },
+  {
+    "producto": "Asado de tira",
+    "archivo": "asado-de-tira.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Two_pieces_of_grilled_short_ribs_served_on_a_plate,_2007.jpg",
+    "licencia": "CC BY 2.0"
+  },
+  {
+    "producto": "Barros Luco",
+    "archivo": "barros-luco.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:S%C3%A1ndwich_Barros_Luco_-_Fuente_Mardoqueo_-_01.jpg",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Sándwich de palta",
+    "archivo": "sandwich-palta.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Bacon,_lettuce,_tomato,_and_avocado.jpg",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Ceviche de salmón",
+    "archivo": "ceviche.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Ceviche_de_salm%C3%B3n.JPG",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Gaseosa",
+    "archivo": "gaseosa.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Glass_of_Cola.jpg",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Pisco sour",
+    "archivo": "pisco-sour.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Pisco_sour_20100613b.JPG",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Vino tinto",
+    "archivo": "vino-tinto.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Wine_being_poured_into_a_glass.jpg",
+    "licencia": "CC BY 2.0"
+  },
+  {
+    "producto": "Limonada",
+    "archivo": "limonada.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Basil_lemonade_(3609257528).jpg",
+    "licencia": "CC BY-SA 2.0"
+  },
+  {
+    "producto": "Té",
+    "archivo": "te.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Corn_silk_tea_cup_teapot_01.jpg",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Kuchen de manzana",
+    "archivo": "kuchen-manzana.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Apple_cake_with_vanilla_ice_cream_2.jpg",
+    "licencia": "CC0"
+  },
+  {
+    "producto": "Tiramisú",
+    "archivo": "tiramisu.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Dolce_Tiramis%C3%B9_monoporzione.jpg",
+    "licencia": "CC BY 4.0"
+  },
+  {
+    "producto": "Helado",
+    "archivo": "helado.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Ice_cream_sundae.jpg",
+    "licencia": "Public domain"
+  }
+]

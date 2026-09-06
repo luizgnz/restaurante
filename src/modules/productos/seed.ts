@@ -141,16 +141,37 @@ export function asegurarProductosDemo(db: Database.Database): void {
     { nombre: "Café", precio: 1800, categoria: bebidas, letra: "F", color: "#4a2c1a" },
     { nombre: "Cerveza", precio: 2800, categoria: bebidas, letra: "V", color: "#c9a227" },
     { nombre: "Flan", precio: 2200, categoria: postres, letra: "L", color: "#c48a3a" },
+    // -- Carta extendida de la demostración (fotos reales en assets/fotos-carta) --
+    { nombre: "Chorrillana", precio: 12400, categoria: principales, letra: "R", color: "#a0522d" },
+    { nombre: "Pastel de choclo", precio: 7900, categoria: principales, letra: "T", color: "#c8a13a" },
+    { nombre: "Cazuela de vacuno", precio: 7500, categoria: principales, letra: "Z", color: "#8f6b3d" },
+    { nombre: "Salmón a la plancha", precio: 11900, categoria: principales, letra: "N", color: "#c96f4a" },
+    { nombre: "Pollo asado", precio: 8400, categoria: principales, letra: "O", color: "#b5793a" },
+    { nombre: "Lomo a lo pobre", precio: 10900, categoria: principales, letra: "M", color: "#7a4a2b" },
+    { nombre: "Asado de tira", precio: 11500, categoria: principales, letra: "D", color: "#96442e" },
+    { nombre: "Barros Luco", precio: 6200, categoria: principales, letra: "B", color: "#a86a32" },
+    { nombre: "Sándwich de palta", precio: 4900, categoria: principales, letra: "A", color: "#4a7a3d" },
+    { nombre: "Ceviche de salmón", precio: 7900, categoria: principales, letra: "E", color: "#d07a3f" },
+    { nombre: "Gaseosa", precio: 1900, categoria: bebidas, letra: "S", color: "#8a3d2e" },
+    { nombre: "Pisco sour", precio: 5500, categoria: bebidas, letra: "P", color: "#c9b267" },
+    { nombre: "Vino tinto", precio: 4500, categoria: bebidas, letra: "T", color: "#6b1f2a" },
+    { nombre: "Limonada", precio: 2800, categoria: bebidas, letra: "L", color: "#b8c94a" },
+    { nombre: "Té", precio: 1400, categoria: bebidas, letra: "T", color: "#7a5230" },
+    { nombre: "Kuchen de manzana", precio: 3500, categoria: postres, letra: "K", color: "#b5793f" },
+    { nombre: "Tiramisú", precio: 4200, categoria: postres, letra: "I", color: "#6b4a33" },
+    { nombre: "Helado", precio: 2800, categoria: postres, letra: "H", color: "#d9a3b3" },
   ];
   const insert = db.prepare(
     "INSERT INTO productos (nombre, precio_centavos, categoria_id, tipo_consumo, disponible_en_pos, activo, color, foto_data, rastrear_inventario) VALUES (?, ?, ?, 'no_almacenable', 1, 1, ?, ?, 0)",
   );
-  const update = db.prepare("UPDATE productos SET foto_data = ?, color = ?, disponible_en_pos = 1, activo = 1 WHERE id = ?");
+  // El seed solo pone la letra de relleno al CREAR el producto; nunca pisa la
+  // foto de un producto existente (fotos cargadas de carta o subidas por el
+  // administrador sobreviven a los reinicios del servidor).
+  const update = db.prepare("UPDATE productos SET color = ?, disponible_en_pos = 1, activo = 1 WHERE id = ?");
   for (const p of carta) {
-    const foto = fotoSvg(p.color, p.letra);
     const existing = db.prepare("SELECT id FROM productos WHERE nombre = ?").get(p.nombre) as { id: number } | undefined;
-    if (existing) update.run(foto, p.color, existing.id);
-    else insert.run(p.nombre, p.precio, p.categoria, p.color, foto);
+    if (existing) update.run(p.color, existing.id);
+    else insert.run(p.nombre, p.precio, p.categoria, p.color, fotoSvg(p.color, p.letra));
   }
   asegurarContornosDemo(db);
 }

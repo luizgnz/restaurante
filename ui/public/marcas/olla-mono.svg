@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="La Olla de Casa">
+  <!-- La Olla de Casa · versión monocroma para impresión. Hereda el color del texto
+       (fill="currentColor") y no lleva tile. -->
+  <g fill="currentColor" stroke="none">
+    <circle cx="24" cy="19" r="2.2"/>
+    <rect x="13" y="22" width="22" height="3.6" rx="1.8"/>
+    <path d="M11.5 27.5h25v3.5a7.5 7.5 0 0 1-7.5 7.5h-10a7.5 7.5 0 0 1-7.5-7.5z"/>
+    <rect x="7" y="28.5" width="3" height="4" rx="1.5"/>
+    <rect x="38" y="28.5" width="3" height="4" rx="1.5"/>
+  </g>
+  <g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+    <path d="M19 11c-1.6 1.8-1.6 3.4 0 5.2"/>
+    <path d="M29 11c-1.6 1.8-1.6 3.4 0 5.2"/>
+  </g>
+</svg>

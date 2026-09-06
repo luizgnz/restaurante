@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="La Olla de Casa">
+  <!-- La Olla de Casa · icono: olla con vapor sobre tile negro.
+       Mismo lenguaje geométrico que Turno (cobre sobre negro, formas redondeadas). -->
+  <rect width="48" height="48" rx="11" fill="#17191d"/>
+  <g fill="none" stroke="#8a4a26" stroke-width="2.4" stroke-linecap="round">
+    <path d="M19 11c-1.6 1.8-1.6 3.4 0 5.2"/>
+    <path d="M29 11c-1.6 1.8-1.6 3.4 0 5.2"/>
+  </g>
+  <circle cx="24" cy="19" r="2.2" fill="#8a4a26"/>
+  <rect x="13" y="22" width="22" height="3.6" rx="1.8" fill="#8a4a26"/>
+  <path d="M11.5 27.5h25v3.5a7.5 7.5 0 0 1-7.5 7.5h-10a7.5 7.5 0 0 1-7.5-7.5z" fill="#8a4a26"/>
+  <rect x="7" y="28.5" width="3" height="4" rx="1.5" fill="#8a4a26"/>
+  <rect x="38" y="28.5" width="3" height="4" rx="1.5" fill="#8a4a26"/>
+</svg>
