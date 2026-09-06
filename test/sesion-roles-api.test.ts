@@ -29,7 +29,9 @@ async function crearUsuario(db: ReturnType<typeof openTestDb>, rol: RolClave) {
 }
 
 describe("sesiones y vistas por rol", () => {
-  it("todos los roles pueden iniciar sesión y el servidor limita sus vistas", async () => {
+  // Hash de contraseñas y cinco sesiones: con la suite completa en paralelo
+  // supera el timeout por defecto de 5s.
+  it("todos los roles pueden iniciar sesión y el servidor limita sus vistas", { timeout: 20000 }, async () => {
     const db = openTestDb();
     seedCartaDemo(db);
     for (const rol of ["administrador", "mesero", "cocina", "caja", "inventario"] as RolClave[]) await crearUsuario(db, rol);

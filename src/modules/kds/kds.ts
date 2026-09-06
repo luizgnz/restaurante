@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { indicacionesEfectivasOrden } from "../ordenes/ordenes.ts";
+import { indicacionesVigentesOrden } from "../ordenes/ordenes.ts";
 import { incidenciasDeComanda, type IncidenciaCocina } from "./incidencias.ts";
 
 export type TipoComanda = "legacy" | "orden" | "correccion" | "anulacion";
@@ -404,7 +404,7 @@ export function tarjetasKds(db: Database.Database): TarjetaKds[] {
     const indicaciones = esCorreccion
       ? row.correccion_indicaciones || null
       : row.orden_id != null
-        ? indicacionesEfectivasOrden(db, row.orden_id)
+        ? indicacionesVigentesOrden(db, row.orden_id)
         : row.pedido_indicaciones;
 
     return {
@@ -458,7 +458,7 @@ export type EventoCorreccion = {
  * Lo que la pantalla de cocina necesita de una corrección: el evento con sus
  * cantidades anterior y nueva, las notas y la etapa de cada línea. La comanda
  * de corrección existe siempre —incluso si solo cambian las indicaciones— y es
- * la notificación; las cantidades vigentes salen de la versión efectiva, no de
+ * la notificación; las cantidades vigentes salen de la versión vigente, no de
  * sumar etapas.
  */
 export function eventosDeCorreccion(db: Database.Database, ordenId: number): EventoCorreccion[] {

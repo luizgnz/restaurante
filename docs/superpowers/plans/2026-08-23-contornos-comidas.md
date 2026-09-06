@@ -24,7 +24,7 @@ Spec: `docs/superpowers/specs/2026-08-23-contornos-comidas-design.md` (aprobado 
 **Modify**
 
 - `src/modules/ordenes/enviar.ts` — valida y guarda contornos; snapshot de precios.
-- `src/modules/cuentas/totales.ts` — suplementos/extras entran al total efectivo.
+- `src/modules/cuentas/totales.ts` — suplementos/extras entran al total vigente.
 - `src/modules/cuentas/cuentas.ts` — el detalle de cuenta expone contornos por línea.
 - `src/modules/kds/kds.ts` — tarjetas incluyen las selecciones.
 - `src/http/rutas/ordenes.ts`, `src/http/app.ts` — body con contornos; montaje de rutas; carta expone si el plato es configurable.
@@ -109,12 +109,12 @@ PUT  /api/productos/:id/slots        → { slots: [...] }
 - `lineas[].contornos: [{ slotPosicion, varianteId }]` opcional; si el plato tiene slots y la línea no trae contornos → `contornos_incompletos`.
 - Repetir `slotPosicion` = extra: solo si el slot `permite_extra`; la primera selección paga `suplemento_centavos`, las siguientes `extra_centavos`.
 - Snapshot en `orden_linea_contornos` (nombres + precios al envío).
-- Total efectivo de la línea = `cantidad × precio + cantidad × Σ(contornos)`; precuenta, cuenta y tickets lo reflejan.
+- Total vigente de la línea = `cantidad × precio + cantidad × Σ(contornos)`; precuenta, cuenta y tickets lo reflejan.
 
 - [x] **Step 1: Tests de envío con contornos** — válido, incompleto, grupo equivocado, extra permitido/no permitido, total con suplemento y extra, idempotencia conserva contornos.
 - [x] **Step 2: Verificar fallo.**
 - [x] **Step 3: Implementar validación + snapshot en enviar.ts.**
-- [x] **Step 4: Totales efectivos incorporan contornos.**
+- [x] **Step 4: Totales vigentes incorporan contornos.**
 - [x] **Step 5: Tests verdes.**
 
 ---

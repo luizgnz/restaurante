@@ -15,7 +15,7 @@ export type NuevaOrden = {
   empleadoId: number;
 };
 
-export type LineaEfectiva = {
+export type LineaVigente = {
   lineaClave: string;
   ordenLineaId: number | null;
   productoId: number;
@@ -47,7 +47,7 @@ type CorreccionLineaRow = {
 
 type ProductoRow = { nombre: string };
 
-export function versionEfectivaOrden(db: Database.Database, ordenId: number): LineaEfectiva[] {
+export function versionVigenteOrden(db: Database.Database, ordenId: number): LineaVigente[] {
   const originales = db
     .prepare(
       `SELECT ol.id, ol.producto_id, ol.cantidad, ol.precio_centavos, ol.nota, ol.linea_clave, p.nombre
@@ -76,7 +76,7 @@ export function versionEfectivaOrden(db: Database.Database, ordenId: number): Li
     contornosPorLinea.set(contorno.orden_linea_id, lista);
   }
 
-  const porClave = new Map<string, LineaEfectiva>();
+  const porClave = new Map<string, LineaVigente>();
   for (const row of originales) {
     porClave.set(row.linea_clave, {
       lineaClave: row.linea_clave,
@@ -135,7 +135,7 @@ export function versionEfectivaOrden(db: Database.Database, ordenId: number): Li
  * guarda las suyas y la última manda. Una cadena vacía significa "sin
  * indicaciones".
  */
-export function indicacionesEfectivasOrden(db: Database.Database, ordenId: number): string | null {
+export function indicacionesVigentesOrden(db: Database.Database, ordenId: number): string | null {
   const ultima = db
     .prepare(
       `SELECT indicaciones FROM orden_correcciones

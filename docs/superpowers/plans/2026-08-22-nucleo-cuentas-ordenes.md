@@ -4,7 +4,7 @@
 
 **Goal:** Separar la cuenta de mesa de sus órdenes, enviar a cocina únicamente cada orden/corrección nueva, guardar borradores en el navegador y mostrar la cuenta agrupada por órdenes.
 
-**Architecture:** SQLite incorpora `cuentas`, `ordenes`, líneas y correcciones inmutables sin eliminar inicialmente las tablas legacy. El backend expone servicios transaccionales e idempotentes y adapta precuenta, caja, KDS e inventario al estado efectivo de la cuenta. React separa `CuentaMesa` de `ConstructorOrden`, persiste borradores en `localStorage` y usa modales para correcciones, PIN y creación de productos.
+**Architecture:** SQLite incorpora `cuentas`, `ordenes`, líneas y correcciones inmutables sin eliminar inicialmente las tablas legacy. El backend expone servicios transaccionales e idempotentes y adapta precuenta, caja, KDS e inventario al estado vigente de la cuenta. React separa `CuentaMesa` de `ConstructorOrden`, persiste borradores en `localStorage` y usa modales para correcciones, PIN y creación de productos.
 
 **Tech Stack:** TypeScript, Node.js, Hono, better-sqlite3, React, Vite, Vitest, lucide-react, SQLite.
 
@@ -30,7 +30,7 @@
 
 - `src/db/migrations/008_cuentas_ordenes.sql` — esquema paralelo del núcleo.
 - `src/modules/cuentas/cuentas.ts` — consulta, apertura y cierre de cuentas.
-- `src/modules/cuentas/totales.ts` — versión efectiva y totales.
+- `src/modules/cuentas/totales.ts` — versión vigente y totales.
 - `src/modules/ordenes/ordenes.ts` — creación y lectura de órdenes.
 - `src/modules/ordenes/correcciones.ts` — diffs, correcciones y anulaciones.
 - `src/modules/ordenes/enviar.ts` — transacción de envío e idempotencia.
@@ -282,7 +282,7 @@ Expected: pass.
 
 ---
 
-### Task 3: Servicios de cuentas, órdenes y estado efectivo
+### Task 3: Servicios de cuentas, órdenes y estado vigente
 
 **Files:**
 - Create: `src/modules/cuentas/cuentas.ts`
@@ -309,8 +309,8 @@ export type NuevaOrden = {
 };
 export function cuentaActivaPorMesa(db, mesaId: number): { id: number; estado: EstadoCuenta } | null;
 export function obtenerCuenta(db, cuentaId: number): CuentaDetalle;
-export function versionEfectivaOrden(db, ordenId: number): LineaEfectiva[];
-export function totalEfectivoCuenta(db, cuentaId: number): number;
+export function versionVigenteOrden(db, ordenId: number): LineaVigente[];
+export function totalVigenteCuenta(db, cuentaId: number): number;
 ```
 
 - [x] **Step 1: Write tests for account lookup and effective lines**
@@ -340,7 +340,7 @@ type CuentaDetalle = {
     indicaciones: string | null;
     creadaEn: string;
     empleado: string;
-    lineas: LineaEfectiva[];
+    lineas: LineaVigente[];
   }>;
 };
 ```
@@ -493,7 +493,7 @@ export type DiferenciaCocina = {
 };
 
 export function calcularDiferencias(
-  actuales: LineaEfectiva[],
+  actuales: LineaVigente[],
   nuevas: CambioOrdenInput[],
 ): DiferenciaCocina[];
 ```
