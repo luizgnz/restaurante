@@ -1317,7 +1317,8 @@ main > [role="alert"] {
     border-radius: 0.95rem;
   }
 
-  .carta__foto {
+  .carta__foto,
+  .carta__icono {
     height: 100px;
   }
 
@@ -2019,7 +2020,8 @@ button.icono {
   .carta__item {
     min-height: 210px;
   }
-  .carta__foto {
+  .carta__foto,
+  .carta__icono {
     height: 105px;
   }
   .constructor-orden__resumen {
@@ -4035,15 +4037,35 @@ button.icono:focus-visible {
   transform: translateY(-1px);
   border-color: color-mix(in oklab, var(--foreground) 30%, var(--border));
 }
+/* respuesta táctil: la tarjeta se hunde un pelín bajo el dedo */
+.carta__item:active {
+  transform: scale(0.98);
+  transition-duration: 60ms;
+}
+/* En la orden: borde grueso de acción (negro) + lavado de tinta. El color de
+   categoría sigue en la franja; la píldora de cantidad completa la señal. */
 .carta__item.is-on {
   border-color: var(--primary);
-  background: var(--secondary);
+  border-width: 2px;
+  background: color-mix(in oklab, var(--primary) 5%, var(--card));
 }
 .carta__foto {
   width: 100%;
   height: 118px;
   border-radius: 0;
   object-fit: cover;
+}
+/* Sin foto: el ícono de la categoría sobre un velo suave de su color. La
+   intensidad la fija color-mix (el producto puede traer un hex saturado de
+   administración); el trazo mezclado con el tinta mantiene el contraste. */
+.carta__icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 118px;
+  background: color-mix(in oklab, var(--product-color, var(--muted-foreground)) 16%, var(--card));
+  color: color-mix(in oklab, var(--product-color, var(--foreground)) 60%, var(--foreground));
 }
 .carta__contenido {
   display: flex;
@@ -4065,10 +4087,18 @@ button.icono:focus-visible {
   font-weight: 600;
   line-height: 1.25;
 }
+/* Precio = chip sólido, siempre abajo a la izquierda: el garzón lo lee sin
+   buscar. Fondo neutro opaco (no velo): legible también sobre la foto. */
 .carta__precio {
-  font-size: 0.9rem;
-  font-weight: 600;
+  margin-top: auto;
+  padding: 0.22rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--secondary);
   color: var(--foreground);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
   font-variant-numeric: tabular-nums;
 }
 .carta__cantidad {
@@ -4118,12 +4148,25 @@ button.icono:focus-visible {
   gap: 0.65rem;
 }
 .ui-v2 .pos-odoo__marca {
-  font-family: "Snell Roundhand", "Apple Chancery", "Segoe Script", cursive;
+  /* El wordmark es EL momento de marca: Fraunces con sus ejes de calidez
+     (SOFT) y de trazo torcido (WONK) da una voz de carta de restaurante
+     que funciona igual en macOS, Windows y Android. Cursiva fuera: sin la
+     fuente de Snell solo habría oblicua sintética. */
+  font-family: "Fraunces Variable", Georgia, "Times New Roman", serif;
   font-size: 1.72rem;
-  font-style: italic;
-  font-weight: 700;
-  letter-spacing: 0.015em;
+  font-weight: 620;
+  font-variation-settings: "SOFT" 100, "WONK" 1;
+  letter-spacing: 0.01em;
   line-height: 1;
+  color: var(--brand-tinta);
+}
+/* Los títulos de página comparten la voz de la marca (una carta usa la misma
+   tipografía en el encabezado y en los títulos). Regla aditiva: no modifica
+   peso ni color que ya definan otras secciones; solo suaviza el tracking que
+   venía de la sans, demasiado cerrado para una serif con acentos. */
+.ui-v2 h1 {
+  font-family: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  letter-spacing: -0.02em;
 }
 @media (min-width: 1050px) {
   .ui-v2 .pos-nav {
@@ -4285,7 +4328,8 @@ button.icono:focus-visible {
 .ui-v2 .carta__item {
   min-height: 166px;
 }
-.ui-v2 .carta__foto {
+.ui-v2 .carta__foto,
+.ui-v2 .carta__icono {
   height: 78px;
 }
 .ui-v2 .carta__contenido {
