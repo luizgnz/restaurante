@@ -10,7 +10,7 @@ Lista viva del proyecto. Marcar con `[x]` al completar; agregar nuevos pendiente
 - [x] 2.5 del plan — COMPLETADA: limpieza de código muerto (Pedido.tsx, Complementos.tsx, table.tsx, ramas uiVersion, imports al pie).
 - [x] Datos de ejemplo del día reiniciados (últimas 2 horas) con `scripts/reiniciar-dia-demo.ts` — respaldo automático de la base antes de tocar.
 - [ ] Botón "Reiniciar día de demostración" en Administración (envuelve el script; hoy se corre por terminal).
-- [ ] Hacer push de los commits locales de la rama `prototype/ui-responsive`.
+- [x] Push de los commits locales de la rama `prototype/ui-responsive` (marca, seed, manifest y catálogo completo con fotos — hasta `8399f27`).
 - [x] Marca creada: sistema "Turno" (campana) y local "La Olla de Casa" (olla), SVGs en `ui/public/marcas/`, logo en login, favicon y barra; guía en `docs/MARCA.md`.
 - [x] Fotos reales de carta para la demo: 13 platos descargados con licencia libre (`assets/fotos-carta/` + manifest con fuente/licencia) y cargadas a la base con `scripts/cargar-fotos-carta.ts`. El seed ya no pisa `foto_data` al reiniciar.
 - [x] Catálogo ampliado — COMPLETADO: seed con 32 productos (18 nuevos: chorrillana, pastel de choclo, cazuela de vacuno, salmón, lomo a lo pobre, pisco sour, etc.); "Sándwich de palta" reemplaza a "Palta reina" (sin foto libre disponible). 31 fotos reales cargadas a la base vía `scripts/cargar-fotos-carta.ts`.
