@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { defaultConfig, type AppConfig } from "../src/config.ts";
 import { enviarACaja, enviarCuentaACaja } from "../src/modules/caja/caja.ts";
 import { cuentaActivaPorMesa, obtenerCuenta } from "../src/modules/cuentas/cuentas.ts";
-import { totalEfectivoCuenta } from "../src/modules/cuentas/totales.ts";
+import { totalVigenteCuenta } from "../src/modules/cuentas/totales.ts";
 import { crearEmpleado } from "../src/modules/empleados/empleados.ts";
 import { pendienteDeFirmar } from "../src/modules/inventario/asientos.ts";
 import { corregirOrden } from "../src/modules/ordenes/correcciones.ts";
 import { enviarOrden } from "../src/modules/ordenes/enviar.ts";
-import { versionEfectivaOrden } from "../src/modules/ordenes/ordenes.ts";
+import { versionVigenteOrden } from "../src/modules/ordenes/ordenes.ts";
 import { agregarLinea, enviarACocina } from "../src/modules/pedidos/pedidos.ts";
 import { emitirPrecuenta, emitirPrecuentaCuenta } from "../src/modules/precuenta/precuenta.ts";
 import { seedCartaDemo } from "../src/modules/productos/seed.ts";
@@ -43,7 +43,7 @@ describe("circuito mesa 7", () => {
 
 // ---------------------------------------------------------------------------
 // Circuito completo del modelo Cuenta → Órdenes: dos órdenes, una corrección,
-// precuenta sobre la suma efectiva y handoff que cierra la cuenta.
+// precuenta sobre la suma vigente y handoff que cierra la cuenta.
 // ---------------------------------------------------------------------------
 
 type Db = ReturnType<typeof openTestDb>;
@@ -89,7 +89,7 @@ async function circuitoDeCuenta(cfg: AppConfig) {
   );
   expect(dos.cuentaId).toBe(uno.cuentaId);
 
-  const hamburguesas = versionEfectivaOrden(db, uno.ordenId)[0];
+  const hamburguesas = versionVigenteOrden(db, uno.ordenId)[0];
   await corregirOrden(
     db,
     {
@@ -124,7 +124,7 @@ describe("circuito cuenta mesa 7", () => {
     const pre = await emitirPrecuentaCuenta(c.db, c.cuentaId, "1234", c.printer, cfg);
     // 4 hamburguesas + 2 jugos + 3 aguas: la corrección manda, no el envío.
     expect(pre.totalCentavos).toBe(45100);
-    expect(pre.totalCentavos).toBe(totalEfectivoCuenta(c.db, c.cuentaId));
+    expect(pre.totalCentavos).toBe(totalVigenteCuenta(c.db, c.cuentaId));
 
     await enviarCuentaACaja(c.db, c.cuentaId, "2222", cfg);
 

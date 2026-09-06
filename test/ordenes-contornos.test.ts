@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { totalEfectivoCuenta } from "../src/modules/cuentas/totales.ts";
+import { totalVigenteCuenta } from "../src/modules/cuentas/totales.ts";
 import { configurarSlots, listarContornos } from "../src/modules/contornos/contornos.ts";
 import { enviarOrden, OrdenError } from "../src/modules/ordenes/enviar.ts";
 import { seedCartaDemo } from "../src/modules/productos/seed.ts";
@@ -68,7 +68,7 @@ describe("envío de órdenes con contornos", () => {
     ]);
 
     // 8900 + 500 (suplemento carne) + 1500 (extra pollo) por unidad, × 2.
-    expect(totalEfectivoCuenta(e.db, envio.cuentaId)).toBe((8900 + 500 + 1500) * 2);
+    expect(totalVigenteCuenta(e.db, envio.cuentaId)).toBe((8900 + 500 + 1500) * 2);
     e.db.close();
   });
 

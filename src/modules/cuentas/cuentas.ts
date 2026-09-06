@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { indicacionesEfectivasOrden, versionEfectivaOrden, type LineaEfectiva } from "../ordenes/ordenes.ts";
+import { indicacionesVigentesOrden, versionVigenteOrden, type LineaVigente } from "../ordenes/ordenes.ts";
 
 export type EstadoCuenta = "abierta" | "precuenta_emitida" | "en_caja" | "cancelada";
 export type EstadoOrden = "enviada" | "corregida" | "anulada";
@@ -28,7 +28,7 @@ export type CuentaDetalle = {
     indicacionesOriginales: string | null;
     creadaEn: string;
     empleado: string;
-    lineas: LineaEfectiva[];
+    lineas: LineaVigente[];
   }>;
 };
 
@@ -93,11 +93,11 @@ export function obtenerCuenta(db: Database.Database, cuentaId: number): CuentaDe
       id: orden.id,
       numero: orden.numero,
       estado: orden.estado,
-      indicaciones: indicacionesEfectivasOrden(db, orden.id),
+      indicaciones: indicacionesVigentesOrden(db, orden.id),
       indicacionesOriginales: orden.indicaciones,
       creadaEn: orden.creada_en,
       empleado: orden.empleado,
-      lineas: versionEfectivaOrden(db, orden.id),
+      lineas: versionVigenteOrden(db, orden.id),
     })),
   };
 }
