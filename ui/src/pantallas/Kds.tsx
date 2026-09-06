@@ -220,8 +220,8 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
         <div><span className="page-eyebrow">Vista del cocinero</span><h1>Cocina</h1><p>Recibe pedidos, prepara cada producto y avisa al mesero cuando haya un problema.</p></div>
       </header>
 
-      <div className="cocina-tabla" role="table" aria-label="Órdenes en cocina, de la más nueva a la más vieja">
-        <div role="row" className="cocina-tabla__fila cocina-tabla__fila--cabecera">
+      <div className="tabla-ordenes" role="table" aria-label="Órdenes en cocina, de la más nueva a la más vieja">
+        <div role="row" className="tabla-ordenes__fila tabla-ordenes__fila--cabecera">
           <span role="columnheader">Orden</span>
           <span role="columnheader">Mesero</span>
           <span role="columnheader">Espera</span>
@@ -242,19 +242,19 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
               <button
                 type="button"
                 role="row"
-                className={`cocina-tabla__fila tactil${pendiente ? " is-bloqueada" : ""}${nuevas.has(tarjeta.id) ? " is-nueva" : ""}`}
+                className={`tabla-ordenes__fila tactil${pendiente ? " is-bloqueada" : ""}${nuevas.has(tarjeta.id) ? " is-nueva" : ""}`}
                 key={tarjeta.id}
                 aria-label={`Abrir ${tituloOrden(tarjeta)} de la ${mesaTexto(tarjeta)}`}
                 onClick={() => setSeleccionadaId(tarjeta.id)}
               >
-                <span role="cell" className="cocina-tabla__orden">
+                <span role="cell" className="tabla-ordenes__orden">
                   <strong>{tituloOrden(tarjeta)}</strong>
-                  <span className="cocina-tabla__mesa">{mesaTexto(tarjeta)}</span>
+                  <span className="tabla-ordenes__mesa">{mesaTexto(tarjeta)}</span>
                   {pendiente ? <Badge variant="danger">Cocina esperando respuesta</Badge> : null}
                 </span>
                 <span role="cell">{tarjeta.mesero}</span>
-                <span role="cell"><span className={`cocina-tarjeta__espera espera-${nivel}`}>{textoEspera(espera)}</span></span>
-                <span role="cell" className="cocina-tabla__descripcion">{descripcionOrden(tarjeta)}</span>
+                <span role="cell"><span className={`chip-espera espera-${nivel}`}>{textoEspera(espera)}</span></span>
+                <span role="cell" className="tabla-ordenes__descripcion">{descripcionOrden(tarjeta)}</span>
               </button>
             );
           })
@@ -295,7 +295,7 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
             <h2>{tituloOrden(seleccionada)}</h2>
             <p className="cocina-orden-modal__meta">
               {mesaTexto(seleccionada)} · Mesero: {seleccionada.mesero}
-              <span className={`cocina-tarjeta__espera espera-${nivelEspera(esperaMinutos(seleccionada.creadaEn))}`}>
+              <span className={`chip-espera espera-${nivelEspera(esperaMinutos(seleccionada.creadaEn))}`}>
                 {textoEspera(esperaMinutos(seleccionada.creadaEn))}
               </span>
             </p>

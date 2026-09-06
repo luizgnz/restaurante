@@ -4304,7 +4304,7 @@ button.icono:focus-visible {
 
 /* Cocina operable (3.4, consolidado en familia): franja de espera por
    tiempo, chip de espera y tarjetas entregadas atenuadas. */
-.cocina-tarjeta__espera {
+.chip-espera {
   margin-left: auto;
   padding: 0.1rem 0.55rem;
   border-radius: 999px;
@@ -4314,9 +4314,9 @@ button.icono:focus-visible {
   background: var(--success-soft);
   color: var(--success);
 }
-.cocina-tarjeta__espera.espera-medio { background: var(--warning-soft); color: var(--warning); }
-.cocina-tarjeta__espera.espera-alto { background: var(--destructive-soft); color: var(--destructive); }
-.cocina-tarjeta__espera.espera-critico { background: var(--destructive); color: #fff; }
+.chip-espera.espera-medio { background: var(--warning-soft); color: var(--warning); }
+.chip-espera.espera-alto { background: var(--destructive-soft); color: var(--destructive); }
+.chip-espera.espera-critico { background: var(--destructive); color: #fff; }
 
 /* Salón con semáforo (3.3, consolidado en familia): mesa atrasada. */
 .mesa-odoo--atrasada {
@@ -4359,19 +4359,19 @@ button.icono:focus-visible {
 
 /* Tabla de órdenes en cocina: una fila por orden, las nuevas arriba.
    Una orden recién llegada se enciende en ámbar unos segundos y se
-   apaga sola (animación cocina-llegada). */
-.cocina-tabla {
+   apaga sola (animación llegada-orden). */
+.tabla-ordenes {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
 }
-.cocina-tabla__fila {
+.tabla-ordenes__fila {
   display: grid;
   grid-template-columns: max-content max-content auto minmax(0, 1fr);
   gap: 0 2.25rem;
   align-items: center;
 }
-.cocina-tabla__fila--cabecera {
+.tabla-ordenes__fila--cabecera {
   padding: 0 0.9rem;
   color: var(--muted-foreground);
   font-size: 0.75rem;
@@ -4379,7 +4379,7 @@ button.icono:focus-visible {
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-button.cocina-tabla__fila {
+button.tabla-ordenes__fila {
   width: 100%;
   padding: 0.7rem 0.9rem;
   border: 1px solid var(--border);
@@ -4389,30 +4389,30 @@ button.cocina-tabla__fila {
   text-align: left;
   font: inherit;
 }
-button.cocina-tabla__fila:hover { background: var(--muted); }
-button.cocina-tabla__fila.is-bloqueada { border-color: color-mix(in oklab, var(--warning) 55%, var(--border)); }
-.cocina-tabla__orden {
+button.tabla-ordenes__fila:hover { background: var(--muted); }
+button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(--warning) 55%, var(--border)); }
+.tabla-ordenes__orden {
   display: flex;
   flex-direction: column;
   gap: 0.05rem;
 }
-.cocina-tabla__orden strong { font-size: 1.02rem; }
+.tabla-ordenes__orden strong { font-size: 1.02rem; }
 /* La mesa va en segunda línea, con la letra display de la marca y sin grueso:
    identifica sin competir con el número de orden. */
-.cocina-tabla__mesa {
+.tabla-ordenes__mesa {
   font-family: "Fraunces Variable", Georgia, serif;
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--muted-foreground);
 }
-.cocina-tabla__descripcion {
+.tabla-ordenes__descripcion {
   overflow: hidden;
   color: var(--muted-foreground);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cocina-tabla__fila.is-nueva { animation: cocina-llegada 6s ease-out; }
-@keyframes cocina-llegada {
+.tabla-ordenes__fila.is-nueva { animation: llegada-orden 6s ease-out; }
+@keyframes llegada-orden {
   0%, 65% {
     background: var(--warning-soft);
     border-color: var(--warning);
@@ -4440,7 +4440,16 @@ button.cocina-tabla__fila.is-bloqueada { border-color: color-mix(in oklab, var(-
   padding: 0.6rem 0.75rem;
 }
 @media (max-width: 719px) {
-  .cocina-tabla__fila { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.4fr); }
-  .cocina-tabla__fila > :nth-child(2) { display: none; }
+  .tabla-ordenes__fila { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.4fr); }
+  .tabla-ordenes__fila > :nth-child(2) { display: none; }
+}
+
+/* La pantalla Órdenes (mesero) usa la misma tabla con una columna más:
+   el estado de la cuenta (En pedido / Precuenta emitida). */
+.pedidos-page .tabla-ordenes__fila {
+  grid-template-columns: max-content max-content auto auto minmax(0, 1fr);
+}
+@media (max-width: 719px) {
+  .pedidos-page .tabla-ordenes__fila { grid-template-columns: minmax(0, 1fr) auto auto minmax(0, 1.2fr); }
 }
 }

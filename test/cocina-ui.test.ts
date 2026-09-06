@@ -59,7 +59,7 @@ describe("vistas coordinadas de cocina y mesero", () => {
     expect(html).toContain("Productos");
     // primero el número de orden; la mesa va en segunda línea, en otra letra
     expect(html).toContain('aria-label="Abrir Orden #1 de la Mesa #7"');
-    expect(html).toContain("cocina-tabla__mesa");
+    expect(html).toContain("tabla-ordenes__mesa");
     // la fila muestra la descripción acotada de lo pedido
     expect(html).toContain("1 × Hamburguesa (sin cebolla)");
     // sin contadores, sin estado "Enviada", sin botón de actualizar
@@ -111,7 +111,10 @@ describe("vistas coordinadas de cocina y mesero", () => {
         onAbrir: () => undefined,
       }),
     );
-    expect(html).toContain("Cocina necesita una respuesta");
+    // el encabezado avisa cuántas quedan por responder
+    expect(html).toContain("1 por responder");
+    // la fila bloqueada lo dice y la tira de la incidencia trae la propuesta
+    expect(html).toContain("Cocina esperando respuesta");
     expect(html).toContain("Cambio sugerido: Hamburguesa");
     expect(html).toContain("Cambiar por ensalada");
     expect(html).toContain("Sugerencia aceptada");

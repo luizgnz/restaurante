@@ -30,9 +30,10 @@ describe("pantalla Órdenes sobre cuentas", () => {
     );
     expect(html).toContain("Órdenes");
     expect(html).not.toContain(">Cocina<");
-    expect(html).toContain("Mesa 7");
+    expect(html).toContain("Mesa #7");
     expect(html).toContain("Ana");
-    expect(html).toContain("Hace dos minutos");
+    // la espera vive en el chip de color, no en texto relativo
+    expect(html).toContain("0 min");
     expect(html).toContain("En pedido");
     expect(html).toContain("Orden #1");
     // Los productos van seguidos por coma, no uno por línea.
@@ -75,9 +76,9 @@ describe("pantalla Órdenes sobre cuentas", () => {
     const html = renderToStaticMarkup(
       createElement(Pedidos, { cuentas: [cuenta()], onAbrir: () => undefined }),
     );
-    expect(html).toContain('aria-label="Abrir acciones de Orden #1, Mesa 7"');
-    expect(html).toContain('class="pedido-orden__abrir"');
-    expect(html).toContain('<div class="pedido-cabecera">');
+    expect(html).toContain('aria-label="Abrir Orden #1 de la Mesa #7"');
+    // la tabla comparte el sistema con la cocina
+    expect(html).toContain('class="tabla-ordenes__fila tactil"');
   });
 
   it("sin cuentas en curso lo dice", () => {

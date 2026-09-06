@@ -19,5 +19,5 @@ Lista viva del proyecto. Marcar con `[x]` al completar; agregar nuevos pendiente
 - [x] Skill `revision-ui` creada (`.agents/skills/revision-ui/`) e instalada `frontend-design` de Anthropic (`~/.agents/skills/`) para la Fase 3.
 - [ ] Crear skills a medida restantes: `auditor-pos`, `capturas-release`.
 - [ ] Integrar `prototype/ui-responsive` en `feat/nucleo-pos-v1` cuando el prototipo de UI esté estable.
-- [x] Cocina rediseñada (base de la propuesta KDS v2): tabla de órdenes nuevas arriba/viejas abajo, entregadas salen del tablero, alerta ámbar al llegar una orden nueva, acciones por orden completa en ventana emergente.
+- [x] Cocina y Órdenes rediseñadas como tabla de órdenes (base de la propuesta KDS v2): nuevas arriba, entregadas salen del tablero, alerta ámbar al llegar, acciones por orden en ventana emergente, esperas con chip de color y estado por badge.
 - [ ] Retomar la propuesta KDS v2 (`propuestas/cocina-kds-v2.html`) para detalles visuales restantes.

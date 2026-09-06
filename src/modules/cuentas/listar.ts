@@ -16,6 +16,7 @@ export type CuentaEnCurso = {
   ordenes: {
     id: number;
     numero: number;
+    creadaEn: string;
     lineas: LineaEfectiva[];
   }[];
 };
@@ -47,6 +48,7 @@ export function listarCuentasActivas(db: Database.Database, ahoraMs = Date.now()
       ordenes: detalle.ordenes.map((orden) => ({
         id: orden.id,
         numero: orden.numero,
+        creadaEn: orden.creadaEn,
         lineas: orden.lineas,
       })),
     };
