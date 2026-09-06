@@ -18,6 +18,20 @@
   font-display: swap;
 }
 
+/* Wordmark y títulos de página · Fraunces (SIL OFL 1.1, archivo y licencia en
+   ui/public/fonts/). Fuente variable autoalojada: "Snell Roundhand" solo
+   existía en macOS y caía en una cursiva aleatoria en Windows/Android.
+   La ruta es absoluta a propósito: el backend monta la UI en la raíz
+   (src/http/ui.ts) y Vite sirve public/ en la raíz, así que /fonts/ es
+   estable tanto en dev como en producción. */
+@font-face {
+  font-family: "Fraunces Variable";
+  src: url("/fonts/fraunces-variable.ttf") format("truetype-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   /* -- neutros: fríos apenas, elegidos, no heredados -- */
   --background: #f7f7f8;
@@ -37,6 +51,12 @@
   --primary: #17191d;
   --primary-foreground: #ffffff;
   --ring: #16181c;
+
+  /* -- marca: cobre de TELAJO. Identidad, no estado: nunca sustituye a
+     success/warning/danger y la acción sigue siendo el negro -- */
+  --brand: #8a4a26;            /* cobre quemado · fondo de acentos de marca, 6.8:1 con blanco */
+  --brand-foreground: #ffffff;
+  --brand-tinta: #a3572b;      /* cobre en tinta · wordmark sobre la barra clara, 5:1 */
 
   /* -- estado: el color aquí SIEMPRE quiere decir algo -- */
   --success: #2f8a55;
@@ -160,13 +180,13 @@ button {
   color: inherit;
 }
 button.primario {
-  background: #714b67;
+  background: var(--brand);
 }
 button.peligro {
   background: #875a5a;
 }
 button.is-on {
-  background: #714b67;
+  background: var(--brand);
 }
 nav {
   display: flex;
@@ -219,7 +239,7 @@ button.icono {
   width: 48px;
   padding: 0;
   border-radius: 50%;
-  background: #714b67;
+  background: var(--brand);
 }
 .pos-odoo__panel[hidden] {
   display: none;
@@ -278,15 +298,6 @@ button.icono {
   min-height: 40px;
   width: 100%;
   font-size: 0.9rem;
-}
-.modal-fondo {
-  position: fixed;
-  inset: 0;
-  background: #000a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 40;
 }
 .modal-caja {
   background: #1c1c1c;
@@ -706,7 +717,7 @@ main {
   justify-self: center;
 }
 .salon-odoo__piso.is-on {
-  background: #714b67;
+  background: var(--brand);
   box-shadow: inset 0 0 0 2px #fff6;
 }
 .salon-odoo__fondo {
@@ -1180,15 +1191,6 @@ main > [role="alert"] {
   font-weight: 750;
 }
 
-.salon-odoo__metricas > div {
-  border-color: var(--border);
-  box-shadow: none;
-}
-
-.salon-odoo__metricas strong {
-  color: var(--primary);
-}
-
 .salon-odoo__pisos {
   border-color: var(--border);
   box-shadow: 0 4px 14px rgb(32 71 60 / 0.04);
@@ -1230,11 +1232,6 @@ main > [role="alert"] {
   color: var(--primary);
 }
 
-.modal-fondo {
-  background: rgb(18 36 30 / 0.52);
-  backdrop-filter: blur(4px);
-}
-
 .modal-caja,
 .armado-plato,
 .correccion-modal {
@@ -1271,15 +1268,6 @@ main > [role="alert"] {
     font-size: 1.55rem;
   }
 
-  .salon-odoo__metricas {
-    gap: 0.4rem;
-  }
-
-  .salon-odoo__metricas > div {
-    padding: 0.5rem;
-    border-radius: 0.8rem;
-  }
-
   .plano-mapa {
     border-radius: 1.15rem;
     padding: 0.65rem;
@@ -1297,7 +1285,8 @@ main > [role="alert"] {
     border-radius: 0.95rem;
   }
 
-  .carta__foto {
+  .carta__foto,
+  .carta__icono {
     height: 100px;
   }
 
@@ -1484,30 +1473,6 @@ button.icono {
   font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-}
-.salon-odoo__metricas {
-  display: flex;
-  gap: 0.65rem;
-}
-.salon-odoo__metricas > div {
-  display: grid;
-  grid-template-columns: auto auto;
-  align-items: center;
-  gap: 0 0.45rem;
-  min-width: 116px;
-  padding: 0.75rem 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: var(--card);
-  box-shadow: 0 5px 18px rgb(67 48 29 / 0.05);
-}
-.salon-odoo__metricas strong {
-  font-size: 1.25rem;
-}
-.salon-odoo__metricas span {
-  grid-column: 1 / -1;
-  color: var(--muted-foreground);
-  font-size: 0.78rem;
 }
 .salon-odoo__pisos {
   margin: 0;
@@ -1903,17 +1868,6 @@ button.icono {
   .salon-odoo__resumen p {
     display: none;
   }
-  .salon-odoo__metricas > div {
-    min-width: auto;
-    padding: 0.55rem 0.65rem;
-  }
-  .salon-odoo__metricas svg {
-    display: none;
-  }
-  .salon-odoo__metricas span {
-    display: block;
-    font-size: 0.63rem;
-  }
   .salon-odoo__pisos {
     display: flex;
     flex-wrap: wrap;
@@ -1948,21 +1902,6 @@ button.icono {
   }
   .salon-odoo__pisos-der button:not(.numeral) {
     display: none;
-  }
-  .plano-mapa {
-    position: static;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.7rem;
-    min-height: 0;
-    padding: 0.75rem;
-    overflow: visible;
-  }
-  .mesa-odoo {
-    position: static;
-    width: 100% !important;
-    height: 104px !important;
-    min-width: 0;
   }
   .constructor-orden {
     padding-bottom: 4.5rem;
@@ -1999,7 +1938,8 @@ button.icono {
   .carta__item {
     min-height: 210px;
   }
-  .carta__foto {
+  .carta__foto,
+  .carta__icono {
     height: 105px;
   }
   .constructor-orden__resumen {
@@ -2040,9 +1980,6 @@ button.icono {
     height: 100%;
     border-radius: 0;
     background: rgb(24 20 16 / 0.5);
-  }
-  .modal-fondo {
-    align-items: flex-end;
   }
   .armado-plato {
     width: 100%;
@@ -2182,8 +2119,9 @@ button.icono {
 }
 .cocina-tarjeta__cabecera > div {
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.6rem;
 }
 .cocina-tarjeta__cabecera > div > strong {
   font-size: 1.05rem;
@@ -2242,11 +2180,6 @@ button.icono {
   min-height: 46px;
   padding: 0;
   border-radius: 50%;
-}
-.cocina-accion-icono.is-start,
-.cocina-accion-icono.is-ready {
-  background: var(--success);
-  color: var(--success-foreground);
 }
 .cocina-accion-icono.is-suggest {
   background: var(--card);
@@ -3715,12 +3648,6 @@ button.icono:focus-visible {
 }
 
 .inventario-resumen > div,
-.salon-odoo__metricas > div {
-  border: 1px solid var(--border);
-  background: var(--card);
-  box-shadow: 0 5px 18px rgb(30 67 56 / 0.055);
-}
-
 .backend-odoo__atajos .backend-atajo,
 .pedido-card,
 .settings-nav {
@@ -3738,11 +3665,6 @@ button.icono:focus-visible {
 .settings-card legend,
 .editor-grupo legend {
   color: var(--primary);
-}
-
-.modal-fondo {
-  background: rgb(17 38 32 / 0.52);
-  backdrop-filter: blur(5px);
 }
 
 .modal-caja,
@@ -3820,11 +3742,6 @@ button.icono:focus-visible {
   }
 
   .inventario-resumen > div,
-  .salon-odoo__metricas > div {
-    padding: 0.7rem;
-    border-radius: 0.9rem;
-  }
-
   .plano-mapa {
     gap: 0.65rem;
     padding: 0.65rem;
@@ -3853,6 +3770,7 @@ button.icono:focus-visible {
   .inventario-fila,
   .pedido-card,
   .cocina-tarjeta {
+  position: relative;
     border-radius: 0.95rem;
   }
 
@@ -3872,13 +3790,6 @@ button.icono:focus-visible {
     padding-inline: 0.25rem;
   }
 
-  .salon-odoo__metricas {
-    gap: 0.3rem;
-  }
-
-  .salon-odoo__metricas > div {
-    padding-inline: 0.5rem;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4001,6 +3912,8 @@ button.icono:focus-visible {
   color: var(--foreground);
   text-align: left;
   cursor: pointer;
+  /* el color de categoría se nota al pasar el dedo: sin destello del SO */
+  -webkit-tap-highlight-color: transparent;
   /* la franja superior es el color del producto, no decoración */
   box-shadow: inset 0 3px 0 var(--product-color, transparent);
   transition:
@@ -4013,15 +3926,35 @@ button.icono:focus-visible {
   transform: translateY(-1px);
   border-color: color-mix(in oklab, var(--foreground) 30%, var(--border));
 }
+/* respuesta táctil: la tarjeta se hunde un pelín bajo el dedo */
+.carta__item:active {
+  transform: scale(0.98);
+  transition-duration: 60ms;
+}
+/* En la orden: borde grueso de acción (negro) + lavado de tinta. El color de
+   categoría sigue en la franja; la píldora de cantidad completa la señal. */
 .carta__item.is-on {
   border-color: var(--primary);
-  background: var(--secondary);
+  border-width: 2px;
+  background: color-mix(in oklab, var(--primary) 5%, var(--card));
 }
 .carta__foto {
   width: 100%;
   height: 118px;
   border-radius: 0;
   object-fit: cover;
+}
+/* Sin foto: el ícono de la categoría sobre un velo suave de su color. La
+   intensidad la fija color-mix (el producto puede traer un hex saturado de
+   administración); el trazo mezclado con el tinta mantiene el contraste. */
+.carta__icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 118px;
+  background: color-mix(in oklab, var(--product-color, var(--muted-foreground)) 16%, var(--card));
+  color: color-mix(in oklab, var(--product-color, var(--foreground)) 60%, var(--foreground));
 }
 .carta__contenido {
   display: flex;
@@ -4043,10 +3976,18 @@ button.icono:focus-visible {
   font-weight: 600;
   line-height: 1.25;
 }
+/* Precio = chip sólido, siempre abajo a la izquierda: el garzón lo lee sin
+   buscar. Fondo neutro opaco (no velo): legible también sobre la foto. */
 .carta__precio {
-  font-size: 0.9rem;
-  font-weight: 600;
+  margin-top: auto;
+  padding: 0.22rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--secondary);
   color: var(--foreground);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
   font-variant-numeric: tabular-nums;
 }
 .carta__cantidad {
@@ -4096,12 +4037,25 @@ button.icono:focus-visible {
   gap: 0.65rem;
 }
 .ui-v2 .pos-odoo__marca {
-  font-family: "Snell Roundhand", "Apple Chancery", "Segoe Script", cursive;
+  /* El wordmark es EL momento de marca: Fraunces con sus ejes de calidez
+     (SOFT) y de trazo torcido (WONK) da una voz de carta de restaurante
+     que funciona igual en macOS, Windows y Android. Cursiva fuera: sin la
+     fuente de Snell solo habría oblicua sintética. */
+  font-family: "Fraunces Variable", Georgia, "Times New Roman", serif;
   font-size: 1.72rem;
-  font-style: italic;
-  font-weight: 700;
-  letter-spacing: 0.015em;
+  font-weight: 620;
+  font-variation-settings: "SOFT" 100, "WONK" 1;
+  letter-spacing: 0.01em;
   line-height: 1;
+  color: var(--brand-tinta);
+}
+/* Los títulos de página comparten la voz de la marca (una carta usa la misma
+   tipografía en el encabezado y en los títulos). Regla aditiva: no modifica
+   peso ni color que ya definan otras secciones; solo suaviza el tracking que
+   venía de la sans, demasiado cerrado para una serif con acentos. */
+.ui-v2 h1 {
+  font-family: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  letter-spacing: -0.02em;
 }
 @media (min-width: 1050px) {
   .ui-v2 .pos-nav {
@@ -4159,24 +4113,6 @@ button.icono:focus-visible {
 .ui-v2 .constructor-orden__cabecera p,
 .ui-v2 .constructor-orden__cabecera .constructor-orden__eyebrow {
   display: none;
-}
-.ui-v2 .salon-odoo__metricas {
-  gap: 0.4rem;
-}
-.ui-v2 .salon-odoo__metricas > div {
-  display: flex;
-  min-width: auto;
-  gap: 0.35rem;
-  padding: 0.45rem 0.65rem;
-  border-radius: var(--radius);
-  box-shadow: none;
-}
-.ui-v2 .salon-odoo__metricas strong {
-  font-size: 1rem;
-}
-.ui-v2 .salon-odoo__metricas span {
-  grid-column: auto;
-  font-size: 0.75rem;
 }
 .ui-v2 .salon-odoo__pisos {
   padding: 0.35rem;
@@ -4263,7 +4199,8 @@ button.icono:focus-visible {
 .ui-v2 .carta__item {
   min-height: 166px;
 }
-.ui-v2 .carta__foto {
+.ui-v2 .carta__foto,
+.ui-v2 .carta__icono {
   height: 78px;
 }
 .ui-v2 .carta__contenido {
@@ -4476,8 +4413,55 @@ button.icono:focus-visible {
   }
 }
 
+/* Cocina operable (3.4, consolidado en familia): franja de espera por
+   tiempo, chip de espera y tarjetas entregadas atenuadas. */
+.cocina-tarjeta::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 5px;
+  border-top-left-radius: inherit;
+  border-bottom-left-radius: inherit;
+  background: var(--success);
+}
+.cocina-tarjeta.espera-medio::before { background: var(--warning); }
+.cocina-tarjeta.espera-alto::before { background: var(--destructive); }
+.cocina-tarjeta.espera-critico::before { background: color-mix(in oklab, var(--destructive) 70%, black); }
+.cocina-tarjeta.is-entregada { opacity: 0.55; }
+.cocina-tarjeta__espera {
+  margin-left: auto;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--success-soft);
+  color: var(--success);
+}
+.cocina-tarjeta__espera.espera-medio { background: var(--warning-soft); color: var(--warning); }
+.cocina-tarjeta__espera.espera-alto { background: var(--destructive-soft); color: var(--destructive); }
+.cocina-tarjeta__espera.espera-critico { background: var(--destructive); color: #fff; }
+
+/* Salón con semáforo (3.3, consolidado en familia): mesa atrasada. */
+.mesa-odoo--atrasada {
+  border: 2px solid color-mix(in oklab, var(--destructive) 60%, transparent);
+  box-shadow: 0 0 0 4px var(--destructive-soft);
+}
+.mesa-odoo--atrasada .mesa-odoo__num { color: var(--destructive); }
+.mesa-odoo__atraso {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--destructive-soft);
+  color: var(--destructive);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
+/* Resumen de orden y precios de línea (1.2, consolidado). */
 .constructor-orden__total {
   display: flex;
   align-items: baseline;
@@ -4497,4 +4481,43 @@ button.icono:focus-visible {
 .ticket-papel__nota--contornos {
   display: block;
   margin-top: 2px;
+}
+.cocina-entregadas { display: flex; justify-content: flex-end; margin-bottom: 0.75rem; }
+}
+
+/* --------------------------------------------------------------------------
+   Contrato responsive del plano del salón (único breakpoint: 768 px).
+   - Desde 768 px: plano espacial. Las mesas se ubican con coordenadas
+     (left/top en %) sobre `.plano-mapa`, tanto en la vista operativa como en
+     el editor (`EditarMapa.tsx`).
+   - Por debajo de 768 px: solo la vista operativa (`.plano-mapa--operativo`,
+     exclusiva de `Plano.tsx`) muestra las mismas mesas en una grilla de dos
+     columnas sin coordenadas. El editor conserva el plano espacial porque
+     arrastrar mesas exige coordenadas absolutas.
+   Los modificadores `--operativo` / `--operativa` no existen en el editor. La
+   regla móvil usa la especificidad del contenedor y vive al final del archivo
+   para que ninguna regla base posterior (`.mesa-odoo { position: absolute }`)
+   pueda devolver las mesas operativas al posicionamiento absoluto.
+   -------------------------------------------------------------------------- */
+@media (max-width: 767px) {
+  .plano-mapa--operativo {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
+    min-height: 0;
+    padding: 0.75rem;
+    overflow: visible;
+  }
+  .plano-mapa--operativo .mesa-odoo--operativa {
+    position: static;
+    inset: auto;
+    /* Anulan el width/height inline que trae el plano espacial. */
+    width: 100% !important;
+    height: auto !important;
+    min-height: 88px;
+    max-width: none;
+    max-height: none;
+    min-width: 0;
+  }
 }

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { interpretarTecla } from "../../../src/modules/salon/teclado.ts";
 import type { NivelEspera } from "../../../src/modules/tiempo.ts";
-import { Clock3, Plus, Search, Table2 } from "lucide-react";
+import { textoEspera } from "../../../src/modules/tiempo.ts";
+import { Clock3, Plus, ReceiptText, Search, Table2, Timer } from "lucide-react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
@@ -52,6 +53,7 @@ type Props = {
   asignando?: boolean;
   bloqueado?: boolean;
   cargando?: boolean;
+  esperaPorMesa?: Record<number, { espera: number; nivel: NivelEspera }>;
   onMesa: (mesa: Mesa) => void;
   onPiso?: (piso: Piso) => void;
   onNuevoPedido?: () => void;
@@ -76,6 +78,7 @@ export function Plano({
   asignando,
   bloqueado,
   cargando,
+  esperaPorMesa = {},
   onMesa,
   onPiso,
   onNuevoPedido,
@@ -92,6 +95,7 @@ export function Plano({
   const [buscando, setBuscando] = useState(false);
   const [buffer, setBuffer] = useState("");
   const [aviso, setAviso] = useState("");
+  const [filtro, setFiltro] = useState<"todas" | "libres" | "servicio" | "precuenta" | "atrasadas">("todas");
   const inputRef = useRef<HTMLInputElement>(null);
   const mapaRef = useRef<HTMLDivElement>(null);
   const [anchoMapa, setAnchoMapa] = useState(1200);
@@ -155,8 +159,21 @@ export function Plano({
 
   const listaPisos = pisos && pisos.length > 0 ? pisos : [{ id: pisoId ?? 0, nombre: piso }];
   const mesasDelPiso = mesas.filter((m) => pisoId == null || m.piso_id == null || m.piso_id === pisoId);
+  const atrasada = (mesa: Mesa) => {
+    const nivel = esperaPorMesa[mesa.id]?.nivel;
+    return nivel === "alto" || nivel === "critico";
+  };
   const libres = mesasDelPiso.filter((mesa) => mesa.estado === "libre").length;
   const ocupadas = mesasDelPiso.length - libres;
+  const enPrecuenta = mesasDelPiso.filter((mesa) => mesa.estado === "precuenta").length;
+  const atrasadas = mesasDelPiso.filter(atrasada).length;
+  const mesasVisibles = mesasDelPiso.filter((mesa) => {
+    if (filtro === "libres") return mesa.estado === "libre";
+    if (filtro === "servicio") return mesa.estado !== "libre";
+    if (filtro === "precuenta") return mesa.estado === "precuenta";
+    if (filtro === "atrasadas") return atrasada(mesa);
+    return true;
+  });
 
   return (
     <section className="salon-odoo">
@@ -166,9 +183,11 @@ export function Plano({
           <h1>{piso}</h1>
           <p>Selecciona una mesa para comenzar o continuar el servicio.</p>
         </div>
-        <div className="salon-odoo__metricas" aria-label="Resumen del salón">
-          <div><Table2 size={19} aria-hidden="true" /><strong>{libres}</strong><span>libres</span></div>
-          <div><Clock3 size={19} aria-hidden="true" /><strong>{ocupadas}</strong><span>en servicio</span></div>
+        <div className="salon-odoo__metricas flex flex-wrap gap-2" aria-label="Resumen del salón, toca para filtrar">
+          <Button type="button" size="sm" variant={filtro === "libres" ? "secondary" : "outline"} aria-pressed={filtro === "libres"} onClick={() => setFiltro(filtro === "libres" ? "todas" : "libres")}><Table2 size={17} aria-hidden="true" /><strong>{libres}</strong><span>libres</span></Button>
+          <Button type="button" size="sm" variant={filtro === "servicio" ? "secondary" : "outline"} aria-pressed={filtro === "servicio"} onClick={() => setFiltro(filtro === "servicio" ? "todas" : "servicio")}><Clock3 size={17} aria-hidden="true" /><strong>{ocupadas}</strong><span>en servicio</span></Button>
+          <Button type="button" size="sm" variant={filtro === "precuenta" ? "secondary" : "outline"} aria-pressed={filtro === "precuenta"} onClick={() => setFiltro(filtro === "precuenta" ? "todas" : "precuenta")}><ReceiptText size={17} aria-hidden="true" /><strong>{enPrecuenta}</strong><span>precuenta</span></Button>
+          <Button type="button" size="sm" variant={filtro === "atrasadas" ? "destructive" : "outline"} aria-pressed={filtro === "atrasadas"} onClick={() => setFiltro(filtro === "atrasadas" ? "todas" : "atrasadas")}><Timer size={17} aria-hidden="true" /><strong>{atrasadas}</strong><span>atrasadas</span></Button>
         </div>
       </div>
       <header className="salon-odoo__pisos">
@@ -260,7 +279,7 @@ export function Plano({
       ) : null}
       <div
         ref={mapaRef}
-        className="plano-mapa"
+        className="plano-mapa plano-mapa--operativo"
         style={{
           backgroundColor: pisos?.find((p) => p.id === pisoId)?.fondo_color || undefined,
           backgroundImage: fondoUrl ? `url("${fondoUrl}")` : undefined,
@@ -274,12 +293,12 @@ export function Plano({
             ))}
           </div>
         ) : (
-          mesasDelPiso.map((m) => (
+          mesasVisibles.map((m) => (
           <Button
             key={m.id}
             type="button"
             variant="ghost"
-            className={`mesa-odoo mesa-odoo--${m.estado} mesa-odoo--${m.forma} tactil`}
+            className={`mesa-odoo mesa-odoo--operativa mesa-odoo--${m.estado} mesa-odoo--${m.forma}${atrasada(m) ? " mesa-odoo--atrasada" : ""} tactil`}
             style={{
               left: `${m.pos_x}%`,
               top: `${m.pos_y}%`,
@@ -299,10 +318,12 @@ export function Plano({
             >
               {etiquetaMesa(m.estado)}
             </Badge>
+            {atrasada(m) ? <span className="mesa-odoo__atraso">{textoEspera(esperaPorMesa[m.id]?.espera ?? 0)}</span> : null}
             <span className="mesa-odoo__asientos">{m.asientos} asientos</span>
           </Button>
           ))
         )}
+        {!cargando && mesasVisibles.length === 0 ? <div className="empty-state">No hay mesas con este filtro.</div> : null}
       </div>
       {mostrarUltimos ? (
         <aside className="barra-pedidos">

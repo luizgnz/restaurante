@@ -314,13 +314,14 @@ export function App() {
     if (!sesion?.abierta || !usuarioActual) return;
     const roles = usuarioActual.roles ?? (["administrador"] as RolClave[]);
     const intervalo = window.setInterval(() => {
-      if (roles.some((rol) => rol === "mesero" || rol === "administrador")) {
+      if (document.hidden) return;
+      if (area === "mesero" && roles.some((rol) => rol === "mesero" || rol === "administrador")) {
         cargarIncidenciasCocina().catch(() => undefined);
       }
-      if (area === "cocina") cargarKds().catch(() => undefined);
+      if (vista === "kds") cargarKds().catch(() => undefined);
     }, 4_000);
     return () => window.clearInterval(intervalo);
-  }, [sesion?.abierta, sesion?.usuario?.id, sesion?.administrador?.id, area]);
+  }, [sesion?.abierta, sesion?.usuario?.id, sesion?.administrador?.id, area, vista]);
 
   async function conError(fn: () => Promise<void>) {
     try {
@@ -618,6 +619,11 @@ export function App() {
   const puedeMesas = puedeAdministrar || roles.includes("mesero");
   const puedeCocina = puedeAdministrar || roles.includes("cocina");
   const puedeOrdenes = puedeMesas || roles.includes("caja");
+  const esperaPorMesa: Record<number, { espera: number; nivel: ReturnType<typeof nivelEspera> }> = {};
+  for (const cuenta of cuentasEnCurso) {
+    const espera = cuenta.espera_min ?? esperaMinutos(cuenta.abiertaEn ?? new Date().toISOString());
+    esperaPorMesa[cuenta.mesaId] = { espera, nivel: nivelEspera(espera) };
+  }
 
   return (
     <div className="pos-odoo ui-v2">
@@ -786,6 +792,7 @@ export function App() {
         {vista === "plano" ? (
           <Plano
             cargando={carga.plano}
+            esperaPorMesa={esperaPorMesa}
             piso={piso}
             pisoId={pisoId}
             pisos={pisos}
