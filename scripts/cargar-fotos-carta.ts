@@ -14,13 +14,16 @@
 import Database from "better-sqlite3";
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdtempSync, readFileSync, readdirSync } from "node:fs";
-import { homedir, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { salonDbPath } from "../src/paths.ts";
 
 const RAIZ = resolve(import.meta.dirname, "..");
 const CARPETA = join(RAIZ, "assets", "fotos-carta");
 const MANIFEST = join(CARPETA, "manifest.json");
-const DB = join(homedir(), "Library", "Application Support", "Restaurante", "data", "salon.sqlite");
+// Respeta RESTAURANTE_DATA_DIR como el servidor: así las demos y pruebas
+// manuales pueden cargar fotos en una base temporal sin tocar la real.
+const DB = salonDbPath();
 
 type Entrada = { producto: string; archivo: string; fuente: string; licencia: string };
 
