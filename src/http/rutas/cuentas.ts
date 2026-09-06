@@ -10,7 +10,12 @@ import { PinError } from "../../modules/empleados/empleados.ts";
 import { sesionAbierta } from "../../modules/empleados/sesion.ts";
 import { totalEfectivoCuenta } from "../../modules/cuentas/totales.ts";
 import { OrdenError } from "../../modules/ordenes/enviar.ts";
-import { emitirPrecuentaCuenta, quienEmite } from "../../modules/precuenta/precuenta.ts";
+import {
+  emitirPrecuentaCuenta,
+  PrecuentaError,
+  reimprimirPrecuenta,
+  quienEmite,
+} from "../../modules/precuenta/precuenta.ts";
 
 /**
  * La mesa de una cuenta que todavía acepta consumo.
@@ -62,6 +67,9 @@ export function rutasCuentas(deps: RutasDeps): Hono {
   rutas.post("/:id/precuenta", async (c) => {
     const cuentaId = idDeRuta(c);
     const pin = pinOpcional((await leerJson<{ pin: unknown }>(c)).pin);
+    if (config.pin_al_emitir_precuenta && !pin) {
+      throw new PinError("credenciales_invalidas", "Hace falta PIN para emitir la precuenta");
+    }
     const emitida = await protegido(
       () => quienEmite(db, pin),
       () => emitirPrecuentaCuenta(db, cuentaId, pin, printer, config),
@@ -72,11 +80,24 @@ export function rutasCuentas(deps: RutasDeps): Hono {
   rutas.post("/:id/enviar-caja", async (c) => {
     const cuentaId = idDeRuta(c);
     const pin = pinOpcional((await leerJson<{ pin: unknown }>(c)).pin);
+    if (config.pin_al_enviar_caja && !pin) {
+      throw new PinError("credenciales_invalidas", "Hace falta PIN para enviar a caja");
+    }
     const handoff = await protegido(
       () => quienCobra(db, pin, config),
       () => enviarCuentaACaja(db, cuentaId, pin, config),
     );
     return c.json(handoff, 201);
+  });
+
+  rutas.post("/:id/precuenta/reimprimir", async (c) => {
+    const cuentaId = idDeRuta(c);
+    const vigente = db
+      .prepare("SELECT id, snapshot_json FROM precuentas WHERE cuenta_id = ? AND vigente = 1 ORDER BY id DESC LIMIT 1")
+      .get(cuentaId) as { id: number; snapshot_json: string } | undefined;
+    if (!vigente) throw new PrecuentaError("precuenta_inexistente", "La cuenta no tiene una precuenta vigente");
+    const { numero } = await reimprimirPrecuenta(db, vigente.id, printer);
+    return c.json({ numero, snapshot: JSON.parse(vigente.snapshot_json) });
   });
 
   rutas.post("/:id/cancelar", async (c) => {

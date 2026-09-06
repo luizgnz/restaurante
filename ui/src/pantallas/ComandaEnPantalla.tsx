@@ -30,11 +30,9 @@ export function ComandaEnPantalla({ restaurante, comanda, onCerrar }: Props) {
                   {linea.cantidad} × {linea.nombre}
                 </strong>
                 {linea.nota ? <span className="ticket-papel__nota"> ({linea.nota})</span> : null}
-                {(linea.contornos ?? []).map((contorno) => (
-                  <span className="ticket-papel__nota" key={contorno}>
-                    {contorno}
-                  </span>
-                ))}
+                {(linea.contornos ?? []).length > 0 ? (
+                  <span className="ticket-papel__nota ticket-papel__nota--contornos">{linea.contornos!.join(" · ")}</span>
+                ) : null}
               </span>
             </li>
           ))}

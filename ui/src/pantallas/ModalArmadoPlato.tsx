@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, Minus, Sparkles, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
+import { dinero } from "../../../src/modules/formato.ts";
 
 export type SlotArmadoUi = {
   posicion: number;
@@ -27,12 +28,12 @@ type Props = {
   productoNombre: string;
   slots: SlotArmadoUi[];
   variantes: VarianteArmadoUi[];
-  onConfirmar: (selecciones: SeleccionArmado[], resumen: string) => void;
+  onConfirmar: (selecciones: SeleccionArmado[], resumen: string, adicionalCentavos: number) => void;
   onCancelar: () => void;
 };
 
 function precio(cantidad: number): string {
-  return `$${cantidad}`;
+  return dinero(cantidad);
 }
 
 /** Grupos del slot que tienen variantes activas: son los que exigen una elección. */
@@ -110,7 +111,21 @@ export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar
     const selecciones = construirSelecciones(slots, variantes, elegidas, extras);
     const resumen = resumenArmado(slots, variantes, elegidas, extras);
     if (selecciones === null || resumen === null) return;
-    onConfirmar(selecciones, resumen);
+    // El suplemento de cada base + el precio de los extras: lo que esta línea
+    // agrega al precio del producto (el servidor lo valida y cobra igual).
+    const adicional =
+      slots.reduce((total, slot) => {
+        return (
+          total +
+          gruposRequeridos(slot, variantes).reduce((suma, grupo) => {
+            const varianteId = elegidas[slot.posicion]?.[grupo.id];
+            const variante = variantes.find((item) => item.id === varianteId);
+            return suma + (variante?.suplementoCentavos ?? 0);
+          }, 0)
+        );
+      }, 0) +
+      extras.reduce((suma, extra) => suma + (variantes.find((item) => item.id === extra.varianteId)?.extraCentavos ?? 0), 0);
+    onConfirmar(selecciones, resumen, adicional);
   }
 
   function elegirVariante(slot: SlotArmadoUi, grupoId: number, varianteId: number) {

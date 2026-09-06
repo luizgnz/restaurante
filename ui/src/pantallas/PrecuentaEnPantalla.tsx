@@ -1,3 +1,5 @@
+import { dinero } from "../../../src/modules/formato.ts";
+
 export type PrecuentaUi = {
   mesaNumero: number | null;
   numero: number;
@@ -31,13 +33,13 @@ export function PrecuentaEnPantalla({ restaurante, precuenta, onCerrar }: Props)
                 </strong>
                 {linea.nota ? <span className="ticket-papel__nota"> ({linea.nota})</span> : null}
               </span>
-              <span>${linea.cantidad * linea.precioCentavos}</span>
+              <span>{dinero(linea.cantidad * linea.precioCentavos)}</span>
             </li>
           ))}
         </ul>
         <p className="ticket-papel__total">
           <strong>TOTAL</strong>
-          <strong>${precuenta.totalCentavos}</strong>
+          <strong>{dinero(precuenta.totalCentavos)}</strong>
         </p>
         <Button type="button" onClick={onCerrar}>
           Listo

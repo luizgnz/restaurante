@@ -310,7 +310,7 @@ describe("confirmación de cierre de cuenta", () => {
     expect(html).toContain('aria-modal="true"');
     expect(html).toContain("¿Cerrar cuenta?");
     expect(html).toContain("Mesa #7");
-    expect(html).toContain("$21300");
+    expect(html).toContain("$21.300");
     expect(html).toContain("Cancelar");
     expect(html).toContain("Cerrar cuenta");
   });

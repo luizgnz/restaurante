@@ -14,6 +14,8 @@ const valores = {
   confirmar_comanda: false,
   auditoria_anulaciones: false,
   devolver_insumos_preparados: false,
+  pin_al_emitir_precuenta: true,
+  pin_al_enviar_caja: true,
   justificacion_anulacion: false,
   precuenta_obligatoria_antes_de_caja: true,
   enviar_a_caja_requiere_avanzado: true,
@@ -57,7 +59,9 @@ describe("opciones", () => {
     const conAuditoria = renderToStaticMarkup(
       createElement(Opciones, {
         valores: { ...valores, auditoria_anulaciones: true,
-  devolver_insumos_preparados: true, justificacion_anulacion: true },
+  devolver_insumos_preparados: true,
+  pin_al_emitir_precuenta: true,
+  pin_al_enviar_caja: true, justificacion_anulacion: true },
         onCambiar: () => undefined,
       }),
     );

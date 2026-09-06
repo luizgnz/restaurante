@@ -25,6 +25,8 @@ export type ResultadoEnvio = {
   repetida: boolean;
   /** Avisos de stock bajo: la orden entra, pero no hay respaldo para todo. */
   avisos: string[];
+  /** Quien autorizó el envío: el PIN que lo firmó, no la sesión abierta. */
+  mesero: string;
 };
 
 type OrdenExistente = { id: number; cuenta_id: number };
@@ -33,10 +35,21 @@ type MesaNumero = { numero: number };
 
 function resultadoIdempotente(db: Database.Database, orden: OrdenExistente): ResultadoEnvio {
   const comanda = db
-    .prepare("SELECT id FROM comandas WHERE orden_id = ? AND tipo = 'orden'")
-    .get(orden.id) as { id: number } | undefined;
+    .prepare(
+      `SELECT c.id, e.nombre AS mesero FROM comandas c
+       JOIN empleados e ON e.id = c.mesero_id
+       WHERE c.orden_id = ? AND c.tipo = 'orden'`,
+    )
+    .get(orden.id) as { id: number; mesero: string } | undefined;
   if (!comanda) throw new OrdenError("comanda_inexistente", "La orden idempotente no tiene comanda");
-  return { cuentaId: orden.cuenta_id, ordenId: orden.id, comandaId: comanda.id, repetida: true, avisos: [] };
+  return {
+    cuentaId: orden.cuenta_id,
+    ordenId: orden.id,
+    comandaId: comanda.id,
+    repetida: true,
+    avisos: [],
+    mesero: comanda.mesero,
+  };
 }
 
 export async function enviarOrden(
@@ -164,7 +177,7 @@ export async function enviarOrden(
       indicaciones: input.indicaciones ?? null,
       lineas: ticketLineas,
     });
-    return { cuentaId: cuenta.id, ordenId, comandaId, repetida: false, avisos };
+    return { cuentaId: cuenta.id, ordenId, comandaId, repetida: false, avisos, mesero: empleado.nombre };
   })();
 
   await despacharJobs(db, printer);
