@@ -635,24 +635,6 @@ button.icono {
   font-size: 1.2rem;
   padding: 0 12px;
 }
-.barra-pedidos {
-  padding: 8px 0 4px;
-}
-.barra-pedidos h2 {
-  margin: 0 0 6px;
-  font-size: 0.9rem;
-  opacity: 0.75;
-}
-.barra-pedidos__lista {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-.chip-pedido {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
 
 main {
   padding: 12px;
@@ -699,15 +681,11 @@ main {
   margin-bottom: 8px;
   align-items: center;
 }
-.salon-odoo__pisos-izq,
-.salon-odoo__pisos-der {
+.salon-odoo__pisos-izq {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   align-items: center;
-}
-.salon-odoo__pisos-der {
-  justify-content: flex-end;
 }
 .salon-odoo__pisos-centro {
   display: flex;
@@ -1490,20 +1468,6 @@ button.icono {
   color: var(--accent-foreground);
   box-shadow: none;
 }
-.barra-pedidos {
-  padding: 0.8rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: var(--card);
-}
-.chip-pedido {
-  border: 1px solid var(--border);
-  color: var(--foreground);
-}
-.espera-ok { background: var(--success-soft); }
-.espera-medio { background: var(--warning-soft); }
-.espera-alto { background: color-mix(in oklab, var(--warning) 22%, var(--card)); }
-.espera-critico { background: var(--destructive-soft); }
 
 /* Constructor de órdenes */
 .constructor-orden {
@@ -1895,13 +1859,6 @@ button.icono {
     flex-wrap: nowrap;
     justify-content: flex-start;
     overflow-x: auto;
-  }
-  .salon-odoo__pisos-der {
-    flex: 1;
-    flex-wrap: nowrap;
-  }
-  .salon-odoo__pisos-der button:not(.numeral) {
-    display: none;
   }
   .plano-mapa {
     position: static;

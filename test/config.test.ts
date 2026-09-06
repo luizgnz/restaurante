@@ -18,8 +18,6 @@ describe("config", () => {
     expect(c.precuenta_obligatoria_antes_de_caja).toBe(true);
     expect(c.liberar_mesa_cuando).toBe("al_enviar_a_caja");
     expect(c.bloqueo_inactividad_seg).toBe(60);
-    expect(c.barra_ultimos_pedidos).toBe(true);
-    expect(c.barra_atrasados).toBe(true);
     expect(c.nombre_local).toBe("Restaurante");
     expect(c.logo_data).toBeNull();
     expect(c.tipografia).toBe("sans");

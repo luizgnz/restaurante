@@ -43,8 +43,6 @@ export type AppConfig = {
   precuenta_obligatoria_antes_de_caja: boolean;
   liberar_mesa_cuando: "al_enviar_a_caja" | "manual";
   bloqueo_inactividad_seg: number;
-  barra_ultimos_pedidos: boolean;
-  barra_atrasados: boolean;
   nombre_local: string;
   logo_data: string | null;
   tipografia: TipografiaPos;
@@ -78,8 +76,6 @@ export function defaultConfig(): AppConfig {
     precuenta_obligatoria_antes_de_caja: true,
     liberar_mesa_cuando: "al_enviar_a_caja",
     bloqueo_inactividad_seg: 60,
-    barra_ultimos_pedidos: true,
-    barra_atrasados: true,
     nombre_local: "Restaurante",
     logo_data: null,
     tipografia: "sans",

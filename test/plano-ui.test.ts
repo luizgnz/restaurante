@@ -68,22 +68,15 @@ describe("plano restaurante", () => {
         onMesa: () => undefined,
         onNuevoPedido: () => undefined,
         onBuscarMesa: () => undefined,
-        mostrarUltimos: true,
-        mostrarAtrasados: true,
-        ultimos: [{ id: 9, mesa: 1, mesero: "Ana", hace: "Hace un minuto", espera_min: 1, nivel: "ok" }],
-        atrasados: [{ id: 8, mesa: 2, mesero: "Ana", hace: "Hace 20 minutos", espera_min: 20, nivel: "alto" }],
-        onPedido: () => undefined,
-        onToggleUltimos: () => undefined,
-        onToggleAtrasados: () => undefined,
       }),
     );
     expect(html).toContain("Nueva orden");
     expect(html).not.toContain("Imagen de fondo");
     expect(html).not.toContain("QR");
     expect(html).not.toContain("Registrar");
-    expect(html).toContain("Últimos");
-    expect(html).toContain("Atrasados");
-    expect(html).toContain("espera-alto");
+    expect(html).not.toContain("Últimos");
+    expect(html).not.toContain("Atrasados");
+    expect(html).not.toContain("barra-pedidos");
     expect(html).toContain("Mesa 1");
   });
 

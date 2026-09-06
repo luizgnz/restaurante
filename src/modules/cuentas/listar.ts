@@ -48,7 +48,7 @@ export type CuentaEnCurso = {
 
 type CuentaActivaRow = { id: number; abierta_en: string; mesero: string | null };
 
-/** Las cuentas que todavía aceptan consumo, para la pantalla Órdenes y las barras del plano. */
+/** Las cuentas que todavía aceptan consumo, para la pantalla Órdenes. */
 export function listarCuentasActivas(db: Database.Database, ahoraMs = Date.now()): CuentaEnCurso[] {
   const rows = db
     .prepare(

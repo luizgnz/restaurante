@@ -239,8 +239,6 @@ const LOGO_MAX = 400 * 1024;
 function configPublica(config: AppConfig) {
   return {
     tablet_cocina: config.tablet_cocina,
-    barra_ultimos_pedidos: config.barra_ultimos_pedidos,
-    barra_atrasados: config.barra_atrasados,
     nombre_local: config.nombre_local,
     logo_data: config.logo_data,
     tipografia: config.tipografia,
@@ -614,8 +612,6 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
   app.post("/api/config", async (c) => {
     const body = await c.req.json<{
       tablet_cocina?: boolean;
-      barra_ultimos_pedidos?: boolean;
-      barra_atrasados?: boolean;
       nombre_local?: string;
       logo_data?: string | null;
       tipografia?: AppConfig["tipografia"];
@@ -637,8 +633,6 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
       nombre_servidor?: string;
     }>();
     if (typeof body.tablet_cocina === "boolean") config.tablet_cocina = body.tablet_cocina;
-    if (typeof body.barra_ultimos_pedidos === "boolean") config.barra_ultimos_pedidos = body.barra_ultimos_pedidos;
-    if (typeof body.barra_atrasados === "boolean") config.barra_atrasados = body.barra_atrasados;
     if (typeof body.nombre_local === "string") {
       const nombre = body.nombre_local.trim().slice(0, 40);
       if (!nombre) throw new PedidoError("nombre_vacio", "El restaurante necesita un nombre");
