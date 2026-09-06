@@ -25,7 +25,7 @@ Este documento es el relevo operativo para continuar la revisión y el merge de 
 | [#9](https://github.com/luizgnz/restaurante/pull/9) | `codex/pr5-04-base-visual-salon` · `26a9f50` | `codex/pr5-03-consistencia` | Salón móvil separado del editor y medido (0 solapes a 390 px); 464/464 pruebas, build y revisión visual en verde | Aprobación formal externa (E02) |
 | [#10](https://github.com/luizgnz/restaurante/pull/10) | `codex/pr5-05-cocina-ordenes` · `9b6fc1b` | `codex/pr5-04-base-visual-salon` | Cocina y Órdenes revisados en funcionamiento; 463/463 pruebas, build y revisión visual en verde | Aprobación formal externa (E02) |
 | [#11](https://github.com/luizgnz/restaurante/pull/11) | `codex/pr5-06-marca-demo` · `16bd1bf` | `codex/pr5-05-cocina-ordenes` | Marca, catálogo de 32 productos y 31 fotos revisados; licenses, 463/463 pruebas y build en verde | Aprobación formal externa (E02) |
-| [#12](https://github.com/luizgnz/restaurante/pull/12) | `codex/pr5-07-documentacion` · se registra al final de esta ronda | `codex/pr5-06-marca-demo` | Documentación actualizada con los SHAs y cifras de esta ronda | Aprobación formal externa (E02) |
+| [#12](https://github.com/luizgnz/restaurante/pull/12) | `codex/pr5-07-documentacion` · `88b31ec` | `codex/pr5-06-marca-demo` | Documentación actualizada con los SHAs y cifras de esta ronda; capturas de la ronda integradas | Aprobación formal externa (E02) |
 
 Todos siguen en borrador y GitHub no tiene checks automáticos configurados. Por eso las verificaciones locales documentadas son obligatorias.
 
