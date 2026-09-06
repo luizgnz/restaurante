@@ -11,7 +11,8 @@ Lista viva del proyecto. Marcar con `[x]` al completar; agregar nuevos pendiente
 
 ## Después
 
-- [ ] Fases 1–4 del plan: montos visibles, consistencia UI, identidad visual, táctil/responsive.
+- [x] Fase 1 del plan — COMPLETADA: formato compartido de dinero/fechas, precios y total en el resumen, comanda legible y atribuida por PIN, reimprimir precuenta, PIN configurable por flujo.
+- [ ] Fases 2–4 del plan: consistencia UI (modales/errores/vocabulario), identidad visual, táctil/responsive.
 - [ ] Crear skills a medida con `skill-creator`: `auditor-pos`, `revision-ui`, `capturas-release`.
 - [ ] Integrar `prototype/ui-responsive` en `feat/nucleo-pos-v1` cuando el prototipo de UI esté estable.
 - [ ] Retomar la propuesta KDS v2 (`propuestas/cocina-kds-v2.html`) como base para el módulo de pantalla de cocina.
