@@ -2,12 +2,23 @@ import type Database from "better-sqlite3";
 import { versionEfectivaOrden } from "../ordenes/ordenes.ts";
 import { obtenerCuenta } from "./cuentas.ts";
 
+/**
+ * El importe de una línea es siempre un entero de centavos. La cantidad es REAL
+ * (piensa en kg) y multiplicarla por el precio entero puede dar fracciones de
+ * centavo: sumadas en crudo, el ticket imprime `329.66999...` y caja no cuadra.
+ * El redondeo va por línea, no sobre el total, para que cada renglón impreso
+ * coincida con lo que se suma.
+ */
+export function totalLineaCentavos(cantidad: number, precioCentavos: number): number {
+  return Math.round(cantidad * precioCentavos);
+}
+
 export function totalEfectivoCuenta(db: Database.Database, cuentaId: number): number {
   const ordenes = db.prepare("SELECT id FROM ordenes WHERE cuenta_id = ?").all(cuentaId) as { id: number }[];
   let total = 0;
   for (const orden of ordenes) {
     for (const linea of versionEfectivaOrden(db, orden.id)) {
-      if (linea.cantidad > 0) total += linea.cantidad * linea.precioCentavos;
+      if (linea.cantidad > 0) total += totalLineaCentavos(linea.cantidad, linea.precioCentavos);
     }
   }
   return total;
@@ -90,7 +101,7 @@ export function snapshotCuenta(db: Database.Database, cuentaId: number): Snapsho
         precioCentavos: linea.precioCentavos,
         nota: linea.nota,
       });
-      totalCentavos += linea.cantidad * linea.precioCentavos;
+      totalCentavos += totalLineaCentavos(linea.cantidad, linea.precioCentavos);
     }
     if (lineas.length === 0) continue;
     ordenes.push({ numero: orden.numero, indicaciones: orden.indicaciones, lineas });
