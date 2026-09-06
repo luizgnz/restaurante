@@ -1,0 +1,14 @@
+{
+  "updatedAt": "2026-08-29T17:00:43.441Z",
+  "commit": "66cf284",
+  "count": 7,
+  "shots": [
+    "01-mesas-salon",
+    "02-mesas-ultimos",
+    "03-mesas-atrasados",
+    "04-vista-cocina",
+    "05-inventario",
+    "06-cuenta",
+    "07-menu"
+  ]
+}
