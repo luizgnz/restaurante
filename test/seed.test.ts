@@ -27,9 +27,11 @@ describe("seed carta", () => {
     const seleccionMenu = validarSelecciones(db, ids.menuDia, [
       { slotPosicion: 1, varianteId: proteina.variantes.find((item) => item.nombre === "Pollo")!.id },
       { slotPosicion: 2, varianteId: carbohidrato.variantes.find((item) => item.nombre === "Arroz")!.id },
+      { slotPosicion: 3, varianteId: carbohidrato.variantes.find((item) => item.nombre === "Papas fritas")!.id },
       { slotPosicion: 3, varianteId: ensalada.variantes.find((item) => item.nombre === "Ensalada rusa")!.id },
     ]);
-    expect(seleccionMenu).toHaveLength(3);
+    expect(seleccionMenu).toHaveLength(4);
+    expect(seleccionMenu.every((seleccion) => !seleccion.esExtra)).toBe(true);
 
     const tipoExtra = grupos.find((grupo) => grupo.nombre === "Tipo de extra")!;
     const extraPollo = validarSelecciones(db, ids.extra, [

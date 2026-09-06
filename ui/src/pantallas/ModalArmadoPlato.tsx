@@ -20,6 +20,9 @@ export type VarianteArmadoUi = {
 
 export type SeleccionArmado = { slotPosicion: number; varianteId: number };
 
+export type EleccionPorGrupo = Record<number, number | undefined>;
+export type EleccionPorSlot = Record<number, EleccionPorGrupo | undefined>;
+
 type Props = {
   productoNombre: string;
   slots: SlotArmadoUi[];
@@ -32,11 +35,67 @@ function precio(cantidad: number): string {
   return `$${cantidad}`;
 }
 
+/** Grupos del slot que tienen variantes activas: son los que exigen una elección. */
+export function gruposRequeridos(slot: SlotArmadoUi, variantes: VarianteArmadoUi[]): Array<{ id: number; nombre: string }> {
+  const conVariantes = new Set(variantes.map((variante) => variante.grupoId));
+  return slot.grupos.filter((grupo) => conVariantes.has(grupo.id));
+}
+
+export function armadoCompleto(slots: SlotArmadoUi[], variantes: VarianteArmadoUi[], elegidas: EleccionPorSlot): boolean {
+  return slots.every((slot) =>
+    gruposRequeridos(slot, variantes).every((grupo) => elegidas[slot.posicion]?.[grupo.id] !== undefined),
+  );
+}
+
+/** Construye el payload de selecciones (una por grupo + extras) o null si falta algo. */
+export function construirSelecciones(
+  slots: SlotArmadoUi[],
+  variantes: VarianteArmadoUi[],
+  elegidas: EleccionPorSlot,
+  extras: SeleccionArmado[],
+): SeleccionArmado[] | null {
+  if (!armadoCompleto(slots, variantes, elegidas)) return null;
+  const selecciones: SeleccionArmado[] = [];
+  for (const slot of slots) {
+    for (const grupo of gruposRequeridos(slot, variantes)) {
+      const varianteId = elegidas[slot.posicion]?.[grupo.id];
+      if (varianteId === undefined) return null;
+      selecciones.push({ slotPosicion: slot.posicion, varianteId });
+    }
+    for (const extra of extras.filter((item) => item.slotPosicion === slot.posicion)) {
+      selecciones.push(extra);
+    }
+  }
+  return selecciones;
+}
+
+export function resumenArmado(
+  slots: SlotArmadoUi[],
+  variantes: VarianteArmadoUi[],
+  elegidas: EleccionPorSlot,
+  extras: SeleccionArmado[],
+): string | null {
+  if (!armadoCompleto(slots, variantes, elegidas)) return null;
+  const nombreVariante = (varianteId: number): string =>
+    variantes.find((variante) => variante.id === varianteId)?.nombre ?? "?";
+  const partes: string[] = [];
+  for (const slot of slots) {
+    const delSlot = gruposRequeridos(slot, variantes)
+      .map((grupo) => elegidas[slot.posicion]?.[grupo.id])
+      .filter((varianteId): varianteId is number => varianteId !== undefined)
+      .map(nombreVariante);
+    if (delSlot.length === 0) return null;
+    partes.push(delSlot.join(" + "));
+  }
+  for (const extra of extras) partes.push(`+ Extra ${nombreVariante(extra.varianteId)}`);
+  return partes.join(" · ");
+}
+
 export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar, onCancelar }: Props) {
-  const [elegidas, setElegidas] = useState<Record<number, number | undefined>>({});
+  const [elegidas, setElegidas] = useState<EleccionPorSlot>({});
   const [extras, setExtras] = useState<SeleccionArmado[]>([]);
 
-  const completos = slots.every((slot) => elegidas[slot.posicion] !== undefined);
+  const completo = armadoCompleto(slots, variantes, elegidas);
 
   function variantesDe(slot: SlotArmadoUi): VarianteArmadoUi[] {
     const grupos = new Set(slot.grupos.map((grupo) => grupo.id));
@@ -48,20 +107,22 @@ export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar
   }
 
   function confirmar() {
-    if (!completos) return;
-    const selecciones: SeleccionArmado[] = [];
-    for (const slot of slots) {
-      const elegida = elegidas[slot.posicion];
-      if (elegida === undefined) return;
-      selecciones.push({ slotPosicion: slot.posicion, varianteId: elegida });
-      for (const extra of extras.filter((item) => item.slotPosicion === slot.posicion)) {
-        selecciones.push(extra);
-      }
-    }
-    const partes = slots.map((slot) => nombreVariante(elegidas[slot.posicion]!));
-    for (const extra of extras) partes.push(`+ Extra ${nombreVariante(extra.varianteId)}`);
-    onConfirmar(selecciones, partes.join(" · "));
+    const selecciones = construirSelecciones(slots, variantes, elegidas, extras);
+    const resumen = resumenArmado(slots, variantes, elegidas, extras);
+    if (selecciones === null || resumen === null) return;
+    onConfirmar(selecciones, resumen);
   }
+
+  function elegirVariante(slot: SlotArmadoUi, grupoId: number, varianteId: number) {
+    setElegidas({ ...elegidas, [slot.posicion]: { ...(elegidas[slot.posicion] ?? {}), [grupoId]: varianteId } });
+  }
+
+  const gruposTotales = slots.reduce((total, slot) => total + gruposRequeridos(slot, variantes).length, 0);
+  const gruposElegidos = slots.reduce(
+    (total, slot) =>
+      total + gruposRequeridos(slot, variantes).filter((grupo) => elegidas[slot.posicion]?.[grupo.id] !== undefined).length,
+    0,
+  );
 
   return (
     <div
@@ -85,14 +146,16 @@ export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar
           </Button>
         </header>
         <div className="armado-plato__progreso" aria-label="Progreso del armado">
-          <span>{Object.values(elegidas).filter((valor) => valor !== undefined).length} de {slots.length} selecciones</span>
-          <div><i style={{ width: `${slots.length ? (Object.values(elegidas).filter((valor) => valor !== undefined).length / slots.length) * 100 : 0}%` }} /></div>
+          <span>{gruposElegidos} de {gruposTotales} selecciones</span>
+          <div><i style={{ width: `${gruposTotales ? (gruposElegidos / gruposTotales) * 100 : 0}%` }} /></div>
         </div>
         {slots.map((slot) => {
           const gruposDistintos = slot.grupos.length > 1;
+          const requeridos = gruposRequeridos(slot, variantes);
+          const slotCompleto = requeridos.every((grupo) => elegidas[slot.posicion]?.[grupo.id] !== undefined);
           return (
             <fieldset className="armado-plato__slot" key={slot.posicion}>
-              <legend><span>{slot.posicion}</span>{slot.nombre}{elegidas[slot.posicion] ? <Check size={18} aria-hidden="true" /> : null}</legend>
+              <legend><span>{slot.posicion}</span>{slot.nombre}{slotCompleto ? <Check size={18} aria-hidden="true" /> : null}</legend>
               {slot.grupos.map((grupo) => {
                 const delGrupo = variantesDe(slot).filter((variante) => variante.grupoId === grupo.id);
                 if (delGrupo.length === 0) return null;
@@ -101,7 +164,7 @@ export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar
                     {gruposDistintos ? <p className="armado-plato__grupo">{grupo.nombre}</p> : null}
                     <div className="armado-plato__variantes">
                       {delGrupo.map((variante) => {
-                        const elegida = elegidas[slot.posicion] === variante.id;
+                        const elegida = elegidas[slot.posicion]?.[grupo.id] === variante.id;
                         return (
                           <Button
                             type="button"
@@ -109,7 +172,7 @@ export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar
                             key={variante.id}
                             className={`tactil${elegida ? " is-on" : ""}`}
                             aria-pressed={elegida}
-                            onClick={() => setElegidas({ ...elegidas, [slot.posicion]: variante.id })}
+                            onClick={() => elegirVariante(slot, grupo.id, variante.id)}
                           >
                             {variante.nombre}
                             {variante.suplementoCentavos > 0 ? (
@@ -165,7 +228,7 @@ export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar
           <Button type="button" variant="outline" onClick={onCancelar}>
             Cancelar
           </Button>
-          <Button type="button" size="lg" disabled={!completos} onClick={confirmar}>
+          <Button type="button" size="lg" disabled={!completo} onClick={confirmar}>
             <Check size={19} aria-hidden="true" /> Agregar a la orden
           </Button>
         </div>

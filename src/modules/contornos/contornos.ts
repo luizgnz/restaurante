@@ -188,29 +188,49 @@ export function validarSelecciones(
       throw new ContornoError("contornos_incompletos", `Falta elegir ${slot.nombre}`);
     }
     const gruposPermitidos = new Set(slot.grupos.map((grupo) => grupo.id));
-    delSlot.forEach((seleccion, indice) => {
+    // Un slot con varios grupos exige una elección por grupo; las repeticiones
+    // dentro del mismo grupo son extras (se cobran como tal si el slot lo permite).
+    const porGrupo = new Map<number, VarianteRow[]>();
+    delSlot.forEach((seleccion) => {
       const variante = varianteStmt.get(seleccion.varianteId) as VarianteRow | undefined;
       if (!variante) throw new ContornoError("variante_inexistente", "Variante inexistente");
       if (!gruposPermitidos.has(variante.grupo_id)) {
         throw new ContornoError("variante_no_permitida", `${variante.nombre} no es una opción de ${slot.nombre}`);
       }
-      const esExtra = indice > 0;
-      if (esExtra && !slot.permiteExtra) {
-        throw new ContornoError("extra_no_permitido", `${slot.nombre} no permite extras`);
-      }
-      if (esExtra && variante.extra_centavos <= 0) {
-        throw new ContornoError("extra_no_permitido", `${variante.nombre} no tiene precio de extra configurado`);
-      }
-      salida.push({
-        slotPosicion: slot.posicion,
-        slotNombre: slot.nombre,
-        varianteId: variante.id,
-        varianteNombre: variante.nombre,
-        precioCentavos: esExtra ? variante.extra_centavos : variante.suplemento_centavos,
-        esExtra,
-        ordenExtra: indice,
-      });
+      const lista = porGrupo.get(variante.grupo_id) ?? [];
+      lista.push(variante);
+      porGrupo.set(variante.grupo_id, lista);
     });
+    let ordenExtraSlot = 0;
+    for (const grupo of slot.grupos) {
+      const delGrupo = porGrupo.get(grupo.id) ?? [];
+      delGrupo.forEach((variante, indice) => {
+        const esExtra = indice > 0;
+        if (esExtra && !slot.permiteExtra) {
+          throw new ContornoError("extra_no_permitido", `${slot.nombre} no permite extras`);
+        }
+        if (esExtra && variante.extra_centavos <= 0) {
+          throw new ContornoError("extra_no_permitido", `${variante.nombre} no tiene precio de extra configurado`);
+        }
+        salida.push({
+          slotPosicion: slot.posicion,
+          slotNombre: slot.nombre,
+          varianteId: variante.id,
+          varianteNombre: variante.nombre,
+          precioCentavos: esExtra ? variante.extra_centavos : variante.suplemento_centavos,
+          esExtra,
+          ordenExtra: esExtra ? ++ordenExtraSlot : 0,
+        });
+      });
+    }
+    for (const grupo of slot.grupos) {
+      if ((porGrupo.get(grupo.id)?.length ?? 0) > 0) continue;
+      // Sin elección y con variantes activas: el plato quedó incompleto. Si el
+      // grupo no tiene variantes activas no se lo puede exigir.
+      if (variantesActivasDeGrupo(db, grupo.id) > 0) {
+        throw new ContornoError("contornos_incompletos", `Falta elegir una opción de ${grupo.nombre} en ${slot.nombre}`);
+      }
+    }
   }
   for (const seleccion of selecciones) {
     if (!slots.some((slot) => slot.posicion === seleccion.slotPosicion)) {
@@ -218,4 +238,11 @@ export function validarSelecciones(
     }
   }
   return salida;
+}
+
+function variantesActivasDeGrupo(db: Database.Database, grupoId: number): number {
+  const fila = db
+    .prepare("SELECT count(*) AS c FROM contorno_variantes WHERE grupo_id = ? AND activo = 1")
+    .get(grupoId) as { c: number };
+  return fila.c;
 }
