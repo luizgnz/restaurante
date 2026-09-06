@@ -9,7 +9,7 @@ import { Select } from "@/components/ui/select.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { etiquetaEtapa, tonoEtapa } from "../lib/estados.ts";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
-import { esperaMinutos, nivelEspera } from "../../../src/modules/tiempo.ts";
+import { esperaMinutos, nivelEspera, textoEspera } from "../../../src/modules/tiempo.ts";
 
 export type IncidenciaCocinaUi = {
   id: number;
@@ -200,7 +200,7 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onR
           return (
             <Card className={`tarjeta cocina-tarjeta espera-${nivel}${entregada ? " is-entregada" : ""}`} key={tarjeta.id}>
               <header className="cocina-tarjeta__cabecera">
-                <div><strong>{tarjeta.referencia}</strong><span>Mesero: {tarjeta.mesero}</span><span className={`cocina-tarjeta__espera espera-${nivel}`}>{entregada ? "Entregada" : `${espera} min`}</span></div>
+                <div><strong>{tarjeta.referencia}</strong><span>Mesero: {tarjeta.mesero}</span><span className={`cocina-tarjeta__espera espera-${nivel}`}>{entregada ? "Entregada" : textoEspera(espera)}</span></div>
                 <Badge variant={tarjeta.tipo === "orden" ? "secondary" : "warning"}>
                   {tarjeta.tipo === "orden" ? "Pedido" : tarjeta.tipo === "anulacion" ? "Anulación" : "Cambio"}
                 </Badge>

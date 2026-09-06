@@ -9,6 +9,16 @@ export function esperaMinutos(desdeIso: string, ahoraMs = Date.now()): number {
   return Math.max(0, Math.floor((ahoraMs - Date.parse(desdeIso)) / 60000));
 }
 
+/** Espera en texto humano: días, horas o minutos según la magnitud. */
+export function textoEspera(min: number): string {
+  if (min >= 1440) {
+    const dias = Math.round(min / 1440);
+    return `${dias} ${dias === 1 ? "día" : "días"}`;
+  }
+  if (min >= 60) return `${Math.round(min / 60)} h`;
+  return `${min} min`;
+}
+
 export function nivelEspera(min: number): NivelEspera {
   if (min >= 25) return "critico";
   if (min >= 15) return "alto";

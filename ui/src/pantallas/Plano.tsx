@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { interpretarTecla } from "../../../src/modules/salon/teclado.ts";
 import type { NivelEspera } from "../../../src/modules/tiempo.ts";
+import { textoEspera } from "../../../src/modules/tiempo.ts";
 import { Clock3, Plus, ReceiptText, Search, Table2, Timer } from "lucide-react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -158,7 +159,10 @@ export function Plano({
 
   const listaPisos = pisos && pisos.length > 0 ? pisos : [{ id: pisoId ?? 0, nombre: piso }];
   const mesasDelPiso = mesas.filter((m) => pisoId == null || m.piso_id == null || m.piso_id === pisoId);
-  const atrasada = (mesa: Mesa) => esperaPorMesa[mesa.id]?.nivel === "alto";
+  const atrasada = (mesa: Mesa) => {
+    const nivel = esperaPorMesa[mesa.id]?.nivel;
+    return nivel === "alto" || nivel === "critico";
+  };
   const libres = mesasDelPiso.filter((mesa) => mesa.estado === "libre").length;
   const ocupadas = mesasDelPiso.length - libres;
   const enPrecuenta = mesasDelPiso.filter((mesa) => mesa.estado === "precuenta").length;
@@ -314,7 +318,7 @@ export function Plano({
             >
               {etiquetaMesa(m.estado)}
             </Badge>
-            {atrasada(m) ? <span className="mesa-odoo__atraso">{esperaPorMesa[m.id]?.espera} min</span> : null}
+            {atrasada(m) ? <span className="mesa-odoo__atraso">{textoEspera(esperaPorMesa[m.id]?.espera ?? 0)}</span> : null}
             <span className="mesa-odoo__asientos">{m.asientos} asientos</span>
           </Button>
           ))

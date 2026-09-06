@@ -4633,3 +4633,5 @@ button.icono:focus-visible {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+.cocina-tarjeta.espera-critico::before { background: color-mix(in oklab, var(--destructive) 70%, black); }
+.cocina-tarjeta__espera.espera-critico { background: var(--destructive); color: #fff; }
