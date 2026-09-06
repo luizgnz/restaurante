@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
+import { etiquetaCuenta, etiquetaOrden, tonoCuenta, tonoOrden } from "../lib/estados.ts";
 
 export type LineaOrdenUi = {
   lineaClave: string;
@@ -77,8 +78,8 @@ export function CuentaMesa({
           <span className="cuenta-mesa__eyebrow">Servicio en curso</span>
           <h1>Cuenta de mesa #{cuenta.mesa.numero}</h1>
           <div className="cuenta-mesa__resumen">
-            <Badge variant={cuenta.estado === "precuenta_emitida" ? "warning" : "success"}>
-              {cuenta.estado.replaceAll("_", " ")}
+            <Badge variant={tonoCuenta(cuenta.estado)}>
+              {etiquetaCuenta(cuenta.estado)}
             </Badge>
             <strong>Total {dinero(cuenta.totalCentavos)}</strong>
           </div>
@@ -96,8 +97,8 @@ export function CuentaMesa({
             <header className="cuenta-orden__cabecera">
               <div>
                 <h2>Orden #{orden.numero}</h2>
-                <Badge variant={orden.estado === "anulada" ? "danger" : orden.estado === "corregida" ? "warning" : "default"}>
-                  {orden.estado}
+                <Badge variant={tonoOrden(orden.estado)}>
+                  {etiquetaOrden(orden.estado)}
                 </Badge>
               </div>
               {aceptaConsumo && orden.estado !== "anulada" ? (

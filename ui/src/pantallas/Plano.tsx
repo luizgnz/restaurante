@@ -5,6 +5,7 @@ import { Clock3, Plus, Search, Table2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
+import { etiquetaMesa, tonoMesa } from "../lib/estados.ts";
 
 export type Mesa = {
   id: number;
@@ -63,14 +64,6 @@ type Props = {
   onOrdenes?: () => void;
 };
 
-
-const ETIQUETA: Record<string, string> = {
-  libre: "Libre",
-  ocupada: "Ocupada",
-  en_cocina: "En pedido",
-  precuenta: "Precuenta",
-  en_caja: "En caja",
-};
 
 export function Plano({
   piso,
@@ -292,9 +285,9 @@ export function Plano({
             <span className="mesa-odoo__num">Mesa {m.numero}</span>
             <Badge
               className="mesa-odoo__meta"
-              variant={m.estado === "libre" ? "success" : m.estado === "precuenta" ? "warning" : "default"}
+              variant={tonoMesa(m.estado)}
             >
-              {ETIQUETA[m.estado] ?? m.estado}
+              {etiquetaMesa(m.estado)}
             </Badge>
             <span className="mesa-odoo__asientos">{m.asientos} asientos</span>
           </Button>

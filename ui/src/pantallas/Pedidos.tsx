@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import type { IncidenciaCocinaUi } from "./Kds.tsx";
+import { etiquetaCuenta, tonoCuenta } from "../lib/estados.ts";
 
 export type LineaCuentaUi = {
   lineaClave: string;
@@ -31,11 +32,6 @@ export type CuentaEnCursoUi = {
     numero: number;
     lineas: LineaCuentaUi[];
   }[];
-};
-
-const ESTADO: Record<string, string> = {
-  abierta: "En pedido",
-  precuenta_emitida: "Precuenta emitida",
 };
 
 type Props = {
@@ -133,7 +129,7 @@ export function Pedidos({
         {cuentas.map((cuenta) => (
           <Card className="tarjeta pedido-card" key={cuenta.id}>
             <div className="pedido-cabecera">
-              <span className="pedido-card__mesa"><strong>Mesa {cuenta.mesa}</strong><Badge variant="warning">{ESTADO[cuenta.estado] ?? cuenta.estado}</Badge></span>
+              <span className="pedido-card__mesa"><strong>Mesa {cuenta.mesa}</strong><Badge variant={tonoCuenta(cuenta.estado)}>{etiquetaCuenta(cuenta.estado)}</Badge></span>
               <span className="pedido-card__meta"><Clock3 size={15} aria-hidden="true" /> {cuenta.mesero} · {cuenta.hace}</span>
             </div>
             <div className="pedido-card__ordenes">

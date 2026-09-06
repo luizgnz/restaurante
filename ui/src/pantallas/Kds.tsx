@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
 import { Select } from "@/components/ui/select.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
+import { etiquetaEtapa, tonoEtapa } from "../lib/estados.ts";
 
 export type IncidenciaCocinaUi = {
   id: number;
@@ -76,23 +77,6 @@ type ModalIncidencia = {
 function cantidad(linea: LineaKdsUi): string {
   if (linea.delta == null) return `${linea.cantidad}`;
   return `${linea.delta > 0 ? "+" : ""}${linea.delta}`;
-}
-
-function etiquetaEtapa(etapa: string): string {
-  if (etapa === "por_preparar") return "Enviado a cocina";
-  if (etapa === "en_proceso") return "En preparación";
-  if (etapa === "listo") return "Listo para entregar";
-  if (etapa === "servido") return "Entregado";
-  if (etapa === "cancelado") return "Cancelado";
-  if (etapa === "aviso") return "Aviso";
-  return etapa;
-}
-
-function varianteEtapa(etapa: string): "secondary" | "warning" | "success" | "danger" {
-  if (etapa === "por_preparar") return "secondary";
-  if (etapa === "en_proceso") return "warning";
-  if (etapa === "listo" || etapa === "servido") return "success";
-  return "danger";
 }
 
 export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar, productos = [] }: Props) {
@@ -202,7 +186,7 @@ export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar, p
                     <article className={`cocina-linea etapa-${linea.etapa}`} key={linea.id}>
                       <div className="cocina-linea__principal">
                         <strong>{cantidad(linea)} × {linea.nombre}</strong>
-                        <Badge variant={varianteEtapa(linea.etapa)}>{etiquetaEtapa(linea.etapa)}</Badge>
+                        <Badge variant={tonoEtapa(linea.etapa)}>{etiquetaEtapa(linea.etapa)}</Badge>
                       </div>
                       {linea.nota ? <p className="cocina-linea__nota">Nota: {linea.nota}</p> : null}
                       {(linea.contornos ?? []).length > 0 ? <div className="kds-contornos">{linea.contornos!.map((contorno) => <em key={contorno}>{contorno}</em>)}</div> : null}
