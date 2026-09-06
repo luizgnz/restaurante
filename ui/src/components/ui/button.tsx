@@ -20,6 +20,7 @@ const buttonVariants = cva(
         ghost: "bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         success: "bg-success text-success-foreground hover:bg-success/90",
+        brand: "bg-[var(--brand)] text-[var(--brand-foreground)] hover:brightness-95",
       },
       size: {
         default: "h-[var(--control-h)]",

@@ -181,8 +181,7 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onR
             {ocultarEntregadas ? `Mostrar entregadas (${entregadas.length})` : `Ocultar entregadas (${entregadas.length})`}
           </Button>
         </div>
-      ) : null}
-      <div className="kds cocina-grid">
+      ) : null}      <div className="kds cocina-grid">
         {cargando && tarjetas.length === 0 ? (
           <div className="flex flex-wrap gap-4" aria-hidden="true">
             {Array.from({ length: 3 }, (_, i) => (
@@ -222,8 +221,8 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onR
                       {incidencia && incidencia !== incidenciaOrden ? <AvisoIncidencia incidencia={incidencia} /> : null}
                       {!linea.esAviso ? (
                         <div className="cocina-linea__acciones">
-                          {linea.etapa === "por_preparar" && !pendiente ? <Button type="button" size="sm" className="cocina-accion is-start" aria-label="Comenzar preparación" title="Comenzar preparación" onClick={() => onCambiarEtapa(linea.id, "en_proceso")}><Play size={18} aria-hidden="true" /><span className="cocina-accion-texto">Comenzar</span></Button> : null}
-                          {linea.etapa === "en_proceso" ? <Button type="button" size="sm" className="cocina-accion is-ready" aria-label="Marcar listo" title="Marcar listo" onClick={() => onCambiarEtapa(linea.id, "listo")}><CheckCheck size={18} aria-hidden="true" /><span className="cocina-accion-texto">Listo</span></Button> : null}
+                          {linea.etapa === "por_preparar" && !pendiente ? <Button type="button" size="sm" variant="brand" aria-label="Comenzar preparación" title="Comenzar preparación" onClick={() => onCambiarEtapa(linea.id, "en_proceso")}><Play size={18} aria-hidden="true" /><span className="max-[1099px]:hidden">Comenzar</span></Button> : null}
+                          {linea.etapa === "en_proceso" ? <Button type="button" size="sm" variant="success" aria-label="Marcar listo" title="Marcar listo" onClick={() => onCambiarEtapa(linea.id, "listo")}><CheckCheck size={18} aria-hidden="true" /><span className="max-[1099px]:hidden">Listo</span></Button> : null}
                           {tarjeta.tipo === "orden" && linea.etapa === "por_preparar" && !pendiente ? (
                             <>
                               <Button type="button" size="icon" className="cocina-accion-icono is-suggest" variant="outline" aria-label="Sugerir cambio" title="Sugerir cambio" onClick={() => abrirModal(tarjeta, "sugerencia", linea)}><ArrowRightLeft size={19} aria-hidden="true" /></Button>

@@ -299,15 +299,6 @@ button.icono {
   width: 100%;
   font-size: 0.9rem;
 }
-.modal-fondo {
-  position: fixed;
-  inset: 0;
-  background: #000a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 40;
-}
 .modal-caja {
   background: #1c1c1c;
   border: 1px solid #333;
@@ -1200,15 +1191,6 @@ main > [role="alert"] {
   font-weight: 750;
 }
 
-.salon-odoo__metricas > div {
-  border-color: var(--border);
-  box-shadow: none;
-}
-
-.salon-odoo__metricas strong {
-  color: var(--primary);
-}
-
 .salon-odoo__pisos {
   border-color: var(--border);
   box-shadow: 0 4px 14px rgb(32 71 60 / 0.04);
@@ -1250,11 +1232,6 @@ main > [role="alert"] {
   color: var(--primary);
 }
 
-.modal-fondo {
-  background: rgb(18 36 30 / 0.52);
-  backdrop-filter: blur(4px);
-}
-
 .modal-caja,
 .armado-plato,
 .correccion-modal {
@@ -1289,15 +1266,6 @@ main > [role="alert"] {
 
   .salon-odoo__resumen h1 {
     font-size: 1.55rem;
-  }
-
-  .salon-odoo__metricas {
-    gap: 0.4rem;
-  }
-
-  .salon-odoo__metricas > div {
-    padding: 0.5rem;
-    border-radius: 0.8rem;
   }
 
   .plano-mapa {
@@ -1505,30 +1473,6 @@ button.icono {
   font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-}
-.salon-odoo__metricas {
-  display: flex;
-  gap: 0.65rem;
-}
-.salon-odoo__metricas > div {
-  display: grid;
-  grid-template-columns: auto auto;
-  align-items: center;
-  gap: 0 0.45rem;
-  min-width: 116px;
-  padding: 0.75rem 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: var(--card);
-  box-shadow: 0 5px 18px rgb(67 48 29 / 0.05);
-}
-.salon-odoo__metricas strong {
-  font-size: 1.25rem;
-}
-.salon-odoo__metricas span {
-  grid-column: 1 / -1;
-  color: var(--muted-foreground);
-  font-size: 0.78rem;
 }
 .salon-odoo__pisos {
   margin: 0;
@@ -1924,17 +1868,6 @@ button.icono {
   .salon-odoo__resumen p {
     display: none;
   }
-  .salon-odoo__metricas > div {
-    min-width: auto;
-    padding: 0.55rem 0.65rem;
-  }
-  .salon-odoo__metricas svg {
-    display: none;
-  }
-  .salon-odoo__metricas span {
-    display: block;
-    font-size: 0.63rem;
-  }
   .salon-odoo__pisos {
     display: flex;
     flex-wrap: wrap;
@@ -2062,9 +1995,6 @@ button.icono {
     height: 100%;
     border-radius: 0;
     background: rgb(24 20 16 / 0.5);
-  }
-  .modal-fondo {
-    align-items: flex-end;
   }
   .armado-plato {
     width: 100%;
@@ -2204,8 +2134,9 @@ button.icono {
 }
 .cocina-tarjeta__cabecera > div {
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.6rem;
 }
 .cocina-tarjeta__cabecera > div > strong {
   font-size: 1.05rem;
@@ -2264,11 +2195,6 @@ button.icono {
   min-height: 46px;
   padding: 0;
   border-radius: 50%;
-}
-.cocina-accion-icono.is-start,
-.cocina-accion-icono.is-ready {
-  background: var(--success);
-  color: var(--success-foreground);
 }
 .cocina-accion-icono.is-suggest {
   background: var(--card);
@@ -3737,12 +3663,6 @@ button.icono:focus-visible {
 }
 
 .inventario-resumen > div,
-.salon-odoo__metricas > div {
-  border: 1px solid var(--border);
-  background: var(--card);
-  box-shadow: 0 5px 18px rgb(30 67 56 / 0.055);
-}
-
 .backend-odoo__atajos .backend-atajo,
 .pedido-card,
 .settings-nav {
@@ -3760,11 +3680,6 @@ button.icono:focus-visible {
 .settings-card legend,
 .editor-grupo legend {
   color: var(--primary);
-}
-
-.modal-fondo {
-  background: rgb(17 38 32 / 0.52);
-  backdrop-filter: blur(5px);
 }
 
 .modal-caja,
@@ -3842,11 +3757,6 @@ button.icono:focus-visible {
   }
 
   .inventario-resumen > div,
-  .salon-odoo__metricas > div {
-    padding: 0.7rem;
-    border-radius: 0.9rem;
-  }
-
   .plano-mapa {
     gap: 0.65rem;
     padding: 0.65rem;
@@ -3875,6 +3785,7 @@ button.icono:focus-visible {
   .inventario-fila,
   .pedido-card,
   .cocina-tarjeta {
+  position: relative;
     border-radius: 0.95rem;
   }
 
@@ -3894,13 +3805,6 @@ button.icono:focus-visible {
     padding-inline: 0.25rem;
   }
 
-  .salon-odoo__metricas {
-    gap: 0.3rem;
-  }
-
-  .salon-odoo__metricas > div {
-    padding-inline: 0.5rem;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4225,24 +4129,6 @@ button.icono:focus-visible {
 .ui-v2 .constructor-orden__cabecera .constructor-orden__eyebrow {
   display: none;
 }
-.ui-v2 .salon-odoo__metricas {
-  gap: 0.4rem;
-}
-.ui-v2 .salon-odoo__metricas > div {
-  display: flex;
-  min-width: auto;
-  gap: 0.35rem;
-  padding: 0.45rem 0.65rem;
-  border-radius: var(--radius);
-  box-shadow: none;
-}
-.ui-v2 .salon-odoo__metricas strong {
-  font-size: 1rem;
-}
-.ui-v2 .salon-odoo__metricas span {
-  grid-column: auto;
-  font-size: 0.75rem;
-}
 .ui-v2 .salon-odoo__pisos {
   padding: 0.35rem;
   border-radius: var(--radius);
@@ -4542,8 +4428,55 @@ button.icono:focus-visible {
   }
 }
 
+/* Cocina operable (3.4, consolidado en familia): franja de espera por
+   tiempo, chip de espera y tarjetas entregadas atenuadas. */
+.cocina-tarjeta::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 5px;
+  border-top-left-radius: inherit;
+  border-bottom-left-radius: inherit;
+  background: var(--success);
+}
+.cocina-tarjeta.espera-medio::before { background: var(--warning); }
+.cocina-tarjeta.espera-alto::before { background: var(--destructive); }
+.cocina-tarjeta.espera-critico::before { background: color-mix(in oklab, var(--destructive) 70%, black); }
+.cocina-tarjeta.is-entregada { opacity: 0.55; }
+.cocina-tarjeta__espera {
+  margin-left: auto;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--success-soft);
+  color: var(--success);
+}
+.cocina-tarjeta__espera.espera-medio { background: var(--warning-soft); color: var(--warning); }
+.cocina-tarjeta__espera.espera-alto { background: var(--destructive-soft); color: var(--destructive); }
+.cocina-tarjeta__espera.espera-critico { background: var(--destructive); color: #fff; }
+
+/* Salón con semáforo (3.3, consolidado en familia): mesa atrasada. */
+.mesa-odoo--atrasada {
+  border: 2px solid color-mix(in oklab, var(--destructive) 60%, transparent);
+  box-shadow: 0 0 0 4px var(--destructive-soft);
+}
+.mesa-odoo--atrasada .mesa-odoo__num { color: var(--destructive); }
+.mesa-odoo__atraso {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--destructive-soft);
+  color: var(--destructive);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
+/* Resumen de orden y precios de línea (1.2, consolidado). */
 .constructor-orden__total {
   display: flex;
   align-items: baseline;
@@ -4564,74 +4497,5 @@ button.icono:focus-visible {
   display: block;
   margin-top: 2px;
 }
-
-/* KDS operable (fase 3.4): franja de espera por tiempo, espera numérica,
-   acciones primarias etiquetadas y cola de entregadas ocultable. */
-.cocina-tarjeta { position: relative; }
-.cocina-tarjeta::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 5px;
-  border-top-left-radius: inherit;
-  border-bottom-left-radius: inherit;
-  background: var(--success);
-}
-.cocina-tarjeta.espera-medio::before { background: var(--warning); }
-.cocina-tarjeta.espera-alto::before { background: var(--destructive); }
-.cocina-tarjeta.is-entregada { opacity: 0.55; }
-
-.cocina-tarjeta__cabecera > div { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-.cocina-tarjeta__espera {
-  margin-left: auto;
-  padding: 0.1rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  background: var(--success-soft);
-  color: var(--success);
-}
-.cocina-tarjeta__espera.espera-medio { background: var(--warning-soft); color: var(--warning); }
-.cocina-tarjeta__espera.espera-alto { background: var(--destructive-soft); color: var(--destructive); }
-
 .cocina-entregadas { display: flex; justify-content: flex-end; margin-bottom: 0.75rem; }
-
-.cocina-accion { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600; }
-.cocina-accion.is-start { background: var(--brand); color: var(--brand-foreground); border-color: transparent; }
-.cocina-accion.is-start:hover { background: color-mix(in oklab, var(--brand) 86%, black); }
-.cocina-accion.is-ready { background: var(--success); color: #fff; border-color: transparent; }
-.cocina-accion.is-ready:hover { background: color-mix(in oklab, var(--success) 86%, black); }
-@media (max-width: 1099px) {
-  .cocina-accion { padding-inline: 0; justify-content: center; }
-  .cocina-accion .cocina-accion-texto { display: none; }
 }
-
-/* Salón con semáforo real (fase 3.3): mesa atrasada en rojo suave y
-   resumen del salón clicable que filtra. */
-.salon-odoo__metricas { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.salon-odoo__metricas .button, .salon-odoo__metricas button { display: inline-flex; align-items: center; gap: 0.4rem; }
-.salon-odoo__metricas button.is-on.espera-alto {
-  border-color: var(--destructive);
-  color: var(--destructive);
-  background: var(--destructive-soft);
-}
-.mesa-odoo--atrasada {
-  border: 2px solid color-mix(in oklab, var(--destructive) 60%, transparent);
-  box-shadow: 0 0 0 4px var(--destructive-soft);
-}
-.mesa-odoo--atrasada .mesa-odoo__num { color: var(--destructive); }
-.mesa-odoo__atraso {
-  display: inline-block;
-  padding: 0.05rem 0.45rem;
-  border-radius: 999px;
-  background: var(--destructive-soft);
-  color: var(--destructive);
-  font-size: 0.75rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.cocina-tarjeta.espera-critico::before { background: color-mix(in oklab, var(--destructive) 70%, black); }
-.cocina-tarjeta__espera.espera-critico { background: var(--destructive); color: #fff; }

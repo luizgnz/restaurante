@@ -183,11 +183,11 @@ export function Plano({
           <h1>{piso}</h1>
           <p>Selecciona una mesa para comenzar o continuar el servicio.</p>
         </div>
-        <div className="salon-odoo__metricas" aria-label="Resumen del salón, toca para filtrar">
-          <Button type="button" size="sm" variant={filtro === "libres" ? "secondary" : "outline"} aria-pressed={filtro === "libres"} className={filtro === "libres" ? "is-on" : ""} onClick={() => setFiltro(filtro === "libres" ? "todas" : "libres")}><Table2 size={17} aria-hidden="true" /><strong>{libres}</strong><span>libres</span></Button>
-          <Button type="button" size="sm" variant={filtro === "servicio" ? "secondary" : "outline"} aria-pressed={filtro === "servicio"} className={filtro === "servicio" ? "is-on" : ""} onClick={() => setFiltro(filtro === "servicio" ? "todas" : "servicio")}><Clock3 size={17} aria-hidden="true" /><strong>{ocupadas}</strong><span>en servicio</span></Button>
-          <Button type="button" size="sm" variant={filtro === "precuenta" ? "secondary" : "outline"} aria-pressed={filtro === "precuenta"} className={filtro === "precuenta" ? "is-on" : ""} onClick={() => setFiltro(filtro === "precuenta" ? "todas" : "precuenta")}><ReceiptText size={17} aria-hidden="true" /><strong>{enPrecuenta}</strong><span>precuenta</span></Button>
-          <Button type="button" size="sm" variant={filtro === "atrasadas" ? "secondary" : "outline"} aria-pressed={filtro === "atrasadas"} className={filtro === "atrasadas" ? "is-on espera-alto" : ""} onClick={() => setFiltro(filtro === "atrasadas" ? "todas" : "atrasadas")}><Timer size={17} aria-hidden="true" /><strong>{atrasadas}</strong><span>atrasadas</span></Button>
+        <div className="salon-odoo__metricas flex flex-wrap gap-2" aria-label="Resumen del salón, toca para filtrar">
+          <Button type="button" size="sm" variant={filtro === "libres" ? "secondary" : "outline"} aria-pressed={filtro === "libres"} onClick={() => setFiltro(filtro === "libres" ? "todas" : "libres")}><Table2 size={17} aria-hidden="true" /><strong>{libres}</strong><span>libres</span></Button>
+          <Button type="button" size="sm" variant={filtro === "servicio" ? "secondary" : "outline"} aria-pressed={filtro === "servicio"} onClick={() => setFiltro(filtro === "servicio" ? "todas" : "servicio")}><Clock3 size={17} aria-hidden="true" /><strong>{ocupadas}</strong><span>en servicio</span></Button>
+          <Button type="button" size="sm" variant={filtro === "precuenta" ? "secondary" : "outline"} aria-pressed={filtro === "precuenta"} onClick={() => setFiltro(filtro === "precuenta" ? "todas" : "precuenta")}><ReceiptText size={17} aria-hidden="true" /><strong>{enPrecuenta}</strong><span>precuenta</span></Button>
+          <Button type="button" size="sm" variant={filtro === "atrasadas" ? "destructive" : "outline"} aria-pressed={filtro === "atrasadas"} onClick={() => setFiltro(filtro === "atrasadas" ? "todas" : "atrasadas")}><Timer size={17} aria-hidden="true" /><strong>{atrasadas}</strong><span>atrasadas</span></Button>
         </div>
       </div>
       <header className="salon-odoo__pisos">
