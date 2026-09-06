@@ -27,6 +27,14 @@ const ORDEN: Record<string, { etiqueta: string; tono: TonoBadge }> = {
   anulada: { etiqueta: "Anulada", tono: "danger" },
 };
 
+/** Etapa agregada de una orden completa (tabla de Órdenes). */
+const ETAPA_ORDEN: Record<string, { etiqueta: string; tono: TonoBadge }> = {
+  enviado: { etiqueta: "Enviado", tono: "secondary" },
+  en_preparacion: { etiqueta: "En preparación", tono: "warning" },
+  listo: { etiqueta: "Listo", tono: "success" },
+  entregado: { etiqueta: "Entregado", tono: "outline" },
+};
+
 const ETAPA: Record<string, { etiqueta: string; tono: TonoBadge }> = {
   por_preparar: { etiqueta: "Enviado a cocina", tono: "secondary" },
   en_proceso: { etiqueta: "En preparación", tono: "warning" },
@@ -57,6 +65,12 @@ export function etiquetaOrden(estado: string): string {
 }
 export function tonoOrden(estado: string): TonoBadge {
   return del(ORDEN, estado).tono;
+}
+export function etiquetaEtapaOrden(etapa: string): string {
+  return del(ETAPA_ORDEN, etapa).etiqueta;
+}
+export function tonoEtapaOrden(etapa: string): TonoBadge {
+  return del(ETAPA_ORDEN, etapa).tono;
 }
 export function etiquetaEtapa(etapa: string): string {
   return del(ETAPA, etapa).etiqueta;

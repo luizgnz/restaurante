@@ -695,6 +695,43 @@ describe("cocina por HTTP", () => {
     expect(inexistente.status).toBe(404);
     e.db.close();
   });
+
+  it("avanza la comanda completa con un solo gesto, sin tocar avisos ni terminales", async () => {
+    const e = await entornoApi();
+    // una orden con dos productos: las dos líneas nacen en por_preparar
+    await crearOrden(e, {
+      claveIdempotencia: "comanda-2-lineas",
+      lineas: [
+        { productoId: e.ids.hamburguesa, cantidad: 1, nota: "sin cebolla" },
+        { productoId: e.ids.jugo, cantidad: 2, nota: "" },
+      ],
+    });
+    const { tarjetas } = (await (await e.app.request("/api/kds")).json()) as {
+      tarjetas: { id: number; tipo: string; lineas: { id: number; etapa: string }[] }[];
+    };
+    const tarjeta = tarjetas.filter((t) => t.tipo === "orden" && t.lineas.length >= 2)[0];
+    expect(tarjeta).toBeTruthy();
+
+    const avanzar = await post(e.app, `/api/kds/comandas/${tarjeta.id}/etapa`, { etapa: "en_proceso" });
+    expect(avanzar.status).toBe(200);
+    expect(await avanzar.json()).toMatchObject({ ok: true, afectadas: 2 });
+
+    // listo avanza las dos; un segundo listo ya no tiene nada y falla
+    const listar = await post(e.app, `/api/kds/comandas/${tarjeta.id}/etapa`, { etapa: "listo" });
+    expect(listar.status).toBe(200);
+    expect(await listar.json()).toMatchObject({ afectadas: 2 });
+    const repetido = await post(e.app, `/api/kds/comandas/${tarjeta.id}/etapa`, { etapa: "listo" });
+    expect(repetido.status).toBe(409);
+    expect(await codigoDe(repetido)).toBe("nada_que_avanzar");
+
+    // "servido" es destino válido pero la comanda ya no tiene líneas por avanzar
+    const servido = await post(e.app, `/api/kds/comandas/${tarjeta.id}/etapa`, { etapa: "servido" });
+    expect(servido.status).toBe(409);
+    expect(await codigoDe(servido)).toBe("nada_que_avanzar");
+    const invalida = await post(e.app, `/api/kds/comandas/${tarjeta.id}/etapa`, { etapa: "inventada" });
+    expect(invalida.status).toBe(400);
+    e.db.close();
+  });
 });
 
 describe("adaptadores legacy", () => {

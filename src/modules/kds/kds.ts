@@ -5,9 +5,9 @@ import { incidenciasDeComanda, type IncidenciaCocina } from "./incidencias.ts";
 export type TipoComanda = "legacy" | "orden" | "correccion" | "anulacion";
 
 export class KdsError extends Error {
-  codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable" | "incidencia_pendiente";
+  codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable" | "incidencia_pendiente" | "nada_que_avanzar";
   constructor(
-    codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable" | "incidencia_pendiente",
+    codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable" | "incidencia_pendiente" | "nada_que_avanzar",
     message: string,
   ) {
     super(message);
@@ -139,6 +139,41 @@ export function avanzarEtapa(db: Database.Database, comandaLineaId: number, etap
     throw new KdsError("incidencia_pendiente", "El mesero debe responder la solicitud antes de preparar");
   }
   db.prepare("UPDATE comanda_lineas SET etapa = ? WHERE id = ?").run(etapa, comandaLineaId);
+}
+
+/**
+ * Avanza TODAS las líneas cocinables de una comanda a la etapa destino, en una
+ * transacción: es el gesto de la pantalla de cocina cuando la orden completa
+ * pasa a "en preparación" o a "lista" — la cocina no avanza producto por
+ * producto. Las líneas en etapa terminal (`servido`, `cancelado`) y los avisos
+ * no se tocan; si alguna línea está bloqueada por una incidencia pendiente, la
+ * comanda entera falla y nada se muta.
+ * Devuelve cuántas líneas avanzó.
+ */
+export function avanzarEtapaDeComanda(db: Database.Database, comandaId: number, etapa: string): number {
+  if (!(ETAPAS_DESTINO as readonly string[]).includes(etapa)) {
+    throw new KdsError("etapa_invalida", `Etapa desconocida: ${etapa}`);
+  }
+  const origenes = etapa === "en_proceso" ? "('por_preparar')" : "('por_preparar','en_proceso')";
+  const filas = db
+    .prepare(
+      `SELECT id, etapa FROM comanda_lineas
+       WHERE comanda_id = ? AND etapa IN ${origenes}
+       ORDER BY id`,
+    )
+    .all(comandaId) as Array<{ id: number; etapa: string }>;
+  if (filas.length === 0) {
+    throw new KdsError("nada_que_avanzar", "La orden no tiene líneas por avanzar");
+  }
+  let afectadas = 0;
+  const avanzar = db.transaction(() => {
+    for (const fila of filas) {
+      avanzarEtapa(db, fila.id, etapa);
+      afectadas += 1;
+    }
+  });
+  avanzar();
+  return afectadas;
 }
 
 /**

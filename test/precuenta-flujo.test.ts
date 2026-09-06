@@ -102,7 +102,7 @@ describe("flujo precuenta en el POS", () => {
       await Promise.resolve();
     });
 
-    expect(contenedor.textContent).toContain("PIN para precuenta");
+    expect(document.body.textContent).toContain("PIN para precuenta");
 
     // Teclear el PIN y confirmar con Enter.
     for (const digito of "2222") {
@@ -119,17 +119,17 @@ describe("flujo precuenta en el POS", () => {
       await Promise.resolve();
     });
 
-    expect(contenedor.textContent).toContain("PRECUENTA");
+    expect(document.body.textContent).toContain("PRECUENTA");
 
     // Cerrarla con Listo.
-    const listo = Array.from(contenedor.querySelectorAll("button")).find((b) => b.textContent?.trim() === "Listo");
+    const listo = Array.from(document.body.querySelectorAll("button")).find((b) => b.textContent?.trim() === "Listo");
     expect(listo).toBeTruthy();
     await act(async () => {
       listo!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
       await Promise.resolve();
     });
 
-    expect(contenedor.textContent).not.toContain("PRECUENTA");
+    expect(document.body.textContent).not.toContain("PRECUENTA");
     root.unmount();
   });
 });
