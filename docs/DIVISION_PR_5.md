@@ -49,11 +49,25 @@ El estado operativo, los errores pendientes y los pasos de relevo están en `doc
 
 Estos resultados no sustituyen una prueba manual de los flujos ni la revisión visual de cada estado intermedio. Las capturas incluidas en el PR de documentación son históricas: no certifican visualmente esta cadena.
 
-## Pendiente conocido: salón móvil
+## Salón móvil: defecto resuelto en la ronda de correcciones
 
-La división conserva el defecto ya observado a 390 px: una regla posterior de `.mesa-odoo` con `position: absolute` prevalece sobre `position: static` del layout móvil, y las mesas se solapan. Eliminar las barras del salón no resuelve esa cascada.
+La división conservaba el defecto ya observado a 390 px: una regla posterior de `.mesa-odoo` con `position: absolute` prevalecía sobre `position: static` del layout móvil, y las mesas se solapaban. Eliminar las barras del salón no resolvía esa cascada.
 
-Esta entrega no introduce una biblioteca de layout, no migra a CSS Modules ni implementa la corrección responsive. Se requiere una corrección focalizada, evaluación del aislamiento de estilos y revisión actual con capturas a 390/768/1280 px antes de dar por aprobada la parte visual. Mantener los PRs afectados en borrador hasta resolver y verificar el problema.
+Quedó resuelto en el PR #9 (`26a9f50`): el salón operativo lleva los modificadores `plano-mapa--operativo`/`mesa-odoo--operativa` (ausentes en `EditarMapa.tsx`), la regla móvil vive al final de `styles.css` con la especificidad del contenedor, y el contrato responsive (plano espacial desde 768 px, grilla de dos columnas por debajo, editor siempre espacial) está documentado en el propio CSS. Verificado con mediciones de rectángulos (0 solapes, 0 desbordes, targets ≥ 44 px) y capturas actuales a 390/768/1280 px en `capturas/2026-09-06_pr9-salon-movil/`. No se añadió ninguna biblioteca de layout.
+
+## Cabezas finales tras la ronda de correcciones (2026-09-06)
+
+| Entrega | Cabeza final | Pruebas | Nota |
+| --- | --- | --- | --- |
+| 1 | `0070f5b` | 451/451 | Sin cambios desde la primera corrección |
+| 2 | `686f192` | 464/464 | Importe del diálogo de cancelar formateado + regresión UI |
+| 3 | `f7a8da4` | 462/462 | Revalidada tras #7 (dos corridas completas) |
+| 4 | `26a9f50` | 464/464 | Salón móvil separado + prueba estructural; incluye `4bca1f5` y `f61a191` |
+| 5 | `9b6fc1b` | 463/463 | Merge con dos conflictos resueltos (listar.ts y styles.css) |
+| 6 | `16bd1bf` | 463/463 | Script de fotos respetando `RESTAURANTE_DATA_DIR` |
+| 7 | ver tabla de `PLAN_MERGE_PRS_6_12.md` | 463/463 | Documentación actualizada con estas cifras |
+
+Las cifras de la tabla «Validación por etapa» más arriba son históricas de las cabezas originales; las vigentes son las de esta tabla.
 
 ## Cómo integrar sin mezclar entregas
 
