@@ -17,17 +17,19 @@ Este documento es el relevo operativo para continuar la revisión y el merge de 
 
 ## Estado confirmado
 
-| PR | Rama y cabeza actual | Base actual | Estado técnico | Bloqueo antes de merge |
-| --- | --- | --- | --- | --- |
-| [#6](https://github.com/luizgnz/restaurante/pull/6) | `codex/pr5-01-correctitud` · `0070f5b` | `feat/nucleo-pos-v1` | Corregido y comentado; 451/451 pruebas y build verdes | Aprobación formal externa (E02) |
-| [#7](https://github.com/luizgnz/restaurante/pull/7) | `codex/pr5-02-dinero-precuentas` · `686f192` | `codex/pr5-01-correctitud` | Importe formateado con `dinero()` y regresión UI; 464/464 pruebas, build y revisión visual a 390 px en verde | Aprobación formal externa (E02) |
-| [#8](https://github.com/luizgnz/restaurante/pull/8) | `codex/pr5-03-consistencia` · `f7a8da4` | `codex/pr5-02-dinero-precuentas` | Revalidado tras #7; 462/462 en dos corridas completas, build y revisión visual en verde | Aprobación formal externa (E02) |
-| [#9](https://github.com/luizgnz/restaurante/pull/9) | `codex/pr5-04-base-visual-salon` · `26a9f50` | `codex/pr5-03-consistencia` | Salón móvil separado del editor y medido (0 solapes a 390 px); 464/464 pruebas, build y revisión visual en verde | Aprobación formal externa (E02) |
-| [#10](https://github.com/luizgnz/restaurante/pull/10) | `codex/pr5-05-cocina-ordenes` · `9b6fc1b` | `codex/pr5-04-base-visual-salon` | Cocina y Órdenes revisados en funcionamiento; 463/463 pruebas, build y revisión visual en verde | Aprobación formal externa (E02) |
-| [#11](https://github.com/luizgnz/restaurante/pull/11) | `codex/pr5-06-marca-demo` · `16bd1bf` | `codex/pr5-05-cocina-ordenes` | Marca, catálogo de 32 productos y 31 fotos revisados; licenses, 463/463 pruebas y build en verde | Aprobación formal externa (E02) |
-| [#12](https://github.com/luizgnz/restaurante/pull/12) | `codex/pr5-07-documentacion` · `88b31ec` | `codex/pr5-06-marca-demo` | Documentación actualizada con los SHAs y cifras de esta ronda; capturas de la ronda integradas | Aprobación formal externa (E02) |
+Tabla histórica de la ronda de correcciones. Desde el 2026-09-06 los siete PR están **MERGED** en `feat/nucleo-pos-v1` con merge commits, en el orden #6 → #12:
 
-Todos siguen en borrador y GitHub no tiene checks automáticos configurados. Por eso las verificaciones locales documentadas son obligatorias.
+| PR | Rama integrada | Merge commit en el target | Verificación previa al merge |
+| --- | --- | --- | --- |
+| [#6](https://github.com/luizgnz/restaurante/pull/6) | `codex/pr5-01-correctitud` · `0070f5b` | `fb7a7e2` | 451/451 pruebas y build verdes |
+| [#7](https://github.com/luizgnz/restaurante/pull/7) | `codex/pr5-02-dinero-precuentas` · `686f192` | `2d2d6a2` | 464/464 pruebas, build y revisión visual a 390 px |
+| [#8](https://github.com/luizgnz/restaurante/pull/8) | `codex/pr5-03-consistencia` · `f7a8da4` | `7435fd4` | 462/462 en dos corridas, build y revisión visual |
+| [#9](https://github.com/luizgnz/restaurante/pull/9) | `codex/pr5-04-base-visual-salon` · `26a9f50` | `a94afde` | Salón móvil medido (0 solapes), 464/464, build y revisión visual |
+| [#10](https://github.com/luizgnz/restaurante/pull/10) | `codex/pr5-05-cocina-ordenes` · `9b6fc1b` | `54f4399` | Cocina y Órdenes revisados en funcionamiento, 463/463 |
+| [#11](https://github.com/luizgnz/restaurante/pull/11) | `codex/pr5-06-marca-demo` · `16bd1bf` | `809da85` | Marca, catálogo y 31 fotos revisados; licenses y 463/463 |
+| [#12](https://github.com/luizgnz/restaurante/pull/12) | `codex/pr5-07-documentacion` · `1994498` | `320b256` | Documentación y capturas de la ronda; verificación final del target en M09 |
+
+GitHub no tiene checks automáticos ni protección de rama configurados; por eso las verificaciones locales documentadas fueron obligatorias y la aprobación formal externa (E02) no se ejecutó: el propietario autorizó el bloque M sin ella.
 
 ## Trabajo ya realizado
 
@@ -99,25 +101,25 @@ Todos siguen en borrador y GitHub no tiene checks automáticos configurados. Por
 ### E. Puerta de aprobación
 
 - [x] **E01 — Quitar borrador solo a PR aprobables.** Un PR puede pasar a “Ready for review” únicamente si sus tareas anteriores están completas y su base sigue siendo la rama esperada.
-- [ ] **E02 — Obtener aprobación externa.** Otra cuenta revisa cada PR. Salida: `reviewDecision` es `APPROVED`; un comentario del autor no cuenta como aprobación formal.
+- [ ] **E02 — Obtener aprobación externa.** Otra cuenta revisa cada PR. Salida: `reviewDecision` es `APPROVED`; un comentario del autor no cuenta como aprobación formal. **No ejecutada, por decisión del propietario (2026-09-06):** `feat/nucleo-pos-v1` no tiene protección de rama que la exija y el dueño autorizó el bloque M sin aprobación formal externa. Queda como deuda de proceso documentada, no como bloqueo técnico.
 - [x] **E03 — Comprobar estado antes de merge.** Para cada PR: `isDraft=false`, `mergeable=MERGEABLE`, `mergeStateStatus=CLEAN`, diff esperado y pruebas verdes.
-- [ ] **E04 — Solicitar autorización final.** Presentar al usuario el estado de los siete PR y pedir autorización explícita para ejecutar el bloque M.
+- [x] **E04 — Solicitar autorización final.** Presentar al usuario el estado de los siete PR y pedir autorización explícita para ejecutar el bloque M. Autorización recibida el 2026-09-06 y ejecutada ese mismo día.
 
 ## Bloque M — Merge final, uno por uno
 
 No iniciar este bloque solo porque el plan exista. Ejecutarlo únicamente después de E04.
 
-- [ ] **M01 — Integrar #6.** Confirmar base `feat/nucleo-pos-v1`; hacer merge commit sin borrar la rama. Salida: #6 figura `MERGED` y el target contiene `0070f5b`.
-- [ ] **M02 — Cambiar la base administrativa de #7.** Cambiar la base del PR #7 a `feat/nucleo-pos-v1`; no rebasear commits. Confirmar que el diff muestre solo la entrega 2. Salida: #7 limpio y aprobable.
-- [ ] **M03 — Integrar #7.** Merge commit sin borrar rama. Salida: #7 `MERGED`.
-- [ ] **M04 — Retarget e integrar #8.** Cambiar base a `feat/nucleo-pos-v1`, comprobar diff, hacer merge commit. Salida: #8 `MERGED`.
-- [ ] **M05 — Retarget e integrar #9.** Repetir el procedimiento; volver a mirar las capturas responsive antes del merge. Salida: #9 `MERGED` sin el bloqueo móvil.
-- [ ] **M06 — Retarget e integrar #10.** Comprobar que Cocina/Órdenes constituyan el único incremento. Salida: #10 `MERGED`.
-- [ ] **M07 — Retarget e integrar #11.** Comprobar recursos y licencias. Salida: #11 `MERGED`.
-- [ ] **M08 — Retarget e integrar #12.** Comprobar que el incremento sea documental. Salida: #12 `MERGED`.
-- [ ] **M09 — Verificación final del target.** Desde `feat/nucleo-pos-v1`, ejecutar `npm test`, `npm run build`, `npm run licenses` y humo GUI a 390/768/1280. Salida: todo verde y capturas finales.
-- [ ] **M10 — Comprobar árbol final.** Comparar el árbol del target con la cabeza final de #12 y explicar cualquier diferencia. Salida esperada: sin diferencias de aplicación no documentadas.
-- [ ] **M11 — Cerrar el seguimiento.** Actualizar `TAREAS.md`, marcar esta lista, publicar resumen final y solo entonces decidir si se eliminan las ramas.
+- [x] **M01 — Integrar #6.** Base `feat/nucleo-pos-v1` confirmada; merge commit sin borrar la rama. Salida: #6 `MERGED`, merge commit `fb7a7e2`, el target contiene `0070f5b`.
+- [x] **M02 — Cambiar la base administrativa de #7.** Base cambiada a `feat/nucleo-pos-v1` sin rebasear; diff y estado `MERGEABLE/CLEAN` confirmados antes del merge.
+- [x] **M03 — Integrar #7.** Merge commit `2d2d6a2`. Salida: #7 `MERGED`.
+- [x] **M04 — Retarget e integrar #8.** Retarget y merge commit `7435fd4`. Salida: #8 `MERGED`.
+- [x] **M05 — Retarget e integrar #9.** Retarget y merge commit `a94afde`; capturas responsive de la ronda C revisadas antes. Salida: #9 `MERGED` sin el bloqueo móvil.
+- [x] **M06 — Retarget e integrar #10.** Retarget y merge commit `54f4399`; el incremento verificado es Cocina/Órdenes. Salida: #10 `MERGED`.
+- [x] **M07 — Retarget e integrar #11.** Retarget y merge commit `809da85`; recursos, fotos y licencias ya revisados en D05/D06. Salida: #11 `MERGED`.
+- [x] **M08 — Retarget e integrar #12.** Retarget y merge commit `320b256`; el incremento es documental y de capturas. Salida: #12 `MERGED`, cadena completa integrada.
+- [x] **M09 — Verificación final del target.** Sobre `feat/nucleo-pos-v1` en `320b256`: `npm test` 464/464 (75 archivos), `npm run build` sin errores de tipos, `npm run licenses` 24 dependencias OK y humo GUI con datos temporales: salón medido a 390/768/1280 (grilla de 2 columnas bajo 768, plano espacial desde 768; 0 solapes, 0 desbordes, targets ≥ 44 px, sin scroll horizontal) y vista Cocina a 390. Capturas en `capturas/2026-09-06_target-integrado/` con su manifest.
+- [x] **M10 — Comprobar árbol final.** `git diff 1994498 320b256` muestra solo dos archivos: `ui/src/pantallas/ConfirmarCancelarCuenta.tsx` y `test/cancelar-cuenta-ui.test.ts`. Explicación: el arreglo final de #7 (`686f192`) no quedó dentro de las ramas #8–#12 (esas ramas conservaban la versión previa del diálogo y no tenían el test), pero como ninguna de ellas modificó esos archivos, el merge de tres vías contra el target —que sí contenía el arreglo por el merge de #7— conservó la versión corregida. El árbol integrado es, por tanto, el árbol de #12 más el arreglo de #7: no hay diferencias de aplicación no documentadas.
+- [x] **M11 — Cerrar el seguimiento.** `TAREAS.md` y este plan actualizados con los merge commits y esta verificación. Decisión sobre las ramas: **se conservan** (`codex/pr5-01` … `codex/pr5-07` y `prototype/ui-responsive`); su eliminación queda como decisión pendiente del propietario, no hay prisa ni necesidad técnica.
 
 ## Comandos de control
 
@@ -156,4 +158,4 @@ Cuando otro agente tome el trabajo debe:
 4. Trabajar solo esa tarea o su grupo mínimo; no saltar al merge.
 5. Actualizar aquí checkbox, SHA, pruebas y observaciones antes de terminar.
 
-Último punto seguro conocido: toda la cadena está corregida, propagada y revisada hasta #12 (bloques A–D completos). Lo único pendiente es el bloque **E**: quitar el borrador a los PR aprobables, obtener aprobación formal de otra cuenta de GitHub y pedir al usuario autorización explícita para el bloque M. No hay errores funcionales abiertos en ninguna entrega.
+Último punto seguro conocido (2026-09-06): **cadena completa integrada**. Los siete PR están `MERGED` en `feat/nucleo-pos-v1` (merge commits `fb7a7e2`, `2d2d6a2`, `7435fd4`, `a94afde`, `54f4399`, `809da85` y `320b256`), el target pasó la verificación final (M09) y el árbol quedó explicado contra la cabeza de #12 (M10). Este plan queda cerrado como relevo operativo; lo único abierto es la deuda de proceso E02 (aprobación formal externa, omitida por decisión del propietario) y la decisión sobre si se eliminan las ramas integradas. No hay errores funcionales abiertos en ninguna entrega.
