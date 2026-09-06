@@ -8,16 +8,18 @@ Orden deliberado: primero limpieza y eliminación de residuos, después el backl
 
 ### Ronda de limpieza de interfaz pedida el 2026-09-06
 
-- [ ] Un solo botón de menú: unificar el icono de menú y el de usuario (hoy solo sirve para cerrar sesión) en un único control.
-- [ ] Eliminar la barra "Sección actual" del encabezado de la página.
-- [ ] Unificar mesero/cocina dentro de Órdenes: quitar el cambio de vista global de la pantalla; la sección Órdenes tendrá dos vistas conmutables (toggle, los iconos actuales o ambos): con cocina muestra la tabla que hoy ve el cocinero y con mesero la lista que hoy muestra Órdenes. La vista cocina pasa a llamarse "Órdenes", conservando el diseño actual de cada vista salvo el título.
-- [ ] Salón: el resumen (libres / en servicio / precuenta / atrasadas) en una misma línea, pudiendo mostrar solo iconos sin texto.
-- [ ] Encabezado del salón lineal y compacto: el título y el botón "+" de nueva orden no pueden quedar apilados ni ocupar un área tan grande; todo en línea en monitor, tablet y smartphone.
-- [ ] Pantallas grandes: en monitor el salón deja mucho espacio en blanco; que las mesas y botones se adapten al ancho disponible y se minimicen los huecos innecesarios, apoyándose en las skills de diseño (`frontend-design`, `modern-web-guidance`). La grilla de teléfono gusta como está hoy: no tocarla.
+Cerrada el 2026-09-06 en la rama `feat/limpieza-interfaz` (commits `46757b8` y `5a30116`, capturas en `capturas/2026-09-06_limpieza-ui/`). Además de lo pedido: se retiró el CSS muerto que dejó la ronda (`.salon-odoo__resumen`, `.pos-nav__areas`, `.salon-odoo__eyebrow`), se alineó el panel de menú a la izquierda (la utilidad `justify-center` ganaba por capas), se llevaron los objetivos táctiles del salón y del toggle a 44 px y se borraron los duplicados " 2" del árbol.
+
+- [x] Un solo botón de menú: unificar el icono de menú y el de usuario (hoy solo sirve para cerrar sesión) en un único control.
+- [x] Eliminar la barra "Sección actual" del encabezado de la página.
+- [x] Unificar mesero/cocina dentro de Órdenes: quitar el cambio de vista global de la pantalla; la sección Órdenes tendrá dos vistas conmutables (toggle, los iconos actuales o ambos): con cocina muestra la tabla que hoy ve el cocinero y con mesero la lista que hoy muestra Órdenes. La vista cocina pasa a llamarse "Órdenes", conservando el diseño actual de cada vista salvo el título.
+- [x] Salón: el resumen (libres / en servicio / precuenta / atrasadas) en una misma línea, pudiendo mostrar solo iconos sin texto.
+- [x] Encabezado del salón lineal y compacto: el título y el botón "+" de nueva orden no pueden quedar apilados ni ocupar un área tan grande; todo en línea en monitor, tablet y smartphone.
+- [x] Pantallas grandes: en monitor el salón deja mucho espacio en blanco; que las mesas y botones se adapten al ancho disponible y se minimicen los huecos innecesarios, apoyándose en las skills de diseño (`frontend-design`, `modern-web-guidance`). La grilla de teléfono gusta como está hoy: no tocarla.
 
 ### Residuos de color y código muerto
 
-- [ ] Púrpura fuera de marca: `COLOR_INICIAL = "#714b67"` en `ui/src/pantallas/CrearProducto.tsx:29` es el color por defecto de todo producto nuevo (se pinta en las fichas del constructor de orden). Es un residuo del tema viejo estilo Odoo, anterior a la marca; no hace sentido junto al cobre actual. Sustituirlo por el cobre de marca (`--brand` `#8a4a26`) o por un neutro, y revisar productos creados a mano en la base real que hayan guardado ese color. El seed demo no lo usa.
+- [x] Púrpura fuera de marca: `COLOR_INICIAL = "#714b67"` en `ui/src/pantallas/CrearProducto.tsx:29` es el color por defecto de todo producto nuevo (se pinta en las fichas del constructor de orden). Es un residuo del tema viejo estilo Odoo, anterior a la marca; no hace sentido junto al cobre actual. Sustituirlo por el cobre de marca (`--brand` `#8a4a26`) o por un neutro, y revisar productos creados a mano en la base real que hayan guardado ese color. El seed demo no lo usa.
 - [ ] ~96 hex sueltos en pantallas viejas: migrarlos a las variables de marca/tokens existentes.
 - [ ] `switch.tsx` para Opciones (hoy hay un control ad hoc).
 - [ ] Pantallas de tabla del §5 de `MIGRACION_SHADCN` sin migrar a JSX.
