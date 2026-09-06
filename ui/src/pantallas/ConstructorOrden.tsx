@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input.tsx";
 import { Select } from "@/components/ui/select.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import type { BorradorOrden } from "../lib/borradores.ts";
+import { dinero } from "../../../src/modules/formato.ts";
 import { ModalArmadoPlato, type SeleccionArmado, type SlotArmadoUi, type VarianteArmadoUi } from "./ModalArmadoPlato.tsx";
 
 export type ProductoCarta = {
@@ -66,12 +67,13 @@ export function actualizarLineaConstructor(
 export function lineasPersistibles(lineas: LineaConstructorUi[]): BorradorOrden["lineas"] {
   return lineas
     .filter((linea) => linea.cantidad > 0)
-    .map(({ productoId, cantidad, nota, contornos, contornosTexto }) => ({
+    .map(({ productoId, cantidad, nota, contornos, contornosTexto, adicionalCentavos }) => ({
       productoId,
       cantidad,
       nota,
       ...(contornos ? { contornos } : {}),
       ...(contornosTexto ? { contornosTexto } : {}),
+      ...(adicionalCentavos ? { adicionalCentavos } : {}),
     }));
 }
 
@@ -113,6 +115,11 @@ export function ConstructorOrden({
   const titulo = mesaFija ? `Nueva orden · Mesa #${mesaFija.numero}` : "Nueva orden";
   const mesaId = mesaFija?.id ?? borrador.mesaId;
   const cantidadProductos = lineasUi.reduce((total, linea) => total + Math.max(0, linea.cantidad), 0);
+  const totalOrden = lineasUi.reduce((total, linea) => {
+    if (linea.cantidad <= 0) return total;
+    const unitario = (productos.find((item) => item.id === linea.productoId)?.precio_centavos ?? 0) + (linea.adicionalCentavos ?? 0);
+    return total + unitario * linea.cantidad;
+  }, 0);
   const categorias = [...new Set(productos.map((producto) => producto.categoria_nombre?.trim()).filter((nombre): nombre is string => Boolean(nombre)))].sort((a, b) => a.localeCompare(b, "es"));
   const termino = busqueda.trim().toLocaleLowerCase("es");
   const productosVisibles = productos.filter((producto) => {
@@ -164,7 +171,7 @@ export function ConstructorOrden({
     else mostrarProducto(producto.id);
   }
 
-  function confirmarArmado(selecciones: SeleccionArmado[], resumen: string) {
+  function confirmarArmado(selecciones: SeleccionArmado[], resumen: string, adicionalCentavos: number) {
     if (!armado) return;
     cambiarLineas([
       ...lineasUi,
@@ -175,6 +182,7 @@ export function ConstructorOrden({
         nota: "",
         contornos: selecciones,
         contornosTexto: resumen,
+        adicionalCentavos,
       },
     ]);
     setArmado(null);
@@ -249,6 +257,9 @@ export function ConstructorOrden({
                     <strong>
                       {linea.cantidad} × {producto?.nombre ?? `Producto ${linea.productoId}`}
                     </strong>
+                    <span className="constructor-linea__precio">
+                      {dinero(((producto?.precio_centavos ?? 0) + (linea.adicionalCentavos ?? 0)) * linea.cantidad)}
+                    </span>
                     <Button
                       type="button"
                       variant="ghost"
@@ -265,7 +276,12 @@ export function ConstructorOrden({
             })}
           {lineasPersistibles(lineasUi).length === 0 ? (
             <p className="login-odoo__ayuda">Toca un producto del menú para agregarlo.</p>
-          ) : null}
+          ) : (
+            <div className="constructor-orden__total">
+              <span>Total estimado</span>
+              <strong>{dinero(totalOrden)}</strong>
+            </div>
+          )}
           {uiVersion === "nueva" && !indicacionesAbiertas ? (
             <Button type="button" variant="ghost" size="sm" className="constructor-orden__agregar-nota" onClick={() => setIndicacionesAbiertas(true)}>
               <MessageSquarePlus size={17} aria-hidden="true" /> Agregar indicaciones
@@ -293,7 +309,8 @@ export function ConstructorOrden({
               disabled={!mesaId || lineasPersistibles(lineasUi).length === 0 || enviando}
               onClick={enviar}
             >
-              <Send size={18} aria-hidden="true" /> {enviando ? "Enviando…" : "Enviar"}
+              <Send size={18} aria-hidden="true" />{" "}
+              {enviando ? "Enviando…" : totalOrden > 0 ? `Enviar · ${dinero(totalOrden)}` : "Enviar"}
             </Button>
           </div>
         </Card>
@@ -350,7 +367,7 @@ export function ConstructorOrden({
                 <span className="carta__contenido">
                   <strong>{producto.nombre}</strong>
                   {producto.codigo ? <span>{producto.codigo}</span> : null}
-                  <span className="carta__precio">${producto.precio_centavos}</span>
+                  <span className="carta__precio">{dinero(producto.precio_centavos)}</span>
                   {producto.configurable ? <Badge>Personalizable</Badge> : null}
                 </span>
                 {linea ? (

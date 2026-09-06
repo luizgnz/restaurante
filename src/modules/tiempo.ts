@@ -24,5 +24,10 @@ export function haceCuanto(desdeIso: string, ahoraMs = Date.now()): string {
   if (min < 60) return `Hace ${min} minutos`;
   const horas = Math.floor(min / 60);
   if (horas === 1) return "Hace una hora";
-  return `Hace ${horas} horas`;
+  if (horas < 48) return `Hace ${horas} horas`;
+  const dias = Math.floor(horas / 24);
+  if (dias === 1) return "Hace un día";
+  if (dias < 60) return `Hace ${dias} días`;
+  const meses = Math.floor(dias / 30);
+  return meses === 1 ? "Hace un mes" : `Hace ${meses} meses`;
 }

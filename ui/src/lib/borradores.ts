@@ -9,6 +9,8 @@ export type BorradorOrden = {
     nota: string;
     contornos?: Array<{ slotPosicion: number; varianteId: number }>;
     contornosTexto?: string;
+    /** Suplementos y extras de los contornos, calculados al armar el plato. */
+    adicionalCentavos?: number;
   }>;
   indicaciones: string;
   actualizadoEn: string;
@@ -81,6 +83,12 @@ function parsearBorrador(raw: unknown): BorradorOrden | null {
     if (l.contornosTexto !== undefined) {
       if (typeof l.contornosTexto !== "string") return null;
       linea.contornosTexto = l.contornosTexto;
+    }
+    if (l.adicionalCentavos !== undefined) {
+      if (typeof l.adicionalCentavos !== "number" || !Number.isInteger(l.adicionalCentavos) || l.adicionalCentavos < 0) {
+        return null;
+      }
+      linea.adicionalCentavos = l.adicionalCentavos;
     }
     lineas.push(linea);
   }

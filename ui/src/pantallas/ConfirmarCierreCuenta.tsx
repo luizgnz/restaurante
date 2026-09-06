@@ -11,7 +11,7 @@ export function ConfirmarCierreCuenta({ mesaNumero, totalCentavos, onConfirmar, 
       <DialogContent>
         <DialogTitle>¿Cerrar cuenta?</DialogTitle>
         <DialogDescription>
-          La cuenta de Mesa #{mesaNumero} por ${totalCentavos} se envía a caja y la mesa queda libre.
+          La cuenta de Mesa #{mesaNumero} por {dinero(totalCentavos)} se envía a caja y la mesa queda libre.
         </DialogDescription>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onCancelar}>
@@ -27,3 +27,4 @@ export function ConfirmarCierreCuenta({ mesaNumero, totalCentavos, onConfirmar, 
 }
 import { Button } from "@/components/ui/button.tsx";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "@/components/ui/dialog.tsx";
+import { dinero } from "../../../src/modules/formato.ts";

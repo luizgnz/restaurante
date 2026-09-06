@@ -252,6 +252,8 @@ function configPublica(config: AppConfig) {
     auditoria_anulaciones: config.auditoria_anulaciones,
     justificacion_anulacion: config.justificacion_anulacion,
     devolver_insumos_preparados: config.devolver_insumos_preparados,
+    pin_al_emitir_precuenta: config.pin_al_emitir_precuenta,
+    pin_al_enviar_caja: config.pin_al_enviar_caja,
     precuenta_obligatoria_antes_de_caja: config.precuenta_obligatoria_antes_de_caja,
     enviar_a_caja_requiere_avanzado: config.enviar_a_caja_requiere_avanzado,
     impresora_comanda: config.impresora_comanda,
@@ -623,6 +625,8 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
       auditoria_anulaciones?: boolean;
       justificacion_anulacion?: boolean;
       devolver_insumos_preparados?: boolean;
+      pin_al_emitir_precuenta?: boolean;
+      pin_al_enviar_caja?: boolean;
       precuenta_obligatoria_antes_de_caja?: boolean;
       enviar_a_caja_requiere_avanzado?: boolean;
       impresora_comanda?: unknown;
@@ -653,6 +657,8 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
     if (typeof body.auditoria_anulaciones === "boolean") config.auditoria_anulaciones = body.auditoria_anulaciones;
     if (typeof body.justificacion_anulacion === "boolean") config.justificacion_anulacion = body.justificacion_anulacion;
     if (typeof body.devolver_insumos_preparados === "boolean") config.devolver_insumos_preparados = body.devolver_insumos_preparados;
+    if (typeof body.pin_al_emitir_precuenta === "boolean") config.pin_al_emitir_precuenta = body.pin_al_emitir_precuenta;
+    if (typeof body.pin_al_enviar_caja === "boolean") config.pin_al_enviar_caja = body.pin_al_enviar_caja;
     if (typeof body.precuenta_obligatoria_antes_de_caja === "boolean") {
       config.precuenta_obligatoria_antes_de_caja = body.precuenta_obligatoria_antes_de_caja;
     }

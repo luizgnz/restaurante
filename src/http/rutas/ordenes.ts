@@ -27,6 +27,7 @@ function respuestaEnvio(db: Database.Database, envio: ResultadoEnvio) {
       comandaId: envio.comandaId,
       repetida: envio.repetida,
       avisos: envio.avisos,
+      mesero: envio.mesero,
     },
     status: (envio.repetida ? 200 : 201) as 200 | 201,
   };
