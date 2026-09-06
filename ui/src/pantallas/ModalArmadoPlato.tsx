@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Check, Minus, Sparkles, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge.tsx";
+import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { dinero } from "../../../src/modules/formato.ts";
 
@@ -140,16 +141,8 @@ export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar
   );
 
   return (
-    <div
-      className="modal-fondo"
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Armado de ${productoNombre}`}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onCancelar();
-      }}
-    >
-      <div className="modal-caja armado-plato">
+    <Dialog aria-label={`Armado de ${productoNombre}`} onOverlayClick={onCancelar}>
+      <DialogContent className="modal-caja armado-plato w-[min(800px,94vw)] max-h-[92svh] rounded-[1.5rem] p-[clamp(1rem,3vw,1.7rem)]">
         <header className="armado-plato__cabecera">
           <div>
             <span className="armado-plato__eyebrow">Personaliza tu plato</span>
@@ -247,7 +240,7 @@ export function ModalArmadoPlato({ productoNombre, slots, variantes, onConfirmar
             <Check size={19} aria-hidden="true" /> Agregar a la orden
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

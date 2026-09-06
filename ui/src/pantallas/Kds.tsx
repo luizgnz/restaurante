@@ -1,6 +1,8 @@
 import { AlertTriangle, ArrowRightLeft, CheckCheck, ChefHat, CircleOff, Clock3, Play, RefreshCw } from "lucide-react";
 import { useState } from "react";
+import { Alerta } from "@/components/ui/alerta.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
+import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
 import { Select } from "@/components/ui/select.tsx";
@@ -235,10 +237,13 @@ export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar, p
       </div>
 
       {modal ? (
-        <div className="modal-fondo" role="presentation">
-          <Card className="inventario-modal cocina-incidencia-modal" role="dialog" aria-modal="true" aria-labelledby="incidencia-titulo">
+        <Dialog
+          aria-label={modal.tipo === "sugerencia" ? "Sugerir un cambio" : "Marcar como no disponible"}
+          onOverlayClick={() => setModal(null)}
+        >
+          <DialogContent className="inventario-modal cocina-incidencia-modal w-[min(440px,calc(100vw-1.5rem))] p-[1.4rem]">
             <span className="page-eyebrow">{modal.alcance === "orden" ? "Orden completa" : "Producto"}</span>
-            <h2 id="incidencia-titulo">{modal.tipo === "sugerencia" ? "Sugerir un cambio" : "Marcar como no disponible"}</h2>
+            <h2>{modal.tipo === "sugerencia" ? "Sugerir un cambio" : "Marcar como no disponible"}</h2>
             <p><strong>{modal.objetivo}</strong></p>
             <label>Motivo<Textarea autoFocus rows={3} value={motivo} onChange={(event) => setMotivo(event.target.value)} placeholder="Ej.: no queda aguacate" /></label>
             {modal.tipo === "sugerencia" && modal.alcance === "linea" ? <>
@@ -249,13 +254,13 @@ export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar, p
               <label>Detalle opcional<Textarea rows={2} value={propuesta} onChange={(event) => setPropuesta(event.target.value)} placeholder="Ej.: mantener los mismos contornos" /></label>
             </> : null}
             {modal.tipo === "sugerencia" && modal.alcance === "orden" ? <label>Cambio sugerido<Textarea rows={3} value={propuesta} onChange={(event) => setPropuesta(event.target.value)} placeholder="Describe el cambio para los productos afectados" /></label> : null}
-            {error ? <p className="inventario-modal__error" role="alert">{error}</p> : null}
+            {error ? <Alerta>{error}</Alerta> : null}
             <div className="inventario-modal__acciones">
               <Button type="button" variant="outline" onClick={() => setModal(null)}>Cancelar</Button>
               <Button type="button" disabled={guardando} onClick={guardarIncidencia}>{guardando ? "Enviando…" : "Avisar al mesero"}</Button>
             </div>
-          </Card>
-        </div>
+          </DialogContent>
+        </Dialog>
       ) : null}
     </section>
   );

@@ -1,6 +1,8 @@
 import { AlertTriangle, ArrowRightLeft, BellRing, Clock3, ReceiptText, Utensils } from "lucide-react";
 import { useState } from "react";
+import { Alerta } from "@/components/ui/alerta.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
+import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
 import { Input } from "@/components/ui/input.tsx";
@@ -99,6 +101,11 @@ export function Pedidos({
     }
   }
 
+  const tituloEliminar = eliminando
+    ? `¿Eliminar ${eliminando.alcance === "orden" ? "la orden completa" : eliminando.producto ?? "el producto"}?`
+    : "";
+  const tituloAceptar = aceptando ? `Aceptar cambio para ${aceptando.producto ?? "la orden"}` : "";
+
   return (
     <section className="page-shell pedidos-page">
       <header className="page-header">
@@ -120,7 +127,7 @@ export function Pedidos({
           <div><strong>Cocina necesita una respuesta</strong><span>Consulta al cliente y responde desde la orden correspondiente.</span></div>
         </Card>
       ) : null}
-      {error && !eliminando ? <p className="mesero-error" role="alert">{error}</p> : null}
+      {error && !eliminando ? <Alerta>{error}</Alerta> : null}
 
       <div className="kds pedidos-grid">
         {cuentas.map((cuenta) => (
@@ -175,35 +182,35 @@ export function Pedidos({
       </div>
 
       {eliminando ? (
-        <div className="modal-fondo" role="presentation">
-          <Card className="inventario-modal mesero-eliminar-modal" role="dialog" aria-modal="true" aria-labelledby="eliminar-incidencia-titulo">
+        <Dialog aria-label={tituloEliminar} onOverlayClick={() => setEliminando(null)}>
+          <DialogContent className="inventario-modal mesero-eliminar-modal w-[min(440px,calc(100vw-1.5rem))] p-[1.4rem]">
             <span className="page-eyebrow">Confirmación del mesero</span>
-            <h2 id="eliminar-incidencia-titulo">¿Eliminar {eliminando.alcance === "orden" ? "la orden completa" : eliminando.producto ?? "el producto"}?</h2>
+            <h2>{tituloEliminar}</h2>
             <p>El cliente no aceptó la sugerencia. Al confirmar se anulará {eliminando.alcance === "orden" ? "todo el pedido" : "este producto"} y cocina recibirá el aviso.</p>
             <label>PIN del mesero<Input type="password" inputMode="numeric" autoComplete="off" value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 12))} /></label>
-            {error ? <p className="inventario-modal__error" role="alert">{error}</p> : null}
+            {error ? <Alerta>{error}</Alerta> : null}
             <div className="inventario-modal__acciones">
               <Button type="button" variant="outline" onClick={() => setEliminando(null)}>No eliminar</Button>
               <Button type="button" variant="destructive" disabled={guardando} onClick={eliminar}>{guardando ? "Eliminando…" : "Sí, eliminar"}</Button>
             </div>
-          </Card>
-        </div>
+          </DialogContent>
+        </Dialog>
       ) : null}
       {aceptando ? (
-        <div className="modal-fondo" role="presentation">
-          <Card className="inventario-modal" role="dialog" aria-modal="true" aria-labelledby="aceptar-sugerencia-titulo">
+        <Dialog aria-label={tituloAceptar} onOverlayClick={() => setAceptando(null)}>
+          <DialogContent className="inventario-modal w-[min(440px,calc(100vw-1.5rem))] p-[1.4rem]">
             <span className="page-eyebrow">Confirmación del mesero</span>
-            <h2 id="aceptar-sugerencia-titulo">Aceptar cambio para {aceptando.producto ?? "la orden"}</h2>
+            <h2>{tituloAceptar}</h2>
             <p>{aceptando.propuesta}</p>
             {aceptando.productoReemplazo ? <p>La orden cambiará a <strong>{aceptando.productoReemplazo}</strong> solo para el producto solicitado.</p> : null}
             <label>PIN del mesero<Input type="password" inputMode="numeric" autoComplete="off" value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 12))} /></label>
-            {error ? <p className="inventario-modal__error" role="alert">{error}</p> : null}
+            {error ? <Alerta>{error}</Alerta> : null}
             <div className="inventario-modal__acciones">
               <Button type="button" variant="outline" onClick={() => setAceptando(null)}>Cancelar</Button>
               <Button type="button" disabled={guardando} onClick={aceptar}>{guardando ? "Aplicando…" : "Aceptar y aplicar cambio"}</Button>
             </div>
-          </Card>
-        </div>
+          </DialogContent>
+        </Dialog>
       ) : null}
     </section>
   );
