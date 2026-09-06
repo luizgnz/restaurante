@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { esperaMinutos, haceCuanto } from "../src/modules/tiempo.ts";
+import { esperaMinutos, haceCuanto, textoEspera } from "../src/modules/tiempo.ts";
 
 
 describe("haceCuanto", () => {
@@ -10,5 +10,14 @@ describe("haceCuanto", () => {
     expect(haceCuanto("2026-08-20T12:09:50Z", ahora)).toBe("Hace un momento");
     expect(haceCuanto("2026-08-20T12:05:00Z", ahora)).toBe("Hace 5 minutos");
     expect(esperaMinutos("2026-08-20T12:05:00Z", ahora)).toBe(5);
+  });
+});
+
+describe("textoEspera", () => {
+  it("elige días, horas o minutos según la magnitud", () => {
+    expect(textoEspera(5)).toBe("5 min");
+    expect(textoEspera(90)).toBe("2 h");
+    expect(textoEspera(11972)).toBe("8 días");
+    expect(textoEspera(1440)).toBe("1 día");
   });
 });

@@ -1,4 +1,26 @@
-import { ChevronDown, MessageSquarePlus, Search, Send, ShoppingBag, Trash2, X } from "lucide-react";
+import {
+  Beer,
+  Beef,
+  Coffee,
+  Croissant,
+  CupSoda,
+  Fish,
+  IceCreamCone,
+  Pizza,
+  Salad,
+  Sandwich,
+  Soup,
+  Utensils,
+  UtensilsCrossed,
+  Wine,
+  ChevronDown,
+  MessageSquarePlus,
+  Search,
+  Send,
+  ShoppingBag,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import type { CSSProperties } from "react";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -23,6 +45,79 @@ export type ProductoCarta = {
   color?: string | null;
   foto_data?: string | null;
 };
+
+/* Iconografía por categoría: cuando un producto no tiene foto, la tarjeta
+   muestra el ícono de su categoría sobre un velo del color de la categoría,
+   así la carta se recorre por color + forma sin leer un solo nombre.
+   Las claves van normalizadas (minúsculas, sin tildes); para sumar una
+   categoría nueva basta agregar una línea a este mapa. */
+const ICONOS_CATEGORIA: Record<string, typeof Utensils> = {
+  agua: CupSoda,
+  almuerzo: UtensilsCrossed,
+  asado: Beef,
+  bar: Beer,
+  bebida: CupSoda,
+  cafe: Coffee,
+  cafeteria: Coffee,
+  caldo: Soup,
+  carne: Beef,
+  cazuela: Soup,
+  cerveza: Beer,
+  comida: UtensilsCrossed,
+  dulce: IceCreamCone,
+  entradas: UtensilsCrossed,
+  ensalada: Salad,
+  fondo: UtensilsCrossed,
+  gaseosa: CupSoda,
+  hamburguesa: Sandwich,
+  helado: IceCreamCone,
+  infusiones: Coffee,
+  jugo: CupSoda,
+  mariscos: Fish,
+  "menu del dia": UtensilsCrossed,
+  pan: Croissant,
+  panaderia: Croissant,
+  pasteleria: Croissant,
+  parrilla: Beef,
+  pescado: Fish,
+  pizza: Pizza,
+  postre: IceCreamCone,
+  refresco: CupSoda,
+  sandwich: Sandwich,
+  sanguche: Sandwich,
+  sopa: Soup,
+  te: Coffee,
+  trago: Beer,
+  vino: Wine,
+};
+const ICONO_CATEGORIA_DEFAULT = Utensils;
+
+function normalizarCategoria(nombre?: string | null): string {
+  return (nombre ?? "")
+    .trim()
+    .toLocaleLowerCase("es")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+export function iconoCategoria(categoriaNombre?: string | null): typeof Utensils {
+  const clave = normalizarCategoria(categoriaNombre);
+  if (!clave) return ICONO_CATEGORIA_DEFAULT;
+  return ICONOS_CATEGORIA[clave] ?? ICONOS_CATEGORIA[clave.replace(/s$/, "")] ?? ICONO_CATEGORIA_DEFAULT;
+}
+
+/* Color estable por categoría para las que no definen color en administración:
+   FNV-1a sobre el nombre normalizado → matiz HSL de tono medio. El velo y el
+   tinte del ícono los calcula CSS con color-mix para cuidar el contraste. */
+export function colorCategoria(categoriaNombre?: string | null): string {
+  const clave = normalizarCategoria(categoriaNombre) || "sin categoria";
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < clave.length; i += 1) {
+    hash ^= clave.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return `hsl(${hash % 360} 62% 46%)`;
+}
 
 export type ConfigContornosUi = {
   grupos: Array<{ id: number; nombre: string; variantes: VarianteArmadoUi[] }>;
@@ -300,7 +395,9 @@ export function ConstructorOrden({
               <span className="constructor-orden__eyebrow">Carta</span>
               <h2>Productos</h2>
             </div>
-            <Badge variant="secondary">{productos.length} disponibles</Badge>
+            <Badge variant="secondary">
+              {productos.length} {productos.length === 1 ? "producto" : "productos"}
+            </Badge>
           </div>
           <div className="constructor-catalogo__herramientas">
             {!busquedaAbierta ? (
@@ -325,13 +422,18 @@ export function ConstructorOrden({
           <div className="carta constructor-orden__carta">
           {productosVisibles.map((producto) => {
             const linea = lineasUi.find((item) => item.productoId === producto.id);
+            const IconoCategoria = iconoCategoria(producto.categoria_nombre);
             return (
               <div
                 key={producto.id}
                 role="button"
                 tabIndex={0}
                 className={`carta__item${linea ? " is-on" : ""}`}
-                style={producto.color ? ({ "--product-color": producto.color } as CSSProperties) : undefined}
+                style={
+                  {
+                    "--product-color": producto.color?.trim() || colorCategoria(producto.categoria_nombre),
+                  } as CSSProperties
+                }
                 onClick={() => tocarProducto(producto)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -340,12 +442,18 @@ export function ConstructorOrden({
                   }
                 }}
               >
-                {producto.foto_data ? <img src={producto.foto_data} alt="" className="carta__foto" /> : null}
+                {producto.foto_data ? (
+                  <img src={producto.foto_data} alt="" className="carta__foto" />
+                ) : (
+                  <span className="carta__icono" aria-hidden="true">
+                    <IconoCategoria size={36} strokeWidth={1.75} />
+                  </span>
+                )}
                 <span className="carta__contenido">
                   <strong>{producto.nombre}</strong>
                   {producto.codigo ? <span>{producto.codigo}</span> : null}
-                  <span className="carta__precio">{dinero(producto.precio_centavos)}</span>
                   {producto.configurable ? <Badge>Personalizable</Badge> : null}
+                  <span className="carta__precio">{dinero(producto.precio_centavos)}</span>
                 </span>
                 {linea ? (
                   <span className="carta__cantidad" onClick={(event) => event.stopPropagation()}>
