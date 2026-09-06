@@ -153,8 +153,8 @@ export function cambiosDeLinea(valor: unknown): CambioOrdenInput[] {
 
 /**
  * Quién firma una orden. En este modelo crear y enviar son el mismo acto —la
- * orden solo existe una vez enviada—, así que el PIN se pide una sola vez y da
- * igual en qué momento lo haya puesto la configuración.
+ * orden solo existe una vez enviada—, así que el PIN se pide una sola vez, al
+ * enviar, cuando `pin_habilitado` está encendido.
  */
 export async function meseroDeOrden(
   db: Database.Database,
@@ -162,7 +162,7 @@ export async function meseroDeOrden(
   pin: string | undefined,
 ): Promise<{ id: number }> {
   if (cfg.pin_habilitado) {
-    return exigirPin(db, pin ?? "", cfg.pin_momento === "crear_orden" ? "crear_pedido" : "enviar");
+    return exigirPin(db, pin ?? "", "enviar");
   }
   if (pin) return exigirPin(db, pin, "enviar");
   const s = sesionAbierta(db);

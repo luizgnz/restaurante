@@ -111,7 +111,6 @@ export function App() {
   const [tipografia, setTipografia] = useState<OpcionesValores["tipografia"]>("sans");
   const [tamanoUi, setTamanoUi] = useState<OpcionesValores["tamano_ui"]>("normal");
   const [pinHabilitado, setPinHabilitado] = useState(true);
-  const [pinMomento, setPinMomento] = useState<OpcionesValores["pin_momento"]>("enviar");
   const [confirmarComanda, setConfirmarComanda] = useState(false);
   const [auditoriaAnulaciones, setAuditoriaAnulaciones] = useState(false);
   const [devolverInsumosPreparados, setDevolverInsumosPreparados] = useState(true);
@@ -205,7 +204,6 @@ export function App() {
     if (data.tipografia) setTipografia(data.tipografia);
     if (data.tamano_ui) setTamanoUi(data.tamano_ui);
     if (typeof data.pin_habilitado === "boolean") setPinHabilitado(data.pin_habilitado);
-    if (data.pin_momento) setPinMomento(data.pin_momento);
     if (typeof data.confirmar_comanda === "boolean") setConfirmarComanda(data.confirmar_comanda);
     if (typeof data.auditoria_anulaciones === "boolean") setAuditoriaAnulaciones(data.auditoria_anulaciones);
     if (typeof data.devolver_insumos_preparados === "boolean") setDevolverInsumosPreparados(data.devolver_insumos_preparados);
@@ -1036,7 +1034,6 @@ export function App() {
               tipografia,
               tamano_ui: tamanoUi,
               pin_habilitado: pinHabilitado,
-              pin_momento: pinMomento,
               pin_al_emitir_precuenta: pinPrecuenta,
               pin_al_enviar_caja: pinCaja,
               confirmar_comanda: confirmarComanda,
