@@ -36,7 +36,8 @@ En macOS la app también se abre con doble clic en `Iniciar Restaurante.command`
 
 - Español para documentación, commits y comunicación.
 - Commits en minúsculas, sin punto final, con prefijo de tipo: `docs:`, `feat:`, `fix:`, `chore:` (mirar `git log` como referencia).
-- Rama de trabajo: `prototype/ui-responsive`. Los PRs se dirigen a `feat/nucleo-pos-v1`.
+- Rama por defecto y destino único de PRs: `main`. Está protegida: todo merge exige al menos una aprobación de otra cuenta y no se puede pushear directo.
+- Ramas de trabajo: crear una por tarea desde `main` y abrir el PR contra `main`. `feat/nucleo-pos-v1` queda solo como referencia histórica de la cadena #6–#12 ya integrada.
 - No commitear: `node_modules/`, builds (`ui/dist*`), bases de datos, `capturas/*.zip`, ni carpetas de trabajo local (`tmp/`, `output/`, `backups/`).
 
 ## Antes de dar un trabajo por terminado
