@@ -1,10 +1,13 @@
 import { Boxes, Clock3, Minus, PackageCheck, Plus, RefreshCw, Search, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Alerta } from "@/components/ui/alerta.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
+import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Select } from "@/components/ui/select.tsx";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
 
 export type MaterialInventarioUi = {
   id: number;
@@ -18,6 +21,7 @@ export type MaterialInventarioUi = {
 
 type Props = {
   materiales: MaterialInventarioUi[];
+  cargando?: boolean;
   puedeIngresar: boolean;
   onRecargar: () => Promise<void>;
   onRegistrarEntrada: (productoId: number, cantidad: number, pin: string) => Promise<void>;
@@ -40,6 +44,7 @@ function estado(material: MaterialInventarioUi): { texto: string; variante: "suc
 
 export function Inventario({
   materiales,
+  cargando,
   puedeIngresar,
   onRecargar,
   onRegistrarEntrada,
@@ -183,7 +188,16 @@ export function Inventario({
             <span role="columnheader">Disponible</span>
             <span role="columnheader">Estado</span>
           </div>
-          {visibles.map((material) => {
+          {cargando && visibles.length === 0 ? (
+            <div aria-hidden="true">
+              {Array.from({ length: 5 }, (_, i) => (
+                <div className="inventario-fila" role="row" key={i}>
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            visibles.map((material) => {
             const estadoMaterial = estado(material);
             return (
               <div className="inventario-fila" role="row" key={material.id}>
@@ -215,8 +229,9 @@ export function Inventario({
                 </span>
               </div>
             );
-          })}
-          {visibles.length === 0 ? <div className="empty-state">No hay materiales que coincidan con el filtro.</div> : null}
+          })
+          )}
+          {!cargando && visibles.length === 0 ? <div className="empty-state">No hay materiales que coincidan con el filtro.</div> : null}
         </div>
       </Card>
 
@@ -226,10 +241,10 @@ export function Inventario({
       </p>
 
       {seleccionado ? (
-        <div className="modal-fondo" role="presentation">
-          <Card className="inventario-modal" role="dialog" aria-modal="true" aria-labelledby="ajuste-inventario-titulo">
+        <Dialog aria-label={`Ajustar ${seleccionado.nombre}`} onOverlayClick={() => setSeleccionado(null)}>
+          <DialogContent className="inventario-modal w-[min(440px,calc(100vw-1.5rem))] p-[1.4rem]">
             <span className="page-eyebrow">Movimiento de inventario</span>
-            <h2 id="ajuste-inventario-titulo">Ajustar {seleccionado.nombre}</h2>
+            <h2>Ajustar {seleccionado.nombre}</h2>
             <p>En mano actualmente: <strong>{cantidad(seleccionado.enMano)}</strong></p>
             <div className="inventario-ajuste__tipo" role="group" aria-label="Tipo de movimiento">
                 <Button
@@ -283,7 +298,7 @@ export function Inventario({
                 onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 12))}
               />
             </label>
-            {error ? <p className="inventario-modal__error" role="alert">{error}</p> : null}
+            {error ? <Alerta>{error}</Alerta> : null}
             <div className="inventario-modal__acciones">
               <Button type="button" variant="outline" onClick={() => setSeleccionado(null)}>Cancelar</Button>
               <Button
@@ -299,8 +314,8 @@ export function Inventario({
                     : "Agregar al inventario"}
               </Button>
             </div>
-          </Card>
-        </div>
+          </DialogContent>
+        </Dialog>
       ) : null}
     </section>
   );

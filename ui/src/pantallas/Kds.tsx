@@ -1,10 +1,14 @@
 import { AlertTriangle, ArrowRightLeft, CheckCheck, ChefHat, CircleOff, Clock3, Play, RefreshCw } from "lucide-react";
 import { useState } from "react";
+import { Alerta } from "@/components/ui/alerta.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
+import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
 import { Select } from "@/components/ui/select.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
+import { etiquetaEtapa, tonoEtapa } from "../lib/estados.ts";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
 
 export type IncidenciaCocinaUi = {
   id: number;
@@ -57,6 +61,7 @@ type NuevaIncidencia = {
 
 type Props = {
   tarjetas: TarjetaKdsUi[];
+  cargando?: boolean;
   onCambiarEtapa: (lineaId: number, etapa: "en_proceso" | "listo") => Promise<void>;
   onCrearIncidencia: (incidencia: NuevaIncidencia) => Promise<void>;
   onRecargar: () => Promise<void>;
@@ -76,24 +81,7 @@ function cantidad(linea: LineaKdsUi): string {
   return `${linea.delta > 0 ? "+" : ""}${linea.delta}`;
 }
 
-function etiquetaEtapa(etapa: string): string {
-  if (etapa === "por_preparar") return "Enviado a cocina";
-  if (etapa === "en_proceso") return "En preparación";
-  if (etapa === "listo") return "Listo para entregar";
-  if (etapa === "servido") return "Entregado";
-  if (etapa === "cancelado") return "Cancelado";
-  if (etapa === "aviso") return "Aviso";
-  return etapa;
-}
-
-function varianteEtapa(etapa: string): "secondary" | "warning" | "success" | "danger" {
-  if (etapa === "por_preparar") return "secondary";
-  if (etapa === "en_proceso") return "warning";
-  if (etapa === "listo" || etapa === "servido") return "success";
-  return "danger";
-}
-
-export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar, productos = [] }: Props) {
+export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onRecargar, productos = [] }: Props) {
   const [modal, setModal] = useState<ModalIncidencia | null>(null);
   const [motivo, setMotivo] = useState("");
   const [propuesta, setPropuesta] = useState("");
@@ -178,7 +166,14 @@ export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar, p
       </div>
 
       <div className="kds cocina-grid">
-        {tarjetas.map((tarjeta) => {
+        {cargando && tarjetas.length === 0 ? (
+          <div className="flex flex-wrap gap-4" aria-hidden="true">
+            {Array.from({ length: 3 }, (_, i) => (
+              <Skeleton key={i} className="h-56 min-w-[260px] flex-1 rounded-2xl" />
+            ))}
+          </div>
+        ) : (
+          tarjetas.map((tarjeta) => {
           const tareas = tarjeta.lineas.filter((linea) => !linea.esAviso && linea.etapa !== "cancelado");
           const ordenCompletaDisponible = tarjeta.tipo === "orden" && tareas.length > 0 && tareas.every((linea) => linea.etapa === "por_preparar");
           const incidenciaOrden = tarjeta.incidencias.find((incidencia) => incidencia.comandaLineaId == null);
@@ -200,7 +195,7 @@ export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar, p
                     <article className={`cocina-linea etapa-${linea.etapa}`} key={linea.id}>
                       <div className="cocina-linea__principal">
                         <strong>{cantidad(linea)} × {linea.nombre}</strong>
-                        <Badge variant={varianteEtapa(linea.etapa)}>{etiquetaEtapa(linea.etapa)}</Badge>
+                        <Badge variant={tonoEtapa(linea.etapa)}>{etiquetaEtapa(linea.etapa)}</Badge>
                       </div>
                       {linea.nota ? <p className="cocina-linea__nota">Nota: {linea.nota}</p> : null}
                       {(linea.contornos ?? []).length > 0 ? <div className="kds-contornos">{linea.contornos!.map((contorno) => <em key={contorno}>{contorno}</em>)}</div> : null}
@@ -230,15 +225,19 @@ export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar, p
               ) : null}
             </Card>
           );
-        })}
-        {tarjetas.length === 0 ? <div className="empty-state"><ChefHat size={32} aria-hidden="true" /><strong>No hay pedidos en cocina</strong><span>Los pedidos nuevos aparecerán automáticamente.</span></div> : null}
+          })
+        )}
+        {!cargando && tarjetas.length === 0 ? <div className="empty-state"><ChefHat size={32} aria-hidden="true" /><strong>No hay pedidos en cocina</strong><span>Los pedidos nuevos aparecerán automáticamente.</span></div> : null}
       </div>
 
       {modal ? (
-        <div className="modal-fondo" role="presentation">
-          <Card className="inventario-modal cocina-incidencia-modal" role="dialog" aria-modal="true" aria-labelledby="incidencia-titulo">
+        <Dialog
+          aria-label={modal.tipo === "sugerencia" ? "Sugerir un cambio" : "Marcar como no disponible"}
+          onOverlayClick={() => setModal(null)}
+        >
+          <DialogContent className="inventario-modal cocina-incidencia-modal w-[min(440px,calc(100vw-1.5rem))] p-[1.4rem]">
             <span className="page-eyebrow">{modal.alcance === "orden" ? "Orden completa" : "Producto"}</span>
-            <h2 id="incidencia-titulo">{modal.tipo === "sugerencia" ? "Sugerir un cambio" : "Marcar como no disponible"}</h2>
+            <h2>{modal.tipo === "sugerencia" ? "Sugerir un cambio" : "Marcar como no disponible"}</h2>
             <p><strong>{modal.objetivo}</strong></p>
             <label>Motivo<Textarea autoFocus rows={3} value={motivo} onChange={(event) => setMotivo(event.target.value)} placeholder="Ej.: no queda aguacate" /></label>
             {modal.tipo === "sugerencia" && modal.alcance === "linea" ? <>
@@ -249,13 +248,13 @@ export function Kds({ tarjetas, onCambiarEtapa, onCrearIncidencia, onRecargar, p
               <label>Detalle opcional<Textarea rows={2} value={propuesta} onChange={(event) => setPropuesta(event.target.value)} placeholder="Ej.: mantener los mismos contornos" /></label>
             </> : null}
             {modal.tipo === "sugerencia" && modal.alcance === "orden" ? <label>Cambio sugerido<Textarea rows={3} value={propuesta} onChange={(event) => setPropuesta(event.target.value)} placeholder="Describe el cambio para los productos afectados" /></label> : null}
-            {error ? <p className="inventario-modal__error" role="alert">{error}</p> : null}
+            {error ? <Alerta>{error}</Alerta> : null}
             <div className="inventario-modal__acciones">
               <Button type="button" variant="outline" onClick={() => setModal(null)}>Cancelar</Button>
               <Button type="button" disabled={guardando} onClick={guardarIncidencia}>{guardando ? "Enviando…" : "Avisar al mesero"}</Button>
             </div>
-          </Card>
-        </div>
+          </DialogContent>
+        </Dialog>
       ) : null}
     </section>
   );

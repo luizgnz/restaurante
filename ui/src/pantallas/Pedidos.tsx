@@ -1,10 +1,14 @@
 import { AlertTriangle, ArrowRightLeft, BellRing, Clock3, ReceiptText, Utensils } from "lucide-react";
 import { useState } from "react";
+import { Alerta } from "@/components/ui/alerta.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
+import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import type { IncidenciaCocinaUi } from "./Kds.tsx";
+import { etiquetaCuenta, tonoCuenta } from "../lib/estados.ts";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
 
 export type LineaCuentaUi = {
   lineaClave: string;
@@ -31,14 +35,9 @@ export type CuentaEnCursoUi = {
   }[];
 };
 
-const ESTADO: Record<string, string> = {
-  abierta: "En pedido",
-  precuenta_emitida: "Precuenta emitida",
-};
-
 type Props = {
-  uiVersion?: "actual" | "nueva";
   cuentas: CuentaEnCursoUi[];
+  cargando?: boolean;
   incidencias?: IncidenciaCocinaUi[];
   onAbrir: (cuentaId: number, ordenId?: number) => void;
   onAceptarSugerencia?: (incidenciaId: number, pin: string) => Promise<void>;
@@ -46,8 +45,8 @@ type Props = {
 };
 
 export function Pedidos({
-  uiVersion = "actual",
   cuentas,
+  cargando,
   incidencias = [],
   onAbrir,
   onAceptarSugerencia = async () => undefined,
@@ -101,6 +100,11 @@ export function Pedidos({
     }
   }
 
+  const tituloEliminar = eliminando
+    ? `¿Eliminar ${eliminando.alcance === "orden" ? "la orden completa" : eliminando.producto ?? "el producto"}?`
+    : "";
+  const tituloAceptar = aceptando ? `Aceptar cambio para ${aceptando.producto ?? "la orden"}` : "";
+
   return (
     <section className="page-shell pedidos-page">
       <header className="page-header">
@@ -122,39 +126,36 @@ export function Pedidos({
           <div><strong>Cocina necesita una respuesta</strong><span>Consulta al cliente y responde desde la orden correspondiente.</span></div>
         </Card>
       ) : null}
-      {error && !eliminando ? <p className="mesero-error" role="alert">{error}</p> : null}
+      {error && !eliminando ? <Alerta>{error}</Alerta> : null}
 
       <div className="kds pedidos-grid">
-        {cuentas.map((cuenta) => (
+        {cargando && cuentas.length === 0 ? (
+          <div className="flex flex-wrap gap-4" aria-hidden="true">
+            {Array.from({ length: 3 }, (_, i) => (
+              <Skeleton key={i} className="h-44 min-w-[280px] flex-1 rounded-2xl" />
+            ))}
+          </div>
+        ) : (
+          cuentas.map((cuenta) => (
           <Card className="tarjeta pedido-card" key={cuenta.id}>
-            {uiVersion === "nueva" ? <div className="pedido-cabecera">
-              <span className="pedido-card__mesa"><strong>Mesa {cuenta.mesa}</strong><Badge variant="warning">{ESTADO[cuenta.estado] ?? cuenta.estado}</Badge></span>
+            <div className="pedido-cabecera">
+              <span className="pedido-card__mesa"><strong>Mesa {cuenta.mesa}</strong><Badge variant={tonoCuenta(cuenta.estado)}>{etiquetaCuenta(cuenta.estado)}</Badge></span>
               <span className="pedido-card__meta"><Clock3 size={15} aria-hidden="true" /> {cuenta.mesero} · {cuenta.hace}</span>
-            </div> : <Button type="button" variant="ghost" className="pedido-cabecera" onClick={() => onAbrir(cuenta.id)}>
-              <span className="pedido-card__mesa"><strong>Mesa {cuenta.mesa}</strong><Badge variant="warning">{ESTADO[cuenta.estado] ?? cuenta.estado}</Badge></span>
-              <span className="pedido-card__meta"><Clock3 size={15} aria-hidden="true" /> {cuenta.mesero} · {cuenta.hace}</span>
-            </Button>}
+            </div>
             <div className="pedido-card__ordenes">
               {cuenta.ordenes.map((orden) => {
                 const avisos = incidencias.filter((incidencia) => incidencia.ordenId === orden.id);
                 return (
                   <div className="pedido-indicaciones" key={orden.id}>
-                    {uiVersion === "nueva" ? (
-                      <button
-                        type="button"
-                        className="pedido-orden__abrir"
-                        aria-label={`Abrir acciones de Orden #${orden.numero}, Mesa ${cuenta.mesa}`}
-                        onClick={() => onAbrir(cuenta.id, orden.id)}
-                      >
-                        <strong>Orden #{orden.numero}</strong>
-                        <span>{orden.lineas.map((linea) => `${linea.cantidad} × ${linea.nombre}${linea.nota ? ` (${linea.nota})` : ""}`).join(", ")}</span>
-                      </button>
-                    ) : (
-                      <>
-                        <strong>Orden #{orden.numero}</strong>
-                        <span>{orden.lineas.map((linea) => `${linea.cantidad} × ${linea.nombre}${linea.nota ? ` (${linea.nota})` : ""}`).join(", ")}</span>
-                      </>
-                    )}
+                    <button
+                      type="button"
+                      className="pedido-orden__abrir"
+                      aria-label={`Abrir acciones de Orden #${orden.numero}, Mesa ${cuenta.mesa}`}
+                      onClick={() => onAbrir(cuenta.id, orden.id)}
+                    >
+                      <strong>Orden #{orden.numero}</strong>
+                      <span>{orden.lineas.map((linea) => `${linea.cantidad} × ${linea.nombre}${linea.nota ? ` (${linea.nota})` : ""}`).join(", ")}</span>
+                    </button>
                     {avisos.map((incidencia) => (
                       <div className={`mesero-incidencia is-${incidencia.tipo}`} key={incidencia.id}>
                         {incidencia.tipo === "sugerencia" ? <ArrowRightLeft size={18} aria-hidden="true" /> : <AlertTriangle size={18} aria-hidden="true" />}
@@ -182,40 +183,41 @@ export function Pedidos({
             </div>
             {cuenta.ordenes.length === 0 ? <p className="login-odoo__ayuda">Sin órdenes aún</p> : null}
           </Card>
-        ))}
-        {cuentas.length === 0 ? <div className="empty-state"><ReceiptText size={30} aria-hidden="true" /><strong>No hay cuentas en curso</strong><span>Las nuevas órdenes aparecerán aquí.</span></div> : null}
+          ))
+        )}
+        {!cargando && cuentas.length === 0 ? <div className="empty-state"><ReceiptText size={30} aria-hidden="true" /><strong>No hay cuentas en curso</strong><span>Las nuevas órdenes aparecerán aquí.</span></div> : null}
       </div>
 
       {eliminando ? (
-        <div className="modal-fondo" role="presentation">
-          <Card className="inventario-modal mesero-eliminar-modal" role="dialog" aria-modal="true" aria-labelledby="eliminar-incidencia-titulo">
+        <Dialog aria-label={tituloEliminar} onOverlayClick={() => setEliminando(null)}>
+          <DialogContent className="inventario-modal mesero-eliminar-modal w-[min(440px,calc(100vw-1.5rem))] p-[1.4rem]">
             <span className="page-eyebrow">Confirmación del mesero</span>
-            <h2 id="eliminar-incidencia-titulo">¿Eliminar {eliminando.alcance === "orden" ? "la orden completa" : eliminando.producto ?? "el producto"}?</h2>
+            <h2>{tituloEliminar}</h2>
             <p>El cliente no aceptó la sugerencia. Al confirmar se anulará {eliminando.alcance === "orden" ? "todo el pedido" : "este producto"} y cocina recibirá el aviso.</p>
             <label>PIN del mesero<Input type="password" inputMode="numeric" autoComplete="off" value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 12))} /></label>
-            {error ? <p className="inventario-modal__error" role="alert">{error}</p> : null}
+            {error ? <Alerta>{error}</Alerta> : null}
             <div className="inventario-modal__acciones">
               <Button type="button" variant="outline" onClick={() => setEliminando(null)}>No eliminar</Button>
               <Button type="button" variant="destructive" disabled={guardando} onClick={eliminar}>{guardando ? "Eliminando…" : "Sí, eliminar"}</Button>
             </div>
-          </Card>
-        </div>
+          </DialogContent>
+        </Dialog>
       ) : null}
       {aceptando ? (
-        <div className="modal-fondo" role="presentation">
-          <Card className="inventario-modal" role="dialog" aria-modal="true" aria-labelledby="aceptar-sugerencia-titulo">
+        <Dialog aria-label={tituloAceptar} onOverlayClick={() => setAceptando(null)}>
+          <DialogContent className="inventario-modal w-[min(440px,calc(100vw-1.5rem))] p-[1.4rem]">
             <span className="page-eyebrow">Confirmación del mesero</span>
-            <h2 id="aceptar-sugerencia-titulo">Aceptar cambio para {aceptando.producto ?? "la orden"}</h2>
+            <h2>{tituloAceptar}</h2>
             <p>{aceptando.propuesta}</p>
             {aceptando.productoReemplazo ? <p>La orden cambiará a <strong>{aceptando.productoReemplazo}</strong> solo para el producto solicitado.</p> : null}
             <label>PIN del mesero<Input type="password" inputMode="numeric" autoComplete="off" value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 12))} /></label>
-            {error ? <p className="inventario-modal__error" role="alert">{error}</p> : null}
+            {error ? <Alerta>{error}</Alerta> : null}
             <div className="inventario-modal__acciones">
               <Button type="button" variant="outline" onClick={() => setAceptando(null)}>Cancelar</Button>
               <Button type="button" disabled={guardando} onClick={aceptar}>{guardando ? "Aplicando…" : "Aceptar y aplicar cambio"}</Button>
             </div>
-          </Card>
-        </div>
+          </DialogContent>
+        </Dialog>
       ) : null}
     </section>
   );

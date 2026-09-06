@@ -238,7 +238,6 @@ const LOGO_MAX = 400 * 1024;
 function configPublica(config: AppConfig) {
   return {
     tablet_cocina: config.tablet_cocina,
-    pin_al_enviar: config.pin_al_enviar,
     barra_ultimos_pedidos: config.barra_ultimos_pedidos,
     barra_atrasados: config.barra_atrasados,
     nombre_local: config.nombre_local,
@@ -246,7 +245,6 @@ function configPublica(config: AppConfig) {
     tipografia: config.tipografia,
     tamano_ui: config.tamano_ui,
     pin_habilitado: config.pin_habilitado,
-    pin_momento: config.pin_momento,
     confirmar_comanda: config.confirmar_comanda,
     pin_al_anular: config.pin_al_anular,
     auditoria_anulaciones: config.auditoria_anulaciones,
@@ -315,10 +313,12 @@ function normalizarSlotsInput(slots: unknown[]): Parameters<typeof configurarSlo
   });
 }
 
-async function meseroAlCrear(db: AppDeps["db"], config: AppConfig, pin?: string) {
-  if (config.pin_habilitado && config.pin_momento === "crear_orden") {
-    return exigirPin(db, pin ?? "", "crear_pedido");
-  }
+/**
+ * Quién firma la apertura de una mesa o pedido del modelo legacy. El PIN no se
+ * exige al crear (la autorización única es al enviar, vía `pin_habilitado`);
+ * si el cliente manda uno se valida, y si no firma la sesión abierta.
+ */
+async function meseroAlCrear(db: AppDeps["db"], pin?: string) {
   if (pin) return exigirPin(db, pin, "crear_pedido");
   const s = sesionAbierta(db);
   if (!s) throw new PinError("credenciales_invalidas", "Hace falta sesión");
@@ -620,7 +620,6 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
       tipografia?: AppConfig["tipografia"];
       tamano_ui?: AppConfig["tamano_ui"];
       pin_habilitado?: boolean;
-      pin_momento?: AppConfig["pin_momento"];
       confirmar_comanda?: boolean;
       auditoria_anulaciones?: boolean;
       justificacion_anulacion?: boolean;
@@ -652,7 +651,6 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
       config.tamano_ui = body.tamano_ui;
     }
     if (typeof body.pin_habilitado === "boolean") config.pin_habilitado = body.pin_habilitado;
-    if (body.pin_momento === "crear_orden" || body.pin_momento === "enviar") config.pin_momento = body.pin_momento;
     if (typeof body.confirmar_comanda === "boolean") config.confirmar_comanda = body.confirmar_comanda;
     if (typeof body.auditoria_anulaciones === "boolean") config.auditoria_anulaciones = body.auditoria_anulaciones;
     if (typeof body.justificacion_anulacion === "boolean") config.justificacion_anulacion = body.justificacion_anulacion;
@@ -864,7 +862,7 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
 
   app.post("/api/pedidos", deprecado("/api/ordenes"), async (c) => {
     const body = await c.req.json<{ cubiertos?: number; pin?: string }>().catch(() => ({ cubiertos: 1 } as { cubiertos?: number; pin?: string }));
-    const mesero = await meseroAlCrear(db, config, body.pin);
+    const mesero = await meseroAlCrear(db, body.pin);
     return c.json(abrirTab(db, { cubiertos: body.cubiertos || 1, preset: "salon", meseroId: mesero.id }));
   });
 
@@ -950,7 +948,7 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
 
   app.post("/api/mesas/:id/abrir", deprecado("/api/ordenes"), async (c) => {
     const body = await c.req.json<{ cubiertos?: number; pin?: string }>();
-    const mesero = await meseroAlCrear(db, config, body.pin);
+    const mesero = await meseroAlCrear(db, body.pin);
     const result = abrirMesa(db, {
       mesaId: Number(c.req.param("id")),
       cubiertos: body.cubiertos || 4,

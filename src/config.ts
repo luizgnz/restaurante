@@ -8,7 +8,6 @@ export type PoliticaInventario =
 
 export type TipografiaPos = "sans" | "serif" | "redondeada";
 export type TamanoUi = "compacto" | "normal" | "grande";
-export type PinMomento = "crear_orden" | "enviar";
 
 export type ImpresoraRedConfig = {
   habilitada: boolean;
@@ -37,7 +36,6 @@ export type AppConfig = {
    * el restaurante los reutiliza. `false`: se registran como merma.
    */
   devolver_insumos_preparados: boolean;
-  pin_al_enviar: boolean;
   pin_al_emitir_precuenta: boolean;
   pin_al_enviar_caja: boolean;
   tablet_cocina: boolean;
@@ -52,7 +50,6 @@ export type AppConfig = {
   tipografia: TipografiaPos;
   tamano_ui: TamanoUi;
   pin_habilitado: boolean;
-  pin_momento: PinMomento;
   confirmar_comanda: boolean;
   pin_al_anular: boolean;
   auditoria_anulaciones: boolean;
@@ -74,7 +71,6 @@ export function defaultConfig(): AppConfig {
     politica_inventario: "reserva_al_enviar_firme_al_enviar_caja",
     bloqueo_sin_stock: "avisar",
     devolver_insumos_preparados: true,
-    pin_al_enviar: true,
     pin_al_emitir_precuenta: true,
     pin_al_enviar_caja: true,
     tablet_cocina: false,
@@ -89,7 +85,6 @@ export function defaultConfig(): AppConfig {
     tipografia: "sans",
     tamano_ui: "normal",
     pin_habilitado: true,
-    pin_momento: "enviar",
     confirmar_comanda: false,
     pin_al_anular: true,
     auditoria_anulaciones: true,
@@ -126,17 +121,13 @@ export function defaultConfig(): AppConfig {
 export function normalizarConfig(cfg: AppConfig): AppConfig {
   const defaults = defaultConfig();
   return {
-    ...sincronizarPinEnviar(cfg),
+    ...cfg,
     justificacion_anulacion: cfg.auditoria_anulaciones && cfg.justificacion_anulacion,
     impresora_comanda: { ...defaults.impresora_comanda, ...cfg.impresora_comanda },
     impresora_boleta: { ...defaults.impresora_boleta, ...cfg.impresora_boleta },
     plantilla_comanda: { ...defaults.plantilla_comanda, ...cfg.plantilla_comanda },
     plantilla_boleta: { ...defaults.plantilla_boleta, ...cfg.plantilla_boleta },
   };
-}
-
-export function sincronizarPinEnviar(cfg: AppConfig): AppConfig {
-  return { ...cfg, pin_al_enviar: cfg.pin_habilitado && cfg.pin_momento === "enviar" };
 }
 
 export function configPath(dir: string): string {

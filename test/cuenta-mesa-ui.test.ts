@@ -6,7 +6,6 @@ import {
   actualizarLineaConstructor,
   crearLineasConstructor,
   lineasPersistibles,
-  revelarProducto,
   type ProductoCarta,
 } from "../ui/src/pantallas/ConstructorOrden.tsx";
 import { CuentaMesa, type CuentaDetalleUi } from "../ui/src/pantallas/CuentaMesa.tsx";
@@ -128,7 +127,7 @@ describe("constructor de orden", () => {
     expect(html).not.toContain('aria-label="Agregar una unidad de Jugo"');
     // Sin notas por producto: solo indicaciones generales de la orden.
     expect(html).not.toContain("Nota del producto");
-    expect(html).toContain("Indicaciones del cliente");
+    expect(html).toContain("Indicaciones para cocina");
   });
 
   it("revelar un producto muestra el control en cero sin sumarlo a la orden", () => {
@@ -150,27 +149,6 @@ describe("constructor de orden", () => {
     expect(html).not.toContain("0 × Jugo");
     expect(html).toContain("Toca un producto del menú para agregarlo");
     expect(html).toContain("disabled");
-  });
-
-  it("revelar otro producto desactiva el revelado anterior que quedó en cero", () => {
-    const revelada = revelarProducto([], 1, () => "ui-a");
-
-    expect(revelada).toEqual([{ idUi: "ui-a", productoId: 1, cantidad: 0, nota: "" }]);
-
-    // Quedó en cero: al tocar otro producto se descarta.
-    const cambio = revelarProducto(revelada, 2, () => "ui-b");
-    expect(cambio).toEqual([{ idUi: "ui-b", productoId: 2, cantidad: 0, nota: "" }]);
-
-    // Con unidades se conserva junto al nuevo revelado.
-    const conUnidades = actualizarLineaConstructor(cambio, "ui-b", { cantidad: 3 });
-    const tercero = revelarProducto(conUnidades, 1, () => "ui-c");
-    expect(tercero.map((linea) => [linea.productoId, linea.cantidad])).toEqual([
-      [2, 3],
-      [1, 0],
-    ]);
-
-    // Tocar el mismo producto no lo duplica.
-    expect(revelarProducto(tercero, 1, () => "ui-d")).toBe(tercero);
   });
 
   it("restaura duplicados y cambia solo la línea elegida", () => {

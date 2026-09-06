@@ -10,7 +10,6 @@ const valores = {
   tipografia: "sans" as const,
   tamano_ui: "normal" as const,
   pin_habilitado: true,
-  pin_momento: "enviar" as const,
   confirmar_comanda: false,
   auditoria_anulaciones: false,
   devolver_insumos_preparados: false,
@@ -41,10 +40,13 @@ describe("opciones", () => {
     expect(html).toContain("Servidor y red local");
     expect(html).not.toContain("Punto de venta");
     expect(html).not.toContain("todo el POS");
-    expect(html).toContain("Solicitar PIN");
-    expect(html).toContain("Confirmar comanda");
+    expect(html).toContain("Pedir PIN al enviar cada orden");
+    expect(html).toContain("Pedir PIN al emitir precuenta");
+    expect(html).toContain("Pedir PIN al enviar a caja");
+    expect(html).toContain("Mostrar vista previa de la comanda antes de enviar");
+    expect(html).not.toContain("Antes de crear la orden");
     expect(html).toContain("Pedir precuenta antes de cerrar la cuenta");
-    expect(html).toContain("Pedir permiso avanzado para cerrar la cuenta");
+    expect(html).toContain("El PIN de caja debe ser de un usuario con rol de caja o administrador");
     expect(html).toContain("ESC/POS");
     expect(html).not.toContain("Tablet en cocina");
   });

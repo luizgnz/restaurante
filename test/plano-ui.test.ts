@@ -47,7 +47,7 @@ describe("plano restaurante", () => {
     expect(html).toContain("top:40%");
   });
 
-  it("tiene Nueva orden y # para mesa; no QR ni Registrar", () => {
+  it("tiene Nueva orden; no QR ni Registrar", () => {
     const html = renderToStaticMarkup(
       createElement(Plano, {
         piso: "Piso 1",
@@ -79,7 +79,6 @@ describe("plano restaurante", () => {
     );
     expect(html).toContain("Nueva orden");
     expect(html).not.toContain("Imagen de fondo");
-    expect(html).toContain("#");
     expect(html).not.toContain("QR");
     expect(html).not.toContain("Registrar");
     expect(html).toContain("Últimos");
