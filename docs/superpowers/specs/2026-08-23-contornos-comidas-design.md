@@ -77,8 +77,8 @@ Slot con un solo grupo = fijo (proteína). Slot con varios grupos = intercambiab
 
 ## 4. Precios
 
-- Precio efectivo de la línea = `cantidad × precio_centavos` (del producto) **más** la suma de `orden_linea_contornos.precio_centavos × cantidad` (suplementos y extras escalan con la cantidad, porque la selección es por línea).
-- `versionEfectivaOrden` / `totalEfectivoCuenta` incorporan el adicional en `LineaEfectiva.precioCentavos` o en un campo `adicionalCentavos` nuevo (implementación elige; los totales de precuenta y cuenta deben reflejarlo).
+- Precio vigente de la línea = `cantidad × precio_centavos` (del producto) **más** la suma de `orden_linea_contornos.precio_centavos × cantidad` (suplementos y extras escalan con la cantidad, porque la selección es por línea).
+- `versionVigenteOrden` / `totalVigenteCuenta` incorporan el adicional en `LineaVigente.precioCentavos` o en un campo `adicionalCentavos` nuevo (implementación elige; los totales de precuenta y cuenta deben reflejarlo).
 - Ejemplo: Menú $8.900 + extra pollo $1.500, cantidad 2 → línea cobra 2 × (8.900 + 1.500).
 
 ## 5. Flujo de pedido (UI)

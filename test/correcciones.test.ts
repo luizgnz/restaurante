@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { defaultConfig, type AppConfig, type PoliticaInventario } from "../src/config.ts";
 import { obtenerCuenta } from "../src/modules/cuentas/cuentas.ts";
-import { totalEfectivoCuenta } from "../src/modules/cuentas/totales.ts";
+import { totalVigenteCuenta } from "../src/modules/cuentas/totales.ts";
 import { crearEmpleado } from "../src/modules/empleados/empleados.ts";
 import {
   ajustarConsumoDeCorreccion,
@@ -20,12 +20,12 @@ import {
 import {
   calcularDiferencias,
   corregirOrden,
-  indicacionesEfectivasOrden,
+  indicacionesVigentesOrden,
   type CambioOrdenInput,
   type EntradaCorreccion,
 } from "../src/modules/ordenes/correcciones.ts";
 import { enviarOrden } from "../src/modules/ordenes/enviar.ts";
-import { versionEfectivaOrden, type LineaEfectiva, type NuevaLineaOrden } from "../src/modules/ordenes/ordenes.ts";
+import { versionVigenteOrden, type LineaVigente, type NuevaLineaOrden } from "../src/modules/ordenes/ordenes.ts";
 import { seedCartaDemo, type SeedIds } from "../src/modules/productos/seed.ts";
 import { MemoryPrinter } from "../src/print/memory.ts";
 import { openTestDb } from "./helpers.ts";
@@ -37,7 +37,7 @@ type Escenario = {
   ids: SeedIds;
   cuentaId: number;
   ordenId: number;
-  lineas: LineaEfectiva[];
+  lineas: LineaVigente[];
 };
 
 let contadorClaves = 0;
@@ -71,7 +71,7 @@ async function ordenEnviada(
     ids,
     cuentaId: envio.cuentaId,
     ordenId: envio.ordenId,
-    lineas: versionEfectivaOrden(db, envio.ordenId),
+    lineas: versionVigenteOrden(db, envio.ordenId),
   };
 }
 
@@ -96,7 +96,7 @@ function corregir(
   );
 }
 
-function cambio(linea: LineaEfectiva, cantidad: number, nota?: string | null): CambioOrdenInput {
+function cambio(linea: LineaVigente, cantidad: number, nota?: string | null): CambioOrdenInput {
   return {
     lineaClave: linea.lineaClave,
     productoId: linea.productoId,
@@ -169,7 +169,7 @@ function etapasDeCorreccion(db: Db, correccionId: number): string[] {
 }
 
 describe("calcularDiferencias", () => {
-  const base: LineaEfectiva = {
+  const base: LineaVigente = {
     lineaClave: "h-a",
     ordenLineaId: 10,
     productoId: 5,
@@ -232,13 +232,13 @@ describe("calcularDiferencias", () => {
   });
 
   it("no toca las líneas que el input no menciona", () => {
-    const otra: LineaEfectiva = { ...base, lineaClave: "j-a", productoId: 9, nombre: "Jugo", cantidad: 3 };
+    const otra: LineaVigente = { ...base, lineaClave: "j-a", productoId: 9, nombre: "Jugo", cantidad: 3 };
     const diffs = calcularDiferencias([base, otra], [{ lineaClave: "j-a", productoId: 9, cantidad: 1 }]);
     expect(diffs.map((d) => d.lineaClave)).toEqual(["j-a"]);
   });
 
   it("normaliza notas en blanco a null", () => {
-    const conNota: LineaEfectiva = { ...base, nota: "sin cebolla" };
+    const conNota: LineaVigente = { ...base, nota: "sin cebolla" };
     const diffs = calcularDiferencias([conNota], [{ lineaClave: "h-a", productoId: 5, cantidad: 2, nota: "   " }]);
     expect(diffs[0]).toMatchObject({ notaAnterior: "sin cebolla", notaNueva: null });
   });
@@ -258,7 +258,7 @@ describe("corregirOrden", () => {
         .prepare("SELECT id, cantidad, precio_centavos, nota, linea_clave FROM orden_lineas WHERE orden_id = ?")
         .all(e.ordenId),
     ).toEqual(antes);
-    expect(versionEfectivaOrden(e.db, e.ordenId)[0]).toMatchObject({ cantidad: 1, nota: "sin cebolla" });
+    expect(versionVigenteOrden(e.db, e.ordenId)[0]).toMatchObject({ cantidad: 1, nota: "sin cebolla" });
     expect(contar(e.db, "orden_correcciones")).toBe(1);
     e.db.close();
   });
@@ -312,7 +312,7 @@ describe("corregirOrden", () => {
     await corregir(e.db, { ordenId: e.ordenId, lineas: [cambio(e.lineas[0], 3)] }, printer);
 
     expect(ticket(printer)).toContain("+ 2 Jugo");
-    expect(versionEfectivaOrden(e.db, e.ordenId)[0].cantidad).toBe(3);
+    expect(versionVigenteOrden(e.db, e.ordenId)[0].cantidad).toBe(3);
     e.db.close();
   });
 
@@ -337,7 +337,7 @@ describe("corregirOrden", () => {
     expect((e.db.prepare("SELECT estado FROM ordenes WHERE id = ?").get(e.ordenId) as { estado: string }).estado).toBe(
       "corregida",
     );
-    expect(versionEfectivaOrden(e.db, e.ordenId).filter((l) => l.cantidad > 0).map((l) => l.productoId)).toEqual([
+    expect(versionVigenteOrden(e.db, e.ordenId).filter((l) => l.cantidad > 0).map((l) => l.productoId)).toEqual([
       e.ids.jugo,
     ]);
     e.db.close();
@@ -370,20 +370,20 @@ describe("corregirOrden", () => {
     expect(
       (e.db.prepare("SELECT tipo FROM comandas WHERE id = ?").get(result.comandaId) as { tipo: string }).tipo,
     ).toBe("anulacion");
-    expect(totalEfectivoCuenta(e.db, e.cuentaId)).toBe(0);
+    expect(totalVigenteCuenta(e.db, e.cuentaId)).toBe(0);
     expect(reserva(e.db, e.ids.pan)).toBe(0);
     expect(reserva(e.db, e.ids.jugo)).toBe(0);
     e.db.close();
   });
 
-  it("una corrección posterior compara contra la última versión efectiva", async () => {
+  it("una corrección posterior compara contra la última versión vigente", async () => {
     const e = await ordenEnviada((ids) => [{ productoId: ids.hamburguesa, cantidad: 2 }]);
     await corregir(e.db, { ordenId: e.ordenId, lineas: [cambio(e.lineas[0], 1)] });
 
-    const efectivas = versionEfectivaOrden(e.db, e.ordenId);
-    expect(efectivas[0].cantidad).toBe(1);
+    const vigentes = versionVigenteOrden(e.db, e.ordenId);
+    expect(vigentes[0].cantidad).toBe(1);
     const printer = new MemoryPrinter();
-    const segunda = await corregir(e.db, { ordenId: e.ordenId, lineas: [cambio(efectivas[0], 3)] }, printer);
+    const segunda = await corregir(e.db, { ordenId: e.ordenId, lineas: [cambio(vigentes[0], 3)] }, printer);
 
     expect(ticket(printer)).toContain("+ 2 Hamburguesa");
     const fila = e.db
@@ -397,7 +397,7 @@ describe("corregirOrden", () => {
         }
       ).numero_version,
     ).toBe(2);
-    expect(versionEfectivaOrden(e.db, e.ordenId)[0].cantidad).toBe(3);
+    expect(versionVigenteOrden(e.db, e.ordenId)[0].cantidad).toBe(3);
     e.db.close();
   });
 
@@ -416,9 +416,9 @@ describe("corregirOrden", () => {
 
     expect(ticket(printer)).toContain("+ 2 Jugo (sin hielo)");
     expect(contar(e.db, "orden_lineas")).toBe(1);
-    const efectivas = versionEfectivaOrden(e.db, e.ordenId);
-    expect(efectivas).toHaveLength(2);
-    expect(efectivas[1]).toMatchObject({
+    const vigentes = versionVigenteOrden(e.db, e.ordenId);
+    expect(vigentes).toHaveLength(2);
+    expect(vigentes[1]).toMatchObject({
       lineaClave: "agregado-jugo",
       ordenLineaId: null,
       productoId: e.ids.jugo,
@@ -427,7 +427,7 @@ describe("corregirOrden", () => {
       precioCentavos: 2500,
     });
     expect(reserva(e.db, e.ids.jugo)).toBe(2);
-    expect(totalEfectivoCuenta(e.db, e.cuentaId)).toBe(8900 + 2 * 2500);
+    expect(totalVigenteCuenta(e.db, e.cuentaId)).toBe(8900 + 2 * 2500);
     expect(etapasDeCorreccion(e.db, result.correccionId)).toEqual(["por_preparar"]);
     e.db.close();
   });
@@ -442,9 +442,9 @@ describe("corregirOrden", () => {
 
     await corregir(e.db, { ordenId: e.ordenId, lineas: [cambio(e.lineas[1], 3)] }, printer);
 
-    const efectivas = versionEfectivaOrden(e.db, e.ordenId);
-    expect(efectivas[0]).toMatchObject({ lineaClave: e.lineas[0].lineaClave, cantidad: 1, nota: "sin cebolla" });
-    expect(efectivas[1]).toMatchObject({ lineaClave: e.lineas[1].lineaClave, cantidad: 3, nota: "extra queso" });
+    const vigentes = versionVigenteOrden(e.db, e.ordenId);
+    expect(vigentes[0]).toMatchObject({ lineaClave: e.lineas[0].lineaClave, cantidad: 1, nota: "sin cebolla" });
+    expect(vigentes[1]).toMatchObject({ lineaClave: e.lineas[1].lineaClave, cantidad: 3, nota: "extra queso" });
     expect(ticket(printer)).toContain("+ 2 Hamburguesa (extra queso)");
     e.db.close();
   });
@@ -455,13 +455,13 @@ describe("corregirOrden", () => {
       ordenId: e.ordenId,
       lineas: [{ lineaClave: "agregado-jugo", productoId: e.ids.jugo, cantidad: 2 }],
     });
-    const efectivas = versionEfectivaOrden(e.db, e.ordenId);
+    const vigentes = versionVigenteOrden(e.db, e.ordenId);
     const printer = new MemoryPrinter();
 
-    const segunda = await corregir(e.db, { ordenId: e.ordenId, lineas: [cambio(efectivas[1], 0)] }, printer);
+    const segunda = await corregir(e.db, { ordenId: e.ordenId, lineas: [cambio(vigentes[1], 0)] }, printer);
 
     expect(ticket(printer)).toContain("ANULADO: 2 Jugo");
-    expect(versionEfectivaOrden(e.db, e.ordenId)[1].cantidad).toBe(0);
+    expect(versionVigenteOrden(e.db, e.ordenId)[1].cantidad).toBe(0);
     expect(reserva(e.db, e.ids.jugo)).toBe(0);
     // La tarea que había creado la primera corrección se cancela; el evento que
     // la anula queda como aviso.
@@ -483,7 +483,7 @@ describe("corregirOrden", () => {
     const texto = ticket(printer);
     expect(texto).toContain("NOTA CAMBIADA: Hamburguesa (antes: sin cebolla) → sin tomate");
     expect(texto).not.toContain("- 0");
-    expect(versionEfectivaOrden(e.db, e.ordenId)[0].nota).toBe("sin tomate");
+    expect(versionVigenteOrden(e.db, e.ordenId)[0].nota).toBe("sin tomate");
     expect(reserva(e.db, e.ids.pan)).toBe(1);
     expect(etapasDeCorreccion(e.db, result.correccionId)).toEqual(["aviso"]);
     expect(etapaDeOrdenLinea(e.db, e.lineas[0].ordenLineaId)).toBe("por_preparar");
@@ -744,7 +744,7 @@ describe("corregirOrden", () => {
       new MemoryPrinter(),
       defaultConfig(),
     );
-    const ajena = versionEfectivaOrden(e.db, otra.ordenId)[0];
+    const ajena = versionVigenteOrden(e.db, otra.ordenId)[0];
 
     await expect(
       corregir(e.db, {
@@ -812,7 +812,7 @@ describe("corregirOrden", () => {
     const sana = new MemoryPrinter();
     await corregir(
       e.db,
-      { ordenId: e.ordenId, lineas: [cambio(versionEfectivaOrden(e.db, e.ordenId)[0], 4)] },
+      { ordenId: e.ordenId, lineas: [cambio(versionVigenteOrden(e.db, e.ordenId)[0], 4)] },
       sana,
     );
     expect(ticket(sana)).toContain("- 1 Jugo");
@@ -856,7 +856,7 @@ describe("corregirOrden idempotente", () => {
     expect(contar(e.db, "print_jobs")).toBe(2);
     expect(reserva(e.db, e.ids.jugo)).toBe(1);
     expect(printer.chunks).toHaveLength(1);
-    expect(versionEfectivaOrden(e.db, e.ordenId)[0].cantidad).toBe(1);
+    expect(versionVigenteOrden(e.db, e.ordenId)[0].cantidad).toBe(1);
     e.db.close();
   });
 
@@ -875,7 +875,7 @@ describe("corregirOrden idempotente", () => {
     });
 
     expect(segunda).toEqual({ ...primera, repetida: true });
-    expect(versionEfectivaOrden(e.db, e.ordenId)[0].cantidad).toBe(1);
+    expect(versionVigenteOrden(e.db, e.ordenId)[0].cantidad).toBe(1);
     expect(contar(e.db, "orden_correcciones")).toBe(1);
     expect(reserva(e.db, e.ids.jugo)).toBe(1);
     expect((e.db.prepare("SELECT estado FROM ordenes WHERE id = ?").get(e.ordenId) as { estado: string }).estado).toBe(
@@ -943,7 +943,7 @@ describe("corregirOrden idempotente", () => {
       new MemoryPrinter(),
       cfg,
     );
-    const lineaOtra = versionEfectivaOrden(e.db, otra.ordenId)[0];
+    const lineaOtra = versionVigenteOrden(e.db, otra.ordenId)[0];
 
     const primera = await corregir(e.db, {
       ordenId: e.ordenId,
@@ -961,8 +961,8 @@ describe("corregirOrden idempotente", () => {
     expect(segunda.repetida).toBe(false);
     expect(segunda.correccionId).not.toBe(primera.correccionId);
     expect(contar(e.db, "orden_correcciones")).toBe(2);
-    expect(versionEfectivaOrden(e.db, e.ordenId)[0].cantidad).toBe(1);
-    expect(versionEfectivaOrden(e.db, otra.ordenId)[0].cantidad).toBe(2);
+    expect(versionVigenteOrden(e.db, e.ordenId)[0].cantidad).toBe(1);
+    expect(versionVigenteOrden(e.db, otra.ordenId)[0].cantidad).toBe(2);
     expect(reserva(e.db, e.ids.jugo)).toBe(1);
     expect(reserva(e.db, e.ids.agua)).toBe(2);
     e.db.close();
@@ -982,7 +982,7 @@ describe("corregirOrden idempotente", () => {
       new MemoryPrinter(),
       cfg,
     );
-    const lineaOtra = versionEfectivaOrden(e.db, otra.ordenId)[0];
+    const lineaOtra = versionVigenteOrden(e.db, otra.ordenId)[0];
     const enLaOtra = await corregir(e.db, {
       ordenId: otra.ordenId,
       lineas: [cambio(lineaOtra, 1)],
@@ -998,7 +998,7 @@ describe("corregirOrden idempotente", () => {
     expect(repetida).toEqual({ ...enLaOtra, repetida: true });
     expect(repetida.ordenId).toBe(otra.ordenId);
     // La orden que nunca se corrigió sigue intacta.
-    expect(versionEfectivaOrden(e.db, e.ordenId)[0].cantidad).toBe(3);
+    expect(versionVigenteOrden(e.db, e.ordenId)[0].cantidad).toBe(3);
     expect(reserva(e.db, e.ids.jugo)).toBe(3);
     e.db.close();
   });
@@ -1043,16 +1043,16 @@ describe("corregirOrden normaliza la lineaClave", () => {
       lineas: [{ ...cambio(original, 1), lineaClave: ` ${original.lineaClave} ` }],
     });
 
-    const efectiva = versionEfectivaOrden(e.db, e.ordenId);
-    expect(efectiva).toHaveLength(1);
-    expect(efectiva[0]).toMatchObject({ lineaClave: original.lineaClave, cantidad: 1 });
+    const vigente = versionVigenteOrden(e.db, e.ordenId);
+    expect(vigente).toHaveLength(1);
+    expect(vigente[0]).toMatchObject({ lineaClave: original.lineaClave, cantidad: 1 });
     expect(contar(e.db, "orden_correccion_lineas")).toBe(1);
     expect(
       (e.db.prepare("SELECT linea_clave FROM orden_correccion_lineas LIMIT 1").get() as { linea_clave: string })
         .linea_clave,
     ).toBe(original.lineaClave);
     expect(reserva(e.db, e.ids.jugo)).toBe(1);
-    expect(totalEfectivoCuenta(e.db, e.cuentaId)).toBe(2500);
+    expect(totalVigenteCuenta(e.db, e.cuentaId)).toBe(2500);
     e.db.close();
   });
 
@@ -1128,7 +1128,7 @@ describe("corregirOrden revalida dentro de la transacción", () => {
     e.db.close();
   });
 
-  it("calcula el diff contra la versión efectiva vigente al abrir la transacción", async () => {
+  it("calcula el diff contra la versión vigente al abrir la transacción", async () => {
     const e = await ordenEnviada((ids) => [{ productoId: ids.jugo, cantidad: 4 }]);
     const printer = new MemoryPrinter();
 
@@ -1165,7 +1165,7 @@ describe("corregirOrden revalida dentro de la transacción", () => {
         }
       ).numero_version,
     ).toBe(2);
-    expect(versionEfectivaOrden(e.db, e.ordenId)[0].cantidad).toBe(3);
+    expect(versionVigenteOrden(e.db, e.ordenId)[0].cantidad).toBe(3);
     e.db.close();
   });
 });
@@ -1235,7 +1235,7 @@ describe("corregirOrden y las etapas de cocina", () => {
 
       expect(etapaDeOrdenLinea(e.db, e.lineas[0].ordenLineaId)).toBe(terminal);
       expect(etapasDeCorreccion(e.db, result.correccionId)).toEqual(["aviso"]);
-      expect(versionEfectivaOrden(e.db, e.ordenId)[0].cantidad).toBe(0);
+      expect(versionVigenteOrden(e.db, e.ordenId)[0].cantidad).toBe(0);
       e.db.close();
     });
   }
@@ -1247,7 +1247,7 @@ describe("corregirOrden y las etapas de cocina", () => {
 
     const segunda = await corregir(e.db, {
       ordenId: e.ordenId,
-      lineas: [cambio(versionEfectivaOrden(e.db, e.ordenId)[0], 0)],
+      lineas: [cambio(versionVigenteOrden(e.db, e.ordenId)[0], 0)],
     });
 
     expect(etapasDeCorreccion(e.db, primera.correccionId)).toEqual(["aviso"]);
@@ -1371,8 +1371,8 @@ describe("corregirOrden e inventario por línea", () => {
       expect(onHand(e.db, e.ids.jugo)).toBe(descuenta ? 9 : 10);
       expect(reserva(e.db, e.ids.jugo)).toBe(descuenta ? 0 : 1);
 
-      const efectiva = versionEfectivaOrden(e.db, e.ordenId)[0];
-      await corregir(e.db, { ordenId: e.ordenId, lineas: [cambio(efectiva, 3)] }, undefined, cfg);
+      const vigente = versionVigenteOrden(e.db, e.ordenId)[0];
+      await corregir(e.db, { ordenId: e.ordenId, lineas: [cambio(vigente, 3)] }, undefined, cfg);
       expect(onHand(e.db, e.ids.jugo)).toBe(descuenta ? 7 : 10);
       expect(reserva(e.db, e.ids.jugo)).toBe(descuenta ? 0 : 3);
       expect(libro(e.db, e.ordenId, e.lineas[0].lineaClave, e.ids.jugo)).toEqual({
@@ -1395,8 +1395,8 @@ describe("corregirOrden e inventario por línea", () => {
       expect(saldo(e.ids.carne)).toBe(descuenta ? 1850 : 150);
       expect(saldo(e.ids.lechuga)).toBe(descuenta ? 380 : 20);
 
-      const efectiva = versionEfectivaOrden(e.db, e.ordenId)[0];
-      await corregir(e.db, { ordenId: e.ordenId, lineas: [cambio(efectiva, 3)] }, undefined, cfg);
+      const vigente = versionVigenteOrden(e.db, e.ordenId)[0];
+      await corregir(e.db, { ordenId: e.ordenId, lineas: [cambio(vigente, 3)] }, undefined, cfg);
       expect(saldo(e.ids.pan)).toBe(descuenta ? 17 : 3);
       expect(saldo(e.ids.carne)).toBe(descuenta ? 1550 : 450);
       expect(libro(e.db, e.ordenId, e.lineas[0].lineaClave, e.ids.carne)).toEqual({
@@ -1578,7 +1578,7 @@ describe("corregirOrden e inventario por línea", () => {
     expect((e.db.prepare("SELECT estado FROM ordenes WHERE id = ?").get(e.ordenId) as { estado: string }).estado).toBe(
       "enviada",
     );
-    expect(versionEfectivaOrden(e.db, e.ordenId)[0].cantidad).toBe(2);
+    expect(versionVigenteOrden(e.db, e.ordenId)[0].cantidad).toBe(2);
     e.db.close();
   });
 
@@ -1631,7 +1631,7 @@ describe("corregirOrden e inventario por línea", () => {
       new MemoryPrinter(),
       defaultConfig(),
     );
-    const lineaCafe = versionEfectivaOrden(e.db, conCafe.ordenId)[0];
+    const lineaCafe = versionVigenteOrden(e.db, conCafe.ordenId)[0];
     expect(
       (e.db.prepare("SELECT count(*) AS c FROM orden_linea_inventario WHERE orden_id = ?").get(conCafe.ordenId) as {
         c: number;
@@ -1640,7 +1640,7 @@ describe("corregirOrden e inventario por línea", () => {
 
     await corregir(e.db, { ordenId: conCafe.ordenId, lineas: [cambio(lineaCafe, 1)] });
 
-    expect(versionEfectivaOrden(e.db, conCafe.ordenId)[0].cantidad).toBe(1);
+    expect(versionVigenteOrden(e.db, conCafe.ordenId)[0].cantidad).toBe(1);
     expect(
       (e.db.prepare("SELECT count(*) AS c FROM orden_linea_inventario WHERE orden_id = ?").get(conCafe.ordenId) as {
         c: number;
@@ -1731,8 +1731,8 @@ describe("corregirOrden usa las proporciones del envío, no la carta de hoy", ()
       lineas: [{ lineaClave: "hamburguesa-nueva", productoId: e.ids.hamburguesa, cantidad: 1 }],
     });
     cambiarReceta(e.db, e.ids);
-    const agregada = versionEfectivaOrden(e.db, e.ordenId).find((l) => l.lineaClave === "hamburguesa-nueva");
-    if (!agregada) throw new Error("la línea agregada no aparece en la versión efectiva");
+    const agregada = versionVigenteOrden(e.db, e.ordenId).find((l) => l.lineaClave === "hamburguesa-nueva");
+    if (!agregada) throw new Error("la línea agregada no aparece en la versión vigente");
     await corregir(e.db, { ordenId: e.ordenId, lineas: [cambio(agregada, 2)] });
 
     expect(reserva(e.db, e.ids.carne)).toBe(300);
@@ -1769,7 +1769,7 @@ describe("corregirOrden e indicaciones", () => {
         }
       ).indicaciones,
     ).toBe("servir al final");
-    expect(indicacionesEfectivasOrden(e.db, e.ordenId)).toBe("servir al final");
+    expect(indicacionesVigentesOrden(e.db, e.ordenId)).toBe("servir al final");
     expect(obtenerCuenta(e.db, e.cuentaId).ordenes[0]).toMatchObject({
       indicaciones: "servir al final",
       indicacionesOriginales: "servir junto",
@@ -1786,7 +1786,7 @@ describe("corregirOrden e indicaciones", () => {
     const texto = ticket(printer);
     expect(texto).toContain("INDICACIONES BORRADAS");
     expect(texto).not.toContain("Indicaciones: servir junto");
-    expect(indicacionesEfectivasOrden(e.db, e.ordenId)).toBeNull();
+    expect(indicacionesVigentesOrden(e.db, e.ordenId)).toBeNull();
     expect(obtenerCuenta(e.db, e.cuentaId).ordenes[0].indicaciones).toBeNull();
     expect(obtenerCuenta(e.db, e.cuentaId).ordenes[0].indicacionesOriginales).toBe("servir junto");
     e.db.close();
@@ -1814,7 +1814,7 @@ describe("corregirOrden y el precio congelado", () => {
       lineas: [{ lineaClave: "agregado-jugo", productoId: e.ids.jugo, cantidad: 2 }],
     });
 
-    expect(totalEfectivoCuenta(e.db, e.cuentaId)).toBe(8900 + 2 * 2500);
+    expect(totalVigenteCuenta(e.db, e.cuentaId)).toBe(8900 + 2 * 2500);
     e.db.prepare("UPDATE productos SET precio_centavos = 9900 WHERE id = ?").run(e.ids.jugo);
 
     expect(
@@ -1824,8 +1824,8 @@ describe("corregirOrden y el precio congelado", () => {
         ) as { precio_centavos: number }
       ).precio_centavos,
     ).toBe(2500);
-    expect(versionEfectivaOrden(e.db, e.ordenId)[1].precioCentavos).toBe(2500);
-    expect(totalEfectivoCuenta(e.db, e.cuentaId)).toBe(8900 + 2 * 2500);
+    expect(versionVigenteOrden(e.db, e.ordenId)[1].precioCentavos).toBe(2500);
+    expect(totalVigenteCuenta(e.db, e.cuentaId)).toBe(8900 + 2 * 2500);
     e.db.close();
   });
 
@@ -1842,8 +1842,8 @@ describe("corregirOrden y el precio congelado", () => {
         ) as { precio_centavos: number }
       ).precio_centavos,
     ).toBe(2500);
-    expect(versionEfectivaOrden(e.db, e.ordenId)[0].precioCentavos).toBe(2500);
-    expect(totalEfectivoCuenta(e.db, e.cuentaId)).toBe(3 * 2500);
+    expect(versionVigenteOrden(e.db, e.ordenId)[0].precioCentavos).toBe(2500);
+    expect(totalVigenteCuenta(e.db, e.cuentaId)).toBe(3 * 2500);
     e.db.close();
   });
 });

@@ -7,7 +7,8 @@ import {
 } from "../inventario/asientos.ts";
 import { exigirPin } from "../empleados/empleados.ts";
 import { cancelarLineasDeOrden, lineaPreparada } from "../kds/kds.ts";
-import { versionEfectivaOrden, type LineaEfectiva } from "../ordenes/ordenes.ts";
+import { versionVigenteOrden, type LineaVigente } from "../ordenes/ordenes.ts";
+import { totalVigenteCuenta } from "./totales.ts";
 
 export class CancelarCuentaError extends Error {
   codigo: "cuenta_inexistente" | "cuenta_cerrada" | "justificacion_requerida";
@@ -70,16 +71,17 @@ export async function cancelarCuenta(
       id: number;
       numero: number;
     }[];
+    const totalCentavos = totalVigenteCuenta(db, cuenta.id);
 
     let lineasPreparadas = 0;
     let lineasLiberadas = 0;
     const ordenLineaIds: number[] = [];
     const correccionLineaIds: number[] = [];
     for (const orden of ordenes) {
-      const efectivas = versionEfectivaOrden(db, orden.id) as LineaEfectiva[];
+      const vigentes = versionVigenteOrden(db, orden.id) as LineaVigente[];
       const mermaDeOrden: MermaAnulacion[] = [];
       const clavesDevueltas: string[] = [];
-      for (const linea of efectivas) {
+      for (const linea of vigentes) {
         if (linea.cantidad <= 0) continue;
         const preparada = lineaPreparada(db, linea.lineaClave, linea.ordenLineaId);
         if (preparada) lineasPreparadas += linea.cantidad;
@@ -123,14 +125,6 @@ export async function cancelarCuenta(
     db.prepare("UPDATE cuentas SET estado = 'cancelada' WHERE id = ?").run(cuenta.id);
 
     const mesa = db.prepare("SELECT numero FROM mesas WHERE id = ?").get(cuenta.mesa_id) as { numero: number };
-    const totalCentavos = db
-      .prepare(
-        `SELECT COALESCE(SUM(ROUND(ol.cantidad * ol.precio_centavos)), 0) AS total
-         FROM orden_lineas ol
-         JOIN ordenes o ON o.id = ol.orden_id
-         WHERE o.cuenta_id = ?`,
-      )
-      .get(cuenta.id) as { total: number };
     db
       .prepare(
         `INSERT INTO cancelaciones_cuentas
@@ -143,7 +137,7 @@ export async function cancelarCuenta(
         mesa.numero,
         empleado.id,
         motivo,
-        totalCentavos.total,
+        totalCentavos,
         ordenes.length,
         lineasPreparadas,
         lineasLiberadas,
@@ -157,7 +151,7 @@ export async function cancelarCuenta(
       ordenes: ordenes.length,
       lineasPreparadas,
       lineasLiberadas,
-      totalCentavos: totalCentavos.total,
+      totalCentavos,
     };
   })();
 
