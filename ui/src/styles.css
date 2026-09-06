@@ -1860,21 +1860,6 @@ button.icono {
     justify-content: flex-start;
     overflow-x: auto;
   }
-  .plano-mapa {
-    position: static;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.7rem;
-    min-height: 0;
-    padding: 0.75rem;
-    overflow: visible;
-  }
-  .mesa-odoo {
-    position: static;
-    width: 100% !important;
-    height: 104px !important;
-    min-width: 0;
-  }
   .constructor-orden {
     padding-bottom: 4.5rem;
   }
@@ -4408,4 +4393,41 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
 @media (max-width: 719px) {
   .pedidos-page .tabla-ordenes__fila { grid-template-columns: minmax(0, 1fr) auto auto minmax(0, 1.2fr); }
 }
+}
+
+/* --------------------------------------------------------------------------
+   Contrato responsive del plano del salón (único breakpoint: 768 px).
+   - Desde 768 px: plano espacial. Las mesas se ubican con coordenadas
+     (left/top en %) sobre `.plano-mapa`, tanto en la vista operativa como en
+     el editor (`EditarMapa.tsx`).
+   - Por debajo de 768 px: solo la vista operativa (`.plano-mapa--operativo`,
+     exclusiva de `Plano.tsx`) muestra las mismas mesas en una grilla de dos
+     columnas sin coordenadas. El editor conserva el plano espacial porque
+     arrastrar mesas exige coordenadas absolutas.
+   Los modificadores `--operativo` / `--operativa` no existen en el editor. La
+   regla móvil usa la especificidad del contenedor y vive al final del archivo
+   para que ninguna regla base posterior (`.mesa-odoo { position: absolute }`)
+   pueda devolver las mesas operativas al posicionamiento absoluto.
+   -------------------------------------------------------------------------- */
+@media (max-width: 767px) {
+  .plano-mapa--operativo {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
+    min-height: 0;
+    padding: 0.75rem;
+    overflow: visible;
+  }
+  .plano-mapa--operativo .mesa-odoo--operativa {
+    position: static;
+    inset: auto;
+    /* Anulan el width/height inline que trae el plano espacial. */
+    width: 100% !important;
+    height: auto !important;
+    min-height: 88px;
+    max-width: none;
+    max-height: none;
+    min-width: 0;
+  }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CuentaError, cuentaActivaPorMesa, obtenerCuenta } from "../src/modules/cuentas/cuentas.ts";
-import { totalEfectivoCuenta } from "../src/modules/cuentas/totales.ts";
+import { totalVigenteCuenta } from "../src/modules/cuentas/totales.ts";
 import { crearEmpleado } from "../src/modules/empleados/empleados.ts";
 import { seedCartaDemo } from "../src/modules/productos/seed.ts";
 import { openTestDb } from "./helpers.ts";
@@ -260,7 +260,7 @@ describe("cuentas servicios", () => {
     db.close();
   });
 
-  it("calcula líneas y total con la cantidad efectiva de Orden #1 (2 → 1)", async () => {
+  it("calcula líneas y total con la cantidad vigente de Orden #1 (2 → 1)", async () => {
     const db = openTestDb();
     const ids = seedCartaDemo(db);
     await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });
@@ -292,7 +292,7 @@ describe("cuentas servicios", () => {
       cantidad: 1,
       precioCentavos: 8900,
     });
-    expect(totalEfectivoCuenta(db, cuentaId)).toBe(8900);
+    expect(totalVigenteCuenta(db, cuentaId)).toBe(8900);
     db.close();
   });
 
@@ -307,7 +307,7 @@ describe("cuentas servicios", () => {
 
     const cuenta = obtenerCuenta(db, cuentaId);
     expect(cuenta.ordenes[0].lineas[0].cantidad).toBe(0);
-    expect(totalEfectivoCuenta(db, cuentaId)).toBe(0);
+    expect(totalVigenteCuenta(db, cuentaId)).toBe(0);
     db.close();
   });
 
@@ -337,7 +337,7 @@ describe("cuentas servicios", () => {
     const cuenta = obtenerCuenta(db, cuentaId);
     expect(cuenta.ordenes[0].estado).toBe("anulada");
     expect(cuenta.ordenes[0].lineas[0]).toMatchObject({ lineaClave: "orig-h", cantidad: 0 });
-    expect(totalEfectivoCuenta(db, cuentaId)).toBe(0);
+    expect(totalVigenteCuenta(db, cuentaId)).toBe(0);
     db.close();
   });
 });
