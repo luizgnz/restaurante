@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { interpretarTecla } from "../../../src/modules/salon/teclado.ts";
 import type { NivelEspera } from "../../../src/modules/tiempo.ts";
 import { textoEspera } from "../../../src/modules/tiempo.ts";
-import { Clock3, Plus, ReceiptText, Search, Table2, Timer } from "lucide-react";
+import { Clock3, Plus, ReceiptText, Table2, Timer } from "lucide-react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
@@ -34,16 +34,6 @@ export type Piso = {
   fondo_quitar_imagen?: boolean;
 };
 
-export type PedidoBarra = {
-  id: number;
-  mesa: number | null;
-  mesero: string;
-  hace: string;
-  espera_min: number;
-  nivel: NivelEspera;
-  abierto_en?: string;
-};
-
 type Props = {
   piso: string;
   pisoId?: number | null;
@@ -58,13 +48,6 @@ type Props = {
   onPiso?: (piso: Piso) => void;
   onNuevoPedido?: () => void;
   onBuscarMesa?: () => void;
-  mostrarUltimos?: boolean;
-  mostrarAtrasados?: boolean;
-  ultimos?: PedidoBarra[];
-  atrasados?: PedidoBarra[];
-  onPedido?: (id: number) => void;
-  onToggleUltimos?: () => void;
-  onToggleAtrasados?: () => void;
   onOrdenes?: () => void;
 };
 
@@ -83,13 +66,6 @@ export function Plano({
   onPiso,
   onNuevoPedido,
   onBuscarMesa,
-  mostrarUltimos,
-  mostrarAtrasados,
-  ultimos = [],
-  atrasados = [],
-  onPedido,
-  onToggleUltimos,
-  onToggleAtrasados,
   onOrdenes,
 }: Props) {
   const [buscando, setBuscando] = useState(false);
@@ -217,30 +193,6 @@ export function Plano({
             );
           })}
         </div>
-        <div className="salon-odoo__pisos-der">
-        {onToggleUltimos ? (
-          <Button
-            type="button"
-            variant={mostrarUltimos ? "secondary" : "ghost"}
-            className={`tactil ${mostrarUltimos ? "is-on" : ""}`}
-            title="Barra últimos pedidos"
-            onClick={onToggleUltimos}
-          >
-            Últimos
-          </Button>
-        ) : null}
-        {onToggleAtrasados ? (
-          <Button
-            type="button"
-            variant={mostrarAtrasados ? "secondary" : "ghost"}
-            className={`tactil ${mostrarAtrasados ? "is-on" : ""}`}
-            title="Barra atrasados"
-            onClick={onToggleAtrasados}
-          >
-            Atrasados
-          </Button>
-        ) : null}
-        </div>
       </header>
       {asignando ? <p>Toque una mesa libre para sentar el pedido</p> : null}
       {buscando ? (
@@ -325,32 +277,6 @@ export function Plano({
         )}
         {!cargando && mesasVisibles.length === 0 ? <div className="empty-state">No hay mesas con este filtro.</div> : null}
       </div>
-      {mostrarUltimos ? (
-        <aside className="barra-pedidos">
-          <h2>Últimos</h2>
-          <div className="barra-pedidos__lista">
-            {ultimos.map((p) => (
-              <Button key={p.id} type="button" variant="outline" className={`chip-pedido espera-${p.nivel} tactil`} onClick={() => onPedido?.(p.id)}>
-                {p.mesa ? `Mesa ${p.mesa}` : "Sin mesa"} · {p.hace}
-              </Button>
-            ))}
-            {ultimos.length === 0 ? <p>Sin pedidos</p> : null}
-          </div>
-        </aside>
-      ) : null}
-      {mostrarAtrasados ? (
-        <aside className="barra-pedidos">
-          <h2>Atrasados</h2>
-          <div className="barra-pedidos__lista">
-            {atrasados.map((p) => (
-              <Button key={p.id} type="button" variant="outline" className={`chip-pedido espera-${p.nivel} tactil`} onClick={() => onPedido?.(p.id)}>
-                {p.mesa ? `Mesa ${p.mesa}` : "Sin mesa"} · {p.hace}
-              </Button>
-            ))}
-            {atrasados.length === 0 ? <p>Sin pedidos</p> : null}
-          </div>
-        </aside>
-      ) : null}
     </section>
   );
 }

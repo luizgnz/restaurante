@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "./api.ts";
-import { pedidosAtrasados, ultimosPedidos } from "../../src/modules/salon/barras.ts";
 import { esperaMinutos, nivelEspera } from "../../src/modules/tiempo.ts";
 import { Barra, type Destino } from "./pantallas/Barra.tsx";
 import { Alerta } from "./components/ui/alerta.tsx";
@@ -26,7 +25,7 @@ import { Pedidos, type CuentaEnCursoUi } from "./pantallas/Pedidos.tsx";
 import { Recetas, type ProductoAdministrable } from "./pantallas/Recetas.tsx";
 import { PinPad } from "./pantallas/PinPad.tsx";
 import { PrecuentaEnPantalla, type PrecuentaUi } from "./pantallas/PrecuentaEnPantalla.tsx";
-import { Plano, type Mesa, type PedidoBarra, type Piso } from "./pantallas/Plano.tsx";
+import { Plano, type Mesa, type Piso } from "./pantallas/Plano.tsx";
 import { VistaPreviaComanda } from "./pantallas/VistaPreviaComanda.tsx";
 import {
   type BorradorOrden,
@@ -105,8 +104,6 @@ export function App() {
   const [comandaReciente, setComandaReciente] = useState<ComandaUi | null>(null);
   const [precuentaReciente, setPrecuentaReciente] = useState<PrecuentaUi | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const [barraUltimos, setBarraUltimos] = useState(true);
-  const [barraAtrasados, setBarraAtrasados] = useState(true);
   const [nombreLocal, setNombreLocal] = useState("Restaurante");
   const [logoData, setLogoData] = useState<string | null>(null);
   const [tipografia, setTipografia] = useState<OpcionesValores["tipografia"]>("sans");
@@ -207,20 +204,11 @@ export function App() {
     }
   }
   async function cargarConfig() {
-    const data = await api<OpcionesValores & { barra_ultimos_pedidos: boolean; barra_atrasados: boolean }>(
-      "/api/config",
-    );
+    const data = await api<OpcionesValores>("/api/config");
     aplicarConfig(data);
   }
 
-  function aplicarConfig(
-    data: Partial<OpcionesValores> & {
-      barra_ultimos_pedidos?: boolean;
-      barra_atrasados?: boolean;
-    },
-  ) {
-    if (typeof data.barra_ultimos_pedidos === "boolean") setBarraUltimos(data.barra_ultimos_pedidos);
-    if (typeof data.barra_atrasados === "boolean") setBarraAtrasados(data.barra_atrasados);
+  function aplicarConfig(data: Partial<OpcionesValores>) {
     if (typeof data.nombre_local === "string") setNombreLocal(data.nombre_local);
     if (data.logo_data !== undefined) setLogoData(data.logo_data);
     if (data.tipografia) setTipografia(data.tipografia);
@@ -258,22 +246,6 @@ export function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [vista, contextoOrden?.tipo, cuentaActual?.id]);
-
-  function conEspera(lista: CuentaEnCursoUi[]): PedidoBarra[] {
-    return lista.map((cuenta) => {
-      const abiertaEn = cuenta.abiertaEn ?? new Date().toISOString();
-      const espera_min = cuenta.espera_min ?? esperaMinutos(abiertaEn);
-      return {
-        id: cuenta.id,
-        mesa: cuenta.mesa,
-        mesero: cuenta.mesero,
-        hace: cuenta.hace,
-        espera_min,
-        nivel: nivelEspera(espera_min),
-        abierto_en: abiertaEn,
-      };
-    });
-  }
 
   useEffect(() => {
     cargarSesion().catch((e) => setError(String(e)));
@@ -804,13 +776,6 @@ export function App() {
               setPisoId(p.id);
               setTieneFondo(Boolean(p.tiene_fondo));
             }}
-            mostrarUltimos={barraUltimos}
-            mostrarAtrasados={barraAtrasados}
-            ultimos={ultimosPedidos(conEspera(cuentasEnCurso), 5)}
-            atrasados={pedidosAtrasados(conEspera(cuentasEnCurso), 5)}
-            onPedido={() => setVista("pedidos")}
-            onToggleUltimos={() => setBarraUltimos((actual) => !actual)}
-            onToggleAtrasados={() => setBarraAtrasados((actual) => !actual)}
             onOrdenes={() => {
               setVista("pedidos");
               cargarCuentasEnCurso().catch((e) => setError(String(e)));
@@ -885,9 +850,8 @@ export function App() {
             cargando={carga.kds}
             tarjetas={tarjetasKds}
             productos={productos}
-            onRecargar={cargarKds}
-            onCambiarEtapa={async (lineaId, etapa) => {
-              await api(`/api/kds/lineas/${lineaId}/etapa`, {
+            onCambiarEtapa={async (comandaId, etapa) => {
+              await api(`/api/kds/comandas/${comandaId}/etapa`, {
                 method: "POST",
                 body: JSON.stringify({ etapa }),
               });

@@ -8,7 +8,12 @@ const tarjeta: TarjetaKdsUi = {
   id: 10,
   tipo: "orden",
   referencia: "Mesa #7 · Orden #1",
+  mesa: 7,
   mesero: "Ana",
+  envioN: 1,
+  ordenNumero: 1,
+  numeroVersion: null,
+  esAnulacion: false,
   creadaEn: "2026-08-24T01:00:00.000Z",
   indicaciones: "Todo junto",
   lineas: [
@@ -34,25 +39,54 @@ const cuenta: CuentaEnCursoUi = {
   estado: "abierta",
   hace: "Ahora",
   totalCentavos: 10_000,
-  ordenes: [{ id: 30, numero: 1, lineas: [{ lineaClave: "l1", productoId: 1, nombre: "Hamburguesa", cantidad: 1, nota: null }] }],
+  ordenes: [{ id: 30, numero: 1, etapa: "enviado", lineas: [{ lineaClave: "l1", productoId: 1, nombre: "Hamburguesa", cantidad: 1, nota: null }] }],
 };
 
 describe("vistas coordinadas de cocina y mesero", () => {
-  it("cocina muestra los tres estados y las acciones por producto u orden", () => {
+  it("cocina muestra la tabla de órdenes con una fila por orden", () => {
     const html = renderToStaticMarkup(
       createElement(Kds, {
         tarjetas: [tarjeta],
         onCambiarEtapa: async () => undefined,
         onCrearIncidencia: async () => undefined,
-        onRecargar: async () => undefined,
       }),
     );
     expect(html).toContain("Vista del cocinero");
-    expect(html).toContain("Enviado a cocina");
-    expect(html).toContain("Comenzar preparación");
-    expect(html).toContain("Sugerir cambio");
-    expect(html).toContain("No disponible");
-    expect(html).toContain("No disponible para toda la orden");
+    // la tabla: cabecera y una fila clicable con la orden
+    expect(html).toContain('aria-label="Órdenes en cocina, de la más nueva a la más vieja"');
+    expect(html).toContain("Orden");
+    expect(html).toContain("Espera");
+    expect(html).toContain("Productos");
+    // primero el número de orden; la mesa va en segunda línea, en otra letra
+    expect(html).toContain('aria-label="Abrir Orden #1 de la Mesa #7"');
+    expect(html).toContain("tabla-ordenes__mesa");
+    // la fila muestra la descripción acotada de lo pedido
+    expect(html).toContain("1 × Hamburguesa (sin cebolla)");
+    // sin contadores, sin estado "Enviada", sin botón de actualizar
+    expect(html).not.toContain("enviados a cocina");
+    expect(html).not.toContain("Enviada<");
+    expect(html).not.toContain("Actualizar");
+    // las acciones NO viven en la tabla: van en la pantalla emergente al hacer clic
+    expect(html).not.toContain("Comenzar orden");
+    expect(html).not.toContain("Lista completa");
+  });
+
+  it("las órdenes sin nada por cocinar salen del tablero", () => {
+    const entregada = {
+      ...tarjeta,
+      id: 11,
+      lineas: [{ ...tarjeta.lineas[0], etapa: "listo" }],
+    };
+    const html = renderToStaticMarkup(
+      createElement(Kds, {
+        tarjetas: [tarjeta, entregada],
+        onCambiarEtapa: async () => undefined,
+        onCrearIncidencia: async () => undefined,
+      }),
+    );
+    // solo queda la fila activa; la entregada desaparece sin toggle
+    expect((html.match(/Abrir Orden #1 de la Mesa #7/g) ?? []).length).toBe(1);
+    expect(html).not.toContain("Ocultar entregadas");
   });
 
   it("una sugerencia pendiente se presenta al mesero como notificación", () => {
@@ -77,7 +111,10 @@ describe("vistas coordinadas de cocina y mesero", () => {
         onAbrir: () => undefined,
       }),
     );
-    expect(html).toContain("Cocina necesita una respuesta");
+    // el encabezado avisa cuántas quedan por responder
+    expect(html).toContain("1 por responder");
+    // la fila bloqueada lo dice y la tira de la incidencia trae la propuesta
+    expect(html).toContain("Cocina esperando respuesta");
     expect(html).toContain("Cambio sugerido: Hamburguesa");
     expect(html).toContain("Cambiar por ensalada");
     expect(html).toContain("Sugerencia aceptada");
@@ -106,10 +143,10 @@ describe("vistas coordinadas de cocina y mesero", () => {
         }],
         onCambiarEtapa: async () => undefined,
         onCrearIncidencia: async () => undefined,
-        onRecargar: async () => undefined,
       }),
     );
-    expect(html).toContain("Sugerencia aceptada por el cliente");
-    expect(html).toContain("Comenzar preparación");
+    // respondida la incidencia, la fila se renderiza y deja de estar bloqueada
+    expect(html).toContain('aria-label="Abrir Orden #1 de la Mesa #7"');
+    expect(html).not.toContain("Cocina esperando respuesta");
   });
 });

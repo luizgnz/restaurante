@@ -13,6 +13,7 @@ describe("haceCuanto", () => {
   });
 });
 
+
 describe("textoEspera", () => {
   it("elige días, horas o minutos según la magnitud", () => {
     expect(textoEspera(5)).toBe("5 min");

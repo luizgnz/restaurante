@@ -28,7 +28,8 @@ describe("precuenta en pantalla (interacción)", () => {
       );
     });
 
-    const boton = Array.from(contenedor.querySelectorAll("button")).find((b) => b.textContent === "Listo");
+    // el modal se monta en el body via el Portal de Radix
+    const boton = Array.from(document.body.querySelectorAll("button")).find((b) => b.textContent === "Listo");
     expect(boton).toBeTruthy();
 
     await act(async () => {
