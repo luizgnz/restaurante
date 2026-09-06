@@ -16,6 +16,13 @@ Lista viva del proyecto. Marcar con `[x]` al completar; agregar nuevos pendiente
 - [x] Catálogo ampliado — COMPLETADO: seed con 32 productos (18 nuevos: chorrillana, pastel de choclo, cazuela de vacuno, salmón, lomo a lo pobre, pisco sour, etc.); "Sándwich de palta" reemplaza a "Palta reina" (sin foto libre disponible). 31 fotos reales cargadas a la base vía `scripts/cargar-fotos-carta.ts`.
 - [x] Fotos de `assets/fotos-carta/` integradas al repo (~8 MB, 31 JPG + manifest con fuente/licencia) para que el pipeline sea reproducible en cualquier máquina. La decisión sobre `capturas/` sigue pendiente (ver arriba).
 - [ ] Día operativo (nuevo, surgió del KDS): filtrar las consultas de cocina/órdenes por día de servicio y agregar un cierre de día explícito con respaldo y auditoría — evita pedidos fantasma de días anteriores en producción.
+- [ ] 2026-09-06: limpieza de interfaz pedida por el usuario (quiere empezarla ya); cada punto se trabaja en rama desde `main` con PR a `main` y verificación responsive en monitor, tablet y smartphone (390/768/1280):
+  - [ ] Un solo botón de menú: unificar el icono de menú y el de usuario (hoy solo sirve para cerrar sesión) en un único control.
+  - [ ] Eliminar la barra "Sección actual" del encabezado de la página.
+  - [ ] Unificar mesero/cocina dentro de Órdenes: quitar el cambio de vista global de la pantalla; la sección Órdenes tendrá dos vistas conmutables (toggle, los iconos actuales o ambos): con cocina muestra la tabla que hoy ve el cocinero y con mesero la lista que hoy muestra Órdenes. La vista cocina pasa a llamarse "Órdenes", conservando el diseño actual de cada vista salvo el título.
+  - [ ] Salón: el resumen (libres / en servicio / precuenta / atrasadas) en una misma línea, pudiendo mostrar solo iconos sin texto.
+  - [ ] Encabezado del salón lineal y compacto: el título y el botón "+" de nueva orden no pueden quedar apilados ni ocupar un área tan grande; todo en línea en monitor, tablet y smartphone.
+  - [ ] Pantallas grandes: en monitor el salón deja mucho espacio en blanco; que las mesas y botones se adapten al ancho disponible y se minimicen los huecos innecesarios, apoyándose en las skills de diseño (`frontend-design`, `modern-web-guidance`). La grilla de teléfono gusta como está hoy: no tocarla.
 
 ## Después
 
