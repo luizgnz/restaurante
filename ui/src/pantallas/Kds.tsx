@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { etiquetaEtapa, tonoEtapa } from "../lib/estados.ts";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { esperaMinutos, nivelEspera } from "../../../src/modules/tiempo.ts";
 
 export type IncidenciaCocinaUi = {
   id: number;
@@ -81,13 +82,22 @@ function cantidad(linea: LineaKdsUi): string {
   return `${linea.delta > 0 ? "+" : ""}${linea.delta}`;
 }
 
+/** La tarjeta ya no requiere acción: todas sus líneas fueron entregadas o canceladas. */
+function esEntregada(tarjeta: TarjetaKdsUi): boolean {
+  const tareas = tarjeta.lineas.filter((linea) => !linea.esAviso);
+  return tareas.length > 0 && tareas.every((linea) => linea.etapa === "servido" || linea.etapa === "cancelado");
+}
+
 export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onRecargar, productos = [] }: Props) {
   const [modal, setModal] = useState<ModalIncidencia | null>(null);
+  const [ocultarEntregadas, setOcultarEntregadas] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [propuesta, setPropuesta] = useState("");
   const [productoReemplazoId, setProductoReemplazoId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const entregadas = tarjetas.filter(esEntregada);
+  const visibles = ocultarEntregadas ? tarjetas.filter((tarjeta) => !esEntregada(tarjeta)) : tarjetas;
   const [recargando, setRecargando] = useState(false);
 
   const lineas = tarjetas.flatMap((tarjeta) => tarjeta.lineas.filter((linea) => !linea.esAviso));
@@ -165,6 +175,13 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onR
         <Card><CheckCheck size={20} aria-hidden="true" /><div><strong>{listos}</strong><span>listos para entregar</span></div></Card>
       </div>
 
+      {entregadas.length > 0 ? (
+        <div className="cocina-entregadas">
+          <Button type="button" size="sm" variant="outline" onClick={() => setOcultarEntregadas((v) => !v)}>
+            {ocultarEntregadas ? `Mostrar entregadas (${entregadas.length})` : `Ocultar entregadas (${entregadas.length})`}
+          </Button>
+        </div>
+      ) : null}
       <div className="kds cocina-grid">
         {cargando && tarjetas.length === 0 ? (
           <div className="flex flex-wrap gap-4" aria-hidden="true">
@@ -174,13 +191,16 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onR
           </div>
         ) : (
           tarjetas.map((tarjeta) => {
-          const tareas = tarjeta.lineas.filter((linea) => !linea.esAviso && linea.etapa !== "cancelado");
+            const espera = esperaMinutos(tarjeta.creadaEn);
+            const nivel = nivelEspera(espera);
+            const entregada = esEntregada(tarjeta);
+            const tareas = tarjeta.lineas.filter((linea) => !linea.esAviso && linea.etapa !== "cancelado");
           const ordenCompletaDisponible = tarjeta.tipo === "orden" && tareas.length > 0 && tareas.every((linea) => linea.etapa === "por_preparar");
           const incidenciaOrden = tarjeta.incidencias.find((incidencia) => incidencia.comandaLineaId == null);
           return (
-            <Card className="tarjeta cocina-tarjeta" key={tarjeta.id}>
+            <Card className={`tarjeta cocina-tarjeta espera-${nivel}${entregada ? " is-entregada" : ""}`} key={tarjeta.id}>
               <header className="cocina-tarjeta__cabecera">
-                <div><strong>{tarjeta.referencia}</strong><span>Mesero: {tarjeta.mesero}</span></div>
+                <div><strong>{tarjeta.referencia}</strong><span>Mesero: {tarjeta.mesero}</span><span className={`cocina-tarjeta__espera espera-${nivel}`}>{entregada ? "Entregada" : `${espera} min`}</span></div>
                 <Badge variant={tarjeta.tipo === "orden" ? "secondary" : "warning"}>
                   {tarjeta.tipo === "orden" ? "Pedido" : tarjeta.tipo === "anulacion" ? "Anulación" : "Cambio"}
                 </Badge>
@@ -202,8 +222,8 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onR
                       {incidencia && incidencia !== incidenciaOrden ? <AvisoIncidencia incidencia={incidencia} /> : null}
                       {!linea.esAviso ? (
                         <div className="cocina-linea__acciones">
-                          {linea.etapa === "por_preparar" && !pendiente ? <Button type="button" size="icon" className="cocina-accion-icono is-start" aria-label="Comenzar preparación" title="Comenzar preparación" onClick={() => onCambiarEtapa(linea.id, "en_proceso")}><Play size={20} aria-hidden="true" /></Button> : null}
-                          {linea.etapa === "en_proceso" ? <Button type="button" size="icon" className="cocina-accion-icono is-ready" aria-label="Marcar listo" title="Marcar listo" onClick={() => onCambiarEtapa(linea.id, "listo")}><CheckCheck size={20} aria-hidden="true" /></Button> : null}
+                          {linea.etapa === "por_preparar" && !pendiente ? <Button type="button" size="sm" className="cocina-accion is-start" aria-label="Comenzar preparación" title="Comenzar preparación" onClick={() => onCambiarEtapa(linea.id, "en_proceso")}><Play size={18} aria-hidden="true" /><span className="cocina-accion-texto">Comenzar</span></Button> : null}
+                          {linea.etapa === "en_proceso" ? <Button type="button" size="sm" className="cocina-accion is-ready" aria-label="Marcar listo" title="Marcar listo" onClick={() => onCambiarEtapa(linea.id, "listo")}><CheckCheck size={18} aria-hidden="true" /><span className="cocina-accion-texto">Listo</span></Button> : null}
                           {tarjeta.tipo === "orden" && linea.etapa === "por_preparar" && !pendiente ? (
                             <>
                               <Button type="button" size="icon" className="cocina-accion-icono is-suggest" variant="outline" aria-label="Sugerir cambio" title="Sugerir cambio" onClick={() => abrirModal(tarjeta, "sugerencia", linea)}><ArrowRightLeft size={19} aria-hidden="true" /></Button>

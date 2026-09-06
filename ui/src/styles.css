@@ -4564,3 +4564,47 @@ button.icono:focus-visible {
   display: block;
   margin-top: 2px;
 }
+
+/* KDS operable (fase 3.4): franja de espera por tiempo, espera numérica,
+   acciones primarias etiquetadas y cola de entregadas ocultable. */
+.cocina-tarjeta { position: relative; }
+.cocina-tarjeta::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 5px;
+  border-top-left-radius: inherit;
+  border-bottom-left-radius: inherit;
+  background: var(--success);
+}
+.cocina-tarjeta.espera-medio::before { background: var(--warning); }
+.cocina-tarjeta.espera-alto::before { background: var(--destructive); }
+.cocina-tarjeta.is-entregada { opacity: 0.55; }
+
+.cocina-tarjeta__cabecera > div { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.cocina-tarjeta__espera {
+  margin-left: auto;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--success-soft);
+  color: var(--success);
+}
+.cocina-tarjeta__espera.espera-medio { background: var(--warning-soft); color: var(--warning); }
+.cocina-tarjeta__espera.espera-alto { background: var(--destructive-soft); color: var(--destructive); }
+
+.cocina-entregadas { display: flex; justify-content: flex-end; margin-bottom: 0.75rem; }
+
+.cocina-accion { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600; }
+.cocina-accion.is-start { background: var(--brand); color: var(--brand-foreground); border-color: transparent; }
+.cocina-accion.is-start:hover { background: color-mix(in oklab, var(--brand) 86%, black); }
+.cocina-accion.is-ready { background: var(--success); color: #fff; border-color: transparent; }
+.cocina-accion.is-ready:hover { background: color-mix(in oklab, var(--success) 86%, black); }
+@media (max-width: 1099px) {
+  .cocina-accion { padding-inline: 0; justify-content: center; }
+  .cocina-accion .cocina-accion-texto { display: none; }
+}
