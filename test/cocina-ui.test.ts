@@ -8,7 +8,12 @@ const tarjeta: TarjetaKdsUi = {
   id: 10,
   tipo: "orden",
   referencia: "Mesa #7 · Orden #1",
+  mesa: 7,
   mesero: "Ana",
+  envioN: 1,
+  ordenNumero: 1,
+  numeroVersion: null,
+  esAnulacion: false,
   creadaEn: "2026-08-24T01:00:00.000Z",
   indicaciones: "Todo junto",
   lineas: [
@@ -52,7 +57,9 @@ describe("vistas coordinadas de cocina y mesero", () => {
     expect(html).toContain("Orden");
     expect(html).toContain("Espera");
     expect(html).toContain("Productos");
-    expect(html).toContain('aria-label="Abrir la orden de la Mesa #7 · Orden #1"');
+    // primero el número de orden; la mesa va en segunda línea, en otra letra
+    expect(html).toContain('aria-label="Abrir Orden #1 de la Mesa #7"');
+    expect(html).toContain("cocina-tabla__mesa");
     // la fila muestra la descripción acotada de lo pedido
     expect(html).toContain("1 × Hamburguesa (sin cebolla)");
     // sin contadores, sin estado "Enviada", sin botón de actualizar
@@ -78,7 +85,7 @@ describe("vistas coordinadas de cocina y mesero", () => {
       }),
     );
     // solo queda la fila activa; la entregada desaparece sin toggle
-    expect((html.match(/Abrir la orden de la /g) ?? []).length).toBe(1);
+    expect((html.match(/Abrir Orden #1 de la Mesa #7/g) ?? []).length).toBe(1);
     expect(html).not.toContain("Ocultar entregadas");
   });
 
@@ -136,7 +143,7 @@ describe("vistas coordinadas de cocina y mesero", () => {
       }),
     );
     // respondida la incidencia, la fila se renderiza y deja de estar bloqueada
-    expect(html).toContain('aria-label="Abrir la orden de la Mesa #7 · Orden #1"');
+    expect(html).toContain('aria-label="Abrir Orden #1 de la Mesa #7"');
     expect(html).not.toContain("Cocina esperando respuesta");
   });
 });

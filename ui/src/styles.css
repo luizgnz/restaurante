@@ -4367,8 +4367,8 @@ button.icono:focus-visible {
 }
 .cocina-tabla__fila {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.6fr) auto minmax(0, 2fr);
-  gap: 0.75rem;
+  grid-template-columns: max-content max-content auto minmax(0, 1fr);
+  gap: 0 2.25rem;
   align-items: center;
 }
 .cocina-tabla__fila--cabecera {
@@ -4391,7 +4391,20 @@ button.cocina-tabla__fila {
 }
 button.cocina-tabla__fila:hover { background: var(--muted); }
 button.cocina-tabla__fila.is-bloqueada { border-color: color-mix(in oklab, var(--warning) 55%, var(--border)); }
-.cocina-tabla__orden { display: inline-flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-weight: 600; }
+.cocina-tabla__orden {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+.cocina-tabla__orden strong { font-size: 1.02rem; }
+/* La mesa va en segunda línea, con la letra display de la marca y sin grueso:
+   identifica sin competir con el número de orden. */
+.cocina-tabla__mesa {
+  font-family: "Fraunces Variable", Georgia, serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
 .cocina-tabla__descripcion {
   overflow: hidden;
   color: var(--muted-foreground);

@@ -43,7 +43,12 @@ export type TarjetaKdsUi = {
   id: number;
   tipo: "legacy" | "orden" | "correccion" | "anulacion";
   referencia: string;
+  mesa: number | null;
   mesero: string;
+  envioN: number;
+  ordenNumero: number | null;
+  numeroVersion: number | null;
+  esAnulacion: boolean;
   creadaEn: string;
   indicaciones: string | null;
   lineas: LineaKdsUi[];
@@ -97,6 +102,19 @@ function descripcionOrden(tarjeta: TarjetaKdsUi): string {
       return linea.nota ? `${base} (${linea.nota})` : base;
     })
     .join(", ");
+}
+
+/** Primera línea de la fila: el número de orden manda. */
+function tituloOrden(tarjeta: TarjetaKdsUi): string {
+  const orden = tarjeta.ordenNumero ?? tarjeta.envioN;
+  if (tarjeta.tipo === "correccion") return `Orden #${orden} · Corrección #${tarjeta.numeroVersion}`;
+  if (tarjeta.tipo === "anulacion") return `Orden #${orden} · Anulación`;
+  return `Orden #${orden}`;
+}
+
+/** Segunda línea, en letra propia y sin grueso: dónde está la mesa. */
+function mesaTexto(tarjeta: TarjetaKdsUi): string {
+  return tarjeta.mesa == null ? "Sin mesa" : `Mesa #${tarjeta.mesa}`;
 }
 
 export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, productos = [] }: Props) {
@@ -226,10 +244,14 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
                 role="row"
                 className={`cocina-tabla__fila tactil${pendiente ? " is-bloqueada" : ""}${nuevas.has(tarjeta.id) ? " is-nueva" : ""}`}
                 key={tarjeta.id}
-                aria-label={`Abrir la orden de la ${tarjeta.referencia}`}
+                aria-label={`Abrir ${tituloOrden(tarjeta)} de la ${mesaTexto(tarjeta)}`}
                 onClick={() => setSeleccionadaId(tarjeta.id)}
               >
-                <span role="cell" className="cocina-tabla__orden"><strong>{tarjeta.referencia}</strong>{pendiente ? <Badge variant="danger">Cocina esperando respuesta</Badge> : null}</span>
+                <span role="cell" className="cocina-tabla__orden">
+                  <strong>{tituloOrden(tarjeta)}</strong>
+                  <span className="cocina-tabla__mesa">{mesaTexto(tarjeta)}</span>
+                  {pendiente ? <Badge variant="danger">Cocina esperando respuesta</Badge> : null}
+                </span>
                 <span role="cell">{tarjeta.mesero}</span>
                 <span role="cell"><span className={`cocina-tarjeta__espera espera-${nivel}`}>{textoEspera(espera)}</span></span>
                 <span role="cell" className="cocina-tabla__descripcion">{descripcionOrden(tarjeta)}</span>
@@ -270,9 +292,9 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
         <Dialog aria-label={`Orden de la ${seleccionada.referencia}`} onOverlayClick={() => setSeleccionadaId(null)}>
           <DialogContent className="inventario-modal w-[min(560px,calc(100vw-1.5rem))] p-[1.4rem]">
             <span className="page-eyebrow">Orden completa</span>
-            <h2>{seleccionada.referencia}</h2>
+            <h2>{tituloOrden(seleccionada)}</h2>
             <p className="cocina-orden-modal__meta">
-              Mesero: {seleccionada.mesero}
+              {mesaTexto(seleccionada)} · Mesero: {seleccionada.mesero}
               <span className={`cocina-tarjeta__espera espera-${nivelEspera(esperaMinutos(seleccionada.creadaEn))}`}>
                 {textoEspera(esperaMinutos(seleccionada.creadaEn))}
               </span>
