@@ -4451,4 +4451,17 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
 @media (max-width: 719px) {
   .pedidos-page .tabla-ordenes__fila { grid-template-columns: minmax(0, 1fr) auto auto minmax(0, 1.2fr); }
 }
+
+/* -- Marca del local en la pantalla de acceso (ui/public/marcas/olla-horizontal.svg) -- */
+.login-marca {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.4rem;
+}
+
+.login-marca img {
+  display: block;
+  width: auto;
+  height: 50px;
+}
 }
