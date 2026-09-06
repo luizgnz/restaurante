@@ -36,14 +36,16 @@ Se ejecutaron `npm run build` y `npm test -- --maxWorkers=2` en cada una de las 
 
 | Entrega | Commit validado | Build y tipos | Archivos de prueba | Pruebas aprobadas |
 | --- | --- | --- | --- | --- |
-| 1 | `88f2b06` | Correcto | 74 | 450 |
-| 2 | `46ed2fa` | Correcto | 75 | 462 |
-| 3 | `8888456` | Correcto | 74 | 460 |
+| 1 | `0070f5b` | Correcto | 74 | 451 |
+| 2 | `a6f6282` | Correcto | 75 | 463 |
+| 3 | `7d5980d` | Correcto | 74 | 461 |
 | 4 | `15e9e2f` | Correcto | 74 | 461 |
 | 5 | `e7e79a0` | Correcto | 73 | 460 |
 | 6 | `0eabc18` | Correcto | 73 | 460 |
 
-La entrega 7 no cambia la aplicación, sus dependencias ni sus pruebas respecto a la 6; reutiliza esa validación. Las diferencias en cantidad de pruebas reflejan los cambios originales de cada etapa, incluidas eliminaciones de componentes. No se retiraron pruebas para hacer pasar la división.
+Las cifras de las entregas 1–3 incluyen la corrección de cancelación añadida después de la primera revisión. Las cifras históricas de las entregas 4–6 corresponden a sus cabezas anteriores a esa corrección y deben sustituirse cuando se propague la cabeza final de #8. La entrega 7 no cambia la aplicación respecto a la 6, pero su documentación debe actualizar las cifras finales. Las diferencias en cantidad de pruebas reflejan los cambios de cada etapa, incluidas eliminaciones de componentes.
+
+El estado operativo, los errores pendientes y los pasos de relevo están en `docs/PLAN_MERGE_PRS_6_12.md`.
 
 Estos resultados no sustituyen una prueba manual de los flujos ni la revisión visual de cada estado intermedio. Las capturas incluidas en el PR de documentación son históricas: no certifican visualmente esta cadena.
 
