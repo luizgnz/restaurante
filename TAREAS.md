@@ -1,6 +1,6 @@
-# Tareas pendientes
+# Tareas pendientes — historial cerrado
 
-Lista viva del proyecto. Marcar con `[x]` al completar; agregar nuevos pendientes al final con fecha.
+ARCHIVO HISTÓRICO desde el 2026-09-06: la lista viva de pendientes es `TAREAS_V2.md`. Lo que sigue conserva el registro de las fases 0–5 y de la cadena de PRs #6–#12; no agregar pendientes nuevos aquí.
 
 ## Ahora
 

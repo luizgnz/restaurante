@@ -1,0 +1,38 @@
+# TAREAS v2 — lista viva
+
+Reemplaza a `TAREAS.md` como lista viva desde el 2026-09-06; aquel archivo queda como historial cerrado de las fases 0–5 y de la cadena de PRs #6–#12. Aquí solo entran pendientes: marcar con `[x]` al completar y retirar lo cerrado al publicar el cierre.
+
+Orden deliberado: primero limpieza y eliminación de residuos, después el backlog de producto y operación.
+
+## 1. Limpieza de interfaz y residuos (prioridad)
+
+### Ronda de limpieza de interfaz pedida el 2026-09-06
+
+- [ ] Un solo botón de menú: unificar el icono de menú y el de usuario (hoy solo sirve para cerrar sesión) en un único control.
+- [ ] Eliminar la barra "Sección actual" del encabezado de la página.
+- [ ] Unificar mesero/cocina dentro de Órdenes: quitar el cambio de vista global de la pantalla; la sección Órdenes tendrá dos vistas conmutables (toggle, los iconos actuales o ambos): con cocina muestra la tabla que hoy ve el cocinero y con mesero la lista que hoy muestra Órdenes. La vista cocina pasa a llamarse "Órdenes", conservando el diseño actual de cada vista salvo el título.
+- [ ] Salón: el resumen (libres / en servicio / precuenta / atrasadas) en una misma línea, pudiendo mostrar solo iconos sin texto.
+- [ ] Encabezado del salón lineal y compacto: el título y el botón "+" de nueva orden no pueden quedar apilados ni ocupar un área tan grande; todo en línea en monitor, tablet y smartphone.
+- [ ] Pantallas grandes: en monitor el salón deja mucho espacio en blanco; que las mesas y botones se adapten al ancho disponible y se minimicen los huecos innecesarios, apoyándose en las skills de diseño (`frontend-design`, `modern-web-guidance`). La grilla de teléfono gusta como está hoy: no tocarla.
+
+### Residuos de color y código muerto
+
+- [ ] Púrpura fuera de marca: `COLOR_INICIAL = "#714b67"` en `ui/src/pantallas/CrearProducto.tsx:29` es el color por defecto de todo producto nuevo (se pinta en las fichas del constructor de orden). Es un residuo del tema viejo estilo Odoo, anterior a la marca; no hace sentido junto al cobre actual. Sustituirlo por el cobre de marca (`--brand` `#8a4a26`) o por un neutro, y revisar productos creados a mano en la base real que hayan guardado ese color. El seed demo no lo usa.
+- [ ] ~96 hex sueltos en pantallas viejas: migrarlos a las variables de marca/tokens existentes.
+- [ ] `switch.tsx` para Opciones (hoy hay un control ad hoc).
+- [ ] Pantallas de tabla del §5 de `MIGRACION_SHADCN` sin migrar a JSX.
+- [ ] Pseudo-fotos de la carta: letras iniciales guardadas como `foto_data` que impiden usar iconos por categoría; limpiarlas.
+
+## 2. Backlog de producto y operación
+
+- [ ] Botón "Reiniciar día de demostración" en Administración (hoy `scripts/reiniciar-dia-demo.ts` se corre por terminal).
+- [ ] Día operativo: filtrar las consultas de cocina/órdenes por día de servicio y agregar un cierre de día explícito con respaldo y auditoría — evita pedidos fantasma de días anteriores en producción.
+- [ ] Fase 4.3: matriz formal de capturas 390/768/1280 de las 5 pantallas core, unificando las capturas que ya existen por ronda.
+- [ ] Retomar la propuesta KDS v2 (`propuestas/cocina-kds-v2.html`) para detalles visuales restantes, coordinada con el toggle de Órdenes para que no choquen.
+- [ ] Fase 5.3 rutina de release y 5.4 endurecer red local (límite de intentos de PIN, expiración de sesiones). Cualquier módulo de pagos requiere decisión explícita del negocio.
+
+## Cómo se trabaja (vigente desde el 2026-09-06)
+
+- `main` es la rama por defecto y está protegida: todo entra por PR a `main` con al menos una aprobación; no hay push directo.
+- Una rama por tarea creada desde `main`; al cerrar, `npm test` y `npm run build` en verde.
+- Cambios de interfaz: verificación responsive en monitor, tablet y smartphone (390/768/1280) con capturas en `capturas/<fecha>_<tema>/` y su `manifest.json`.
