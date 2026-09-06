@@ -1,7 +1,13 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ModalArmadoPlato } from "../ui/src/pantallas/ModalArmadoPlato.tsx";
+import {
+  armadoCompleto,
+  construirSelecciones,
+  ModalArmadoPlato,
+  resumenArmado,
+  type EleccionPorSlot,
+} from "../ui/src/pantallas/ModalArmadoPlato.tsx";
 import { ConstructorOrden } from "../ui/src/pantallas/ConstructorOrden.tsx";
 
 describe("armado de platos", () => {
@@ -61,5 +67,56 @@ describe("armado de platos", () => {
     );
     expect(html).toContain("1 × Menú del día");
     expect(html).toContain("Pollo · Arroz · Ensalada rusa");
+  });
+});
+
+describe("armado de platos: una elección por grupo del slot", () => {
+  const slots = [
+    { posicion: 1, nombre: "Proteína", permiteExtra: true, grupos: [{ id: 1, nombre: "Proteína" }] },
+    {
+      posicion: 2,
+      nombre: "Segundo contorno",
+      permiteExtra: true,
+      grupos: [{ id: 2, nombre: "Carbohidrato" }, { id: 3, nombre: "Ensalada" }],
+    },
+  ];
+  const variantes = [
+    { id: 10, grupoId: 1, nombre: "Pollo", suplementoCentavos: 500, extraCentavos: 1500 },
+    { id: 11, grupoId: 2, nombre: "Arroz", suplementoCentavos: 0, extraCentavos: 800 },
+    { id: 12, grupoId: 3, nombre: "Ensalada rusa", suplementoCentavos: 0, extraCentavos: 700 },
+  ];
+
+  it("conserva la elección de cada grupo del mismo slot (antes se pisaban)", () => {
+    const elegidas: EleccionPorSlot = {
+      1: { 1: 10 },
+      2: { 2: 11, 3: 12 },
+    };
+    const selecciones = construirSelecciones(slots, variantes, elegidas, []);
+    expect(selecciones).toEqual([
+      { slotPosicion: 1, varianteId: 10 },
+      { slotPosicion: 2, varianteId: 11 },
+      { slotPosicion: 2, varianteId: 12 },
+    ]);
+    expect(resumenArmado(slots, variantes, elegidas, [])).toBe("Pollo · Arroz + Ensalada rusa");
+    expect(armadoCompleto(slots, variantes, elegidas)).toBe(true);
+  });
+
+  it("agrega los extras después de las bases y exige todas las elecciones", () => {
+    const elegidas: EleccionPorSlot = { 1: { 1: 10 }, 2: { 2: 11, 3: 12 } };
+    const extras = [
+      { slotPosicion: 1, varianteId: 11 },
+      { slotPosicion: 2, varianteId: 12 },
+    ];
+    expect(construirSelecciones(slots, variantes, elegidas, extras)).toEqual([
+      { slotPosicion: 1, varianteId: 10 },
+      { slotPosicion: 1, varianteId: 11 },
+      { slotPosicion: 2, varianteId: 11 },
+      { slotPosicion: 2, varianteId: 12 },
+      { slotPosicion: 2, varianteId: 12 },
+    ]);
+    expect(resumenArmado(slots, variantes, elegidas, extras)).toBe(
+      "Pollo · Arroz + Ensalada rusa · + Extra Arroz · + Extra Ensalada rusa",
+    );
+    expect(construirSelecciones(slots, variantes, { 1: { 1: 10 }, 2: { 2: 11 } }, [])).toBeNull();
   });
 });

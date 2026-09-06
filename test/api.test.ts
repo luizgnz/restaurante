@@ -517,12 +517,19 @@ describe("POST /api/ordenes/:id/anular", () => {
     const e = await entornoApi();
     const orden = await crearOrden(e);
     expect(
-      (await post(e.app, `/api/ordenes/${orden.ordenId}/anular`, { claveIdempotencia: "a1", pin: "1234" })).status,
+      (
+        await post(e.app, `/api/ordenes/${orden.ordenId}/anular`, {
+          claveIdempotencia: "a1",
+          pin: "1234",
+          motivo: "error del mesero",
+        })
+      ).status,
     ).toBe(201);
 
     const repetida = await post(e.app, `/api/ordenes/${orden.ordenId}/anular`, {
       claveIdempotencia: "a1",
       pin: "1234",
+      motivo: "error del mesero",
     });
     expect(repetida.status).toBe(200);
     expect(await repetida.json()).toMatchObject({ repetida: true });

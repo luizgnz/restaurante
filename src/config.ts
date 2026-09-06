@@ -31,6 +31,12 @@ export type AppConfig = {
   url_updates: string;
   politica_inventario: PoliticaInventario;
   bloqueo_sin_stock: "permitir" | "avisar" | "bloquear";
+  /**
+   * Qué pasa con los insumos de un plato que se anula o cancela estando en
+   * preparación o ya preparado. `true` (default): vuelven al inventario porque
+   * el restaurante los reutiliza. `false`: se registran como merma.
+   */
+  devolver_insumos_preparados: boolean;
   pin_al_enviar: boolean;
   pin_al_emitir_precuenta: boolean;
   pin_al_enviar_caja: boolean;
@@ -67,6 +73,7 @@ export function defaultConfig(): AppConfig {
     url_updates: "",
     politica_inventario: "reserva_al_enviar_firme_al_enviar_caja",
     bloqueo_sin_stock: "avisar",
+    devolver_insumos_preparados: true,
     pin_al_enviar: true,
     pin_al_emitir_precuenta: true,
     pin_al_enviar_caja: true,
@@ -85,8 +92,8 @@ export function defaultConfig(): AppConfig {
     pin_momento: "enviar",
     confirmar_comanda: false,
     pin_al_anular: true,
-    auditoria_anulaciones: false,
-    justificacion_anulacion: false,
+    auditoria_anulaciones: true,
+    justificacion_anulacion: true,
     impresora_comanda: {
       habilitada: false,
       nombre: "Cocina",

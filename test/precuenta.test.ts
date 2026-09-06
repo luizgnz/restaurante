@@ -250,14 +250,26 @@ describe("precuenta por cuenta", () => {
     // Jugo a cero deja la línea en la historia; el agua sigue viva.
     await corregirOrden(
       e.db,
-      { ordenId: e.ordenDos, lineas: [cambio(lineasDos[0], 0)], claveIdempotencia: clave("corr"), pin: "1234" },
+      {
+        ordenId: e.ordenDos,
+        lineas: [cambio(lineasDos[0], 0)],
+        claveIdempotencia: clave("corr"),
+        pin: "1234",
+        motivo: "error del mesero",
+      },
       new MemoryPrinter(),
       defaultConfig(),
     );
     const lineasUno = versionEfectivaOrden(e.db, e.ordenUno);
     await corregirOrden(
       e.db,
-      { ordenId: e.ordenUno, lineas: [cambio(lineasUno[0], 0)], claveIdempotencia: clave("corr"), pin: "1234" },
+      {
+        ordenId: e.ordenUno,
+        lineas: [cambio(lineasUno[0], 0)],
+        claveIdempotencia: clave("corr"),
+        pin: "1234",
+        motivo: "error del mesero",
+      },
       new MemoryPrinter(),
       defaultConfig(),
     );
@@ -400,7 +412,13 @@ describe("precuenta por cuenta", () => {
     const lineas = versionEfectivaOrden(e.db, e.ordenId);
     await corregirOrden(
       e.db,
-      { ordenId: e.ordenId, lineas: [cambio(lineas[0], 0)], claveIdempotencia: clave("corr"), pin: "1234" },
+      {
+        ordenId: e.ordenId,
+        lineas: [cambio(lineas[0], 0)],
+        claveIdempotencia: clave("corr"),
+        pin: "1234",
+        motivo: "error del mesero",
+      },
       new MemoryPrinter(),
       defaultConfig(),
     );

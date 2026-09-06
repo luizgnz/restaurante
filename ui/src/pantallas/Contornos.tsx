@@ -217,6 +217,7 @@ export function Contornos({
                   </label>
                   <div className="contornos-admin__checks">
                     <span>Grupos permitidos</span>
+                    <p>Si eliges varios grupos, el cliente deberá seleccionar una opción de cada uno.</p>
                     {grupos.map((grupo) => (
                       <label key={grupo.id}>
                         <Checkbox

@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import type { PoliticaInventario } from "../../config.ts";
+import type { AppConfig, PoliticaInventario } from "../../config.ts";
 
 export type LineaConsumo = { productoId: number; cantidad: number };
 
@@ -319,6 +319,57 @@ export function ajustarConsumoDeCorreccion(
 }
 
 /**
+ * Convierte la reserva pendiente de esas líneas en consumo firmado, **una sola
+ * vez**: los insumos ya se usaron (el plato se preparó o se sirvió), así que el
+ * stock sale ahora y el libro queda firmado, aunque la cuenta nunca llegue a
+ * caja. Lo que ya estaba firmado no se toca.
+ */
+export function firmarReservasDeLineas(db: Database.Database, ordenId: number, lineaClaves: string[]): void {
+  if (lineaClaves.length === 0) return;
+  const run = db.transaction(() => {
+    const filasStmt = db.prepare(
+      `SELECT producto_id, reservada_real FROM orden_linea_inventario
+       WHERE orden_id = ? AND linea_clave = ? AND reservada_real > 0`,
+    );
+    const updateStmt = db.prepare(
+      `UPDATE orden_linea_inventario
+       SET firmada_real = firmada_real + reservada_real, reservada_real = 0
+       WHERE orden_id = ? AND linea_clave = ? AND producto_id = ?`,
+    );
+    for (const clave of lineaClaves) {
+      const filas = filasStmt.all(ordenId, clave) as { producto_id: number; reservada_real: number }[];
+      for (const f of filas) {
+        ajustar(db, f.producto_id, -f.reservada_real, -f.reservada_real);
+        updateStmt.run(ordenId, clave, f.producto_id);
+      }
+    }
+  });
+  run();
+}
+
+/**
+ * Devuelve al stock **todo** el consumo que el libro registra para esas líneas:
+ * libera lo reservado y revierte lo ya firmado al `on_hand`. Es el camino de la
+ * reutilización: un plato anulado o una cuenta cancelada no consumió nada que
+ * se pueda volver a la despensa. Deja el libro en cero para esas líneas.
+ */
+export function devolverConsumoDeLineas(db: Database.Database, ordenId: number, lineaClaves: string[]): void {
+  if (lineaClaves.length === 0) return;
+  const run = db.transaction(() => {
+    for (const clave of lineaClaves) {
+      for (const c of componentesDelLibro(db, ordenId, clave)) {
+        if (c.reservada > 0) ajustar(db, c.productoId, 0, -c.reservada);
+        if (c.firmada > 0) ajustar(db, c.productoId, c.firmada, 0);
+        if (c.reservada > 0 || c.firmada > 0) {
+          anotarLibro(db, ordenId, clave, c.productoId, c.cantidadPorUnidad, -c.reservada, -c.firmada);
+        }
+      }
+    }
+  });
+  run();
+}
+
+/**
  * ¿Esta política firma la reserva en este momento del flujo? Es la pregunta que
  * decide **cuándo** firmar, y la responde el llamador (Task 6). Lo que se firma
  * no se deduce de acá: sale del libro.
@@ -392,4 +443,117 @@ export function firmarReservadoDeCuenta(db: Database.Database, cuentaId: number)
     db,
     ordenes.map((o) => o.id),
   );
+}
+
+// ---------------------------------------------------------------------------
+// Stock al vender, merma por anulación y liberación al cancelar.
+// ---------------------------------------------------------------------------
+
+export type FaltanteStock = { productoId: number; nombre: string; requerido: number; disponible: number };
+
+/**
+ * Aplica la política `bloqueo_sin_stock` a un consumo por venir. Con
+ * `bloquear` lanza `stock_insuficiente` (409); con `avisar` devuelve los avisos
+ * para que la respuesta se los lleve al mesero. No mueve stock: solo mira.
+ */
+export function controlarStock(
+  db: Database.Database,
+  cfg: Pick<AppConfig, "bloqueo_sin_stock">,
+  lineas: LineaConsumo[],
+): string[] {
+  if (cfg.bloqueo_sin_stock === "permitir") return [];
+  const faltantes = faltantesDeStock(db, lineas.filter((l) => l.cantidad > 0));
+  if (faltantes.length === 0) return [];
+  const detalle = faltantes.map(
+    (f) => `${f.nombre}: pide ${f.requerido}, disponible ${Math.max(0, Math.round(f.disponible * 100) / 100)}`,
+  );
+  if (cfg.bloqueo_sin_stock === "bloquear") {
+    throw new InventarioError("stock_insuficiente", `Sin stock suficiente — ${detalle.join("; ")}`);
+  }
+  return detalle.map((d) => `Stock bajo — ${d}`);
+}
+
+/**
+ * Lo que faltaría para servir estas líneas, comparado contra lo disponible
+ * (en mano menos lo reservado a otras mesas). Es una **pre-check**: usa la
+ * receta vigente, no el libro, porque se corre antes de mover un solo gramo.
+ * Solo considera productos con inventario rastreado; lo demás no expande.
+ */
+export function faltantesDeStock(db: Database.Database, lineas: LineaConsumo[]): FaltanteStock[] {
+  const requeridos = new Map<number, number>();
+  for (const c of expandir(db, lineas)) {
+    requeridos.set(c.productoId, (requeridos.get(c.productoId) ?? 0) + c.cantidad);
+  }
+  const faltantes: FaltanteStock[] = [];
+  for (const [productoId, requerido] of requeridos) {
+    const fila = db
+      .prepare(
+        `SELECT p.nombre, COALESCE(s.on_hand_real, 0) AS on_hand, COALESCE(s.reserved_real, 0) AS reservado
+         FROM productos p LEFT JOIN stock s ON s.producto_id = p.id
+         WHERE p.id = ?`,
+      )
+      .get(productoId) as { nombre: string; on_hand: number; reservado: number } | undefined;
+    if (!fila) continue;
+    const disponible = fila.on_hand - fila.reservado;
+    if (requerido > disponible + 1e-9) {
+      faltantes.push({ productoId, nombre: fila.nombre, requerido, disponible });
+    }
+  }
+  return faltantes;
+}
+
+export type MermaAnulacion = { lineaClave: string; productoId: number; unidades: number };
+
+/**
+ * Documenta la merma de los insumos que ya se cocinaron de una línea anulada.
+ *
+ * El stock **no se toca**: esas unidades salieron cuando se reservó/firmó el
+ * envío y devolverlas sería inventario fantasma (el plato existe, ya no está en
+ * la despensa). Lo que falta es el rastro: un movimiento de pérdida por
+ * componente, con el motivo `anulacion_preparacion`, queda en el kardex.
+ */
+export function registrarMermaDeAnulacion(
+  db: Database.Database,
+  ordenId: number,
+  mermas: MermaAnulacion[],
+  empleadoId: number,
+): void {
+  for (const merma of mermas) {
+    for (const c of componentesDelLibro(db, ordenId, merma.lineaClave)) {
+      const cantidad = c.cantidadPorUnidad * merma.unidades;
+      if (cantidad <= 0) continue;
+      const stock = db
+        .prepare("SELECT COALESCE(on_hand_real, 0) AS s FROM stock WHERE producto_id = ?")
+        .get(c.productoId) as { s: number } | undefined;
+      const onHand = stock?.s ?? 0;
+      db
+        .prepare(
+          `INSERT INTO inventario_movimientos
+            (producto_id, tipo, cantidad_real, stock_anterior_real, stock_nuevo_real, empleado_id, motivo, creado_en)
+           VALUES (?, 'perdida', ?, ?, ?, ?, 'anulacion_preparacion', ?)`,
+        )
+        .run(c.productoId, cantidad, onHand, onHand, empleadoId, new Date().toISOString());
+    }
+  }
+}
+
+/**
+ * Libera lo reservado de unas órdenes sin firmarlo: las unidades vuelven a estar
+ * disponibles porque nunca se cocinaron. Es el destino del stock cuando se
+ * cancela una cuenta con líneas que cocina no empezó.
+ */
+export function liberarReservasDeOrdenes(db: Database.Database, ordenIds: number[]): void {
+  const run = db.transaction(() => {
+    for (const p of pendienteDeFirmar(db, ordenIds)) {
+      ajustar(db, p.productoId, 0, -p.cantidad);
+      db
+        .prepare(
+          `UPDATE orden_linea_inventario
+           SET reservada_real = MAX(reservada_real - ?, 0)
+           WHERE orden_id = ? AND linea_clave = ? AND producto_id = ?`,
+        )
+        .run(p.cantidad, p.ordenId, p.lineaClave, p.productoId);
+    }
+  });
+  run();
 }

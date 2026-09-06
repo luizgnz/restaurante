@@ -1,4 +1,4 @@
-import { Clock3, Pencil, Plus, ReceiptText, Send, Trash2, UserRound } from "lucide-react";
+import { Ban, Clock3, Pencil, Plus, ReceiptText, Send, Trash2, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -44,6 +44,7 @@ type Props = {
   onAnularOrden: (orden: OrdenCuentaUi) => void;
   onPrecuenta: () => void;
   onCerrarCuenta: () => void;
+  onCancelarCuenta?: () => void;
   onNotaPrivada: (nota: string) => Promise<void>;
 };
 
@@ -55,6 +56,7 @@ export function CuentaMesa({
   onAnularOrden,
   onPrecuenta,
   onCerrarCuenta,
+  onCancelarCuenta,
   onNotaPrivada,
 }: Props) {
   const aceptaConsumo = cuenta.estado === "abierta" || cuenta.estado === "precuenta_emitida";
@@ -168,6 +170,11 @@ export function CuentaMesa({
             {puedeCerrar ? (
               <Button type="button" onClick={onCerrarCuenta}>
                 <Send size={18} aria-hidden="true" /> Cerrar cuenta
+              </Button>
+            ) : null}
+            {onCancelarCuenta ? (
+              <Button type="button" variant="outline" className="peligro" onClick={onCancelarCuenta}>
+                <Ban size={18} aria-hidden="true" /> Cancelar cuenta
               </Button>
             ) : null}
           </>

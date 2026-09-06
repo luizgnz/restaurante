@@ -271,6 +271,7 @@ describe("tarjetasKds", () => {
         lineas: [{ lineaClave: e.lineaClave, productoId: e.ids.agua, cantidad: 0 }],
         claveIdempotencia: "kds-anulacion-1",
         pin: "1234",
+        motivo: "error del mesero",
       },
       e.printer,
       e.cfg,

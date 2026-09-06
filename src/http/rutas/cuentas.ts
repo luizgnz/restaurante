@@ -4,6 +4,7 @@ import { idDeRuta, leerJson, pinOpcional, protegido, textoOpcional, type RutasDe
 import { crearOrdenDeMesa, type CuerpoOrden } from "./ordenes.ts";
 import { enviarCuentaACaja, quienCobra } from "../../modules/caja/caja.ts";
 import { actualizarNotaPrivadaCuenta, CuentaError, obtenerCuenta } from "../../modules/cuentas/cuentas.ts";
+import { cancelarCuenta } from "../../modules/cuentas/cancelar.ts";
 import { listarCuentasActivas } from "../../modules/cuentas/listar.ts";
 import { PinError } from "../../modules/empleados/empleados.ts";
 import { sesionAbierta } from "../../modules/empleados/sesion.ts";
@@ -76,6 +77,20 @@ export function rutasCuentas(deps: RutasDeps): Hono {
       () => enviarCuentaACaja(db, cuentaId, pin, config),
     );
     return c.json(handoff, 201);
+  });
+
+  rutas.post("/:id/cancelar", async (c) => {
+    const cuentaId = idDeRuta(c);
+    const cuerpo = await leerJson<{ pin: unknown; motivo: unknown }>(c);
+    const pin = pinOpcional(cuerpo.pin) ?? "";
+    const motivo = textoOpcional(cuerpo.motivo) ?? null;
+    const resultado = await cancelarCuenta(db, {
+      cuentaId,
+      pin,
+      motivo,
+      devolverInsumosPreparados: config.devolver_insumos_preparados,
+    });
+    return c.json(resultado, 200);
   });
 
   return rutas;

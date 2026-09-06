@@ -6,6 +6,7 @@ import { Barra, type Destino } from "./pantallas/Barra.tsx";
 import { Backend } from "./pantallas/Backend.tsx";
 import { Categorias } from "./pantallas/Categorias.tsx";
 import { ComandaEnPantalla, type ComandaUi } from "./pantallas/ComandaEnPantalla.tsx";
+import { ConfirmarCancelarCuenta } from "./pantallas/ConfirmarCancelarCuenta.tsx";
 import { ConfirmarCierreCuenta } from "./pantallas/ConfirmarCierreCuenta.tsx";
 import { ConstructorOrden, type ConfigContornosUi, type ProductoCarta } from "./pantallas/ConstructorOrden.tsx";
 import { Contornos, type GrupoContornoUi, type SlotEditorUi } from "./pantallas/Contornos.tsx";
@@ -44,7 +45,8 @@ import {
 type PinPendiente =
   | { tipo: "enviar-orden"; borrador: BorradorOrden }
   | { tipo: "precuenta"; cuentaId: number }
-  | { tipo: "enviar-caja"; cuentaId: number };
+  | { tipo: "enviar-caja"; cuentaId: number }
+  | { tipo: "cancelar-cuenta"; cuentaId: number; motivo: string };
 
 type EdicionOrden = { orden: OrdenCuentaUi; modo: "editar" | "anular" };
 
@@ -113,6 +115,8 @@ export function App() {
   const [pinMomento, setPinMomento] = useState<OpcionesValores["pin_momento"]>("enviar");
   const [confirmarComanda, setConfirmarComanda] = useState(false);
   const [auditoriaAnulaciones, setAuditoriaAnulaciones] = useState(false);
+  const [devolverInsumosPreparados, setDevolverInsumosPreparados] = useState(true);
+  const [confirmarCancelar, setConfirmarCancelar] = useState(false);
   const [justificacionAnulacion, setJustificacionAnulacion] = useState(false);
   const [precuentaObligatoria, setPrecuentaObligatoria] = useState(true);
   const [cierreRequiereAvanzado, setCierreRequiereAvanzado] = useState(false);
@@ -202,6 +206,7 @@ export function App() {
     if (data.pin_momento) setPinMomento(data.pin_momento);
     if (typeof data.confirmar_comanda === "boolean") setConfirmarComanda(data.confirmar_comanda);
     if (typeof data.auditoria_anulaciones === "boolean") setAuditoriaAnulaciones(data.auditoria_anulaciones);
+    if (typeof data.devolver_insumos_preparados === "boolean") setDevolverInsumosPreparados(data.devolver_insumos_preparados);
     if (typeof data.justificacion_anulacion === "boolean") setJustificacionAnulacion(data.justificacion_anulacion);
     if (typeof data.precuenta_obligatoria_antes_de_caja === "boolean") {
       setPrecuentaObligatoria(data.precuenta_obligatoria_antes_de_caja);
@@ -463,14 +468,14 @@ export function App() {
     await enviarOrden(borrador);
   }
 
-  async function accionCuenta(tipo: "precuenta" | "enviar-caja", id: number, pin?: string) {
+  async function accionCuenta(tipo: "precuenta" | "enviar-caja" | "cancelar", id: number, pin?: string, motivo?: string) {
     if (envioEnCurso.current) return;
     envioEnCurso.current = true;
     setEnviando(true);
     try {
       const respuesta = await api<{ numero: number }>(`/api/cuentas/${id}/${tipo}`, {
         method: "POST",
-        body: JSON.stringify({ pin }),
+        body: JSON.stringify({ pin, ...(tipo === "cancelar" ? { motivo } : {}) }),
       });
       const detalle = await cargarCuenta(id);
       if (tipo === "precuenta") {
@@ -493,6 +498,13 @@ export function App() {
       }
       await Promise.all([cargarPlano(), cargarCuentasEnCurso()]);
       setPinPendiente(null);
+      if (tipo === "cancelar") {
+        setVista("plano");
+        setCuentaActual(null);
+        setContextoOrden(null);
+        setBorradorOrden(null);
+        return;
+      }
       setVista(vistaTrasAccionCuenta(tipo));
       if (tipo === "enviar-caja") {
         setCuentaActual(null);
@@ -519,6 +531,7 @@ export function App() {
     const pendiente = pinPendiente;
     if (!pendiente || enviando) return;
     if (pendiente.tipo === "enviar-orden") await enviarOrden(pendiente.borrador, pin);
+    else if (pendiente.tipo === "cancelar-cuenta") await accionCuenta("cancelar", pendiente.cuentaId, pin, pendiente.motivo);
     else await accionCuenta(pendiente.tipo, pendiente.cuentaId, pin);
   }
 
@@ -606,7 +619,9 @@ export function App() {
                 ? "PIN para enviar orden"
                 : pinPendiente.tipo === "precuenta"
                   ? "PIN para precuenta"
-                  : "PIN para enviar a caja"
+                  : pinPendiente.tipo === "cancelar-cuenta"
+                    ? "PIN para cancelar cuenta"
+                    : "PIN para enviar a caja"
             }
             error={errorModal}
             onPin={resolverPinEnModal}
@@ -645,6 +660,19 @@ export function App() {
             onConfirmar={() => {
               setConfirmarCierre(false);
               empezarAccionCuenta("enviar-caja");
+            }}
+          />
+        ) : null}
+        {confirmarCancelar && cuentaActual ? (
+          <ConfirmarCancelarCuenta
+            mesaNumero={cuentaActual.mesa.numero}
+            totalCentavos={cuentaActual.totalCentavos}
+            onCancelar={() => setConfirmarCancelar(false)}
+            onConfirmar={(motivo) => {
+              setConfirmarCancelar(false);
+              if (!cuentaActual) return;
+              setErrorModal("");
+              setPinPendiente({ tipo: "cancelar-cuenta", cuentaId: cuentaActual.id, motivo });
             }}
           />
         ) : null}
@@ -774,6 +802,7 @@ export function App() {
             onAnularOrden={(orden) => setEdicionOrden({ orden, modo: "anular" })}
             onPrecuenta={() => empezarAccionCuenta("precuenta")}
             onCerrarCuenta={() => setConfirmarCierre(true)}
+            onCancelarCuenta={() => setConfirmarCancelar(true)}
             onNotaPrivada={async (notaPrivada) => {
               await api(`/api/cuentas/${cuentaActual.id}/nota-privada`, {
                 method: "POST",
@@ -971,6 +1000,7 @@ export function App() {
               pin_momento: pinMomento,
               confirmar_comanda: confirmarComanda,
               auditoria_anulaciones: auditoriaAnulaciones,
+              devolver_insumos_preparados: devolverInsumosPreparados,
               justificacion_anulacion: justificacionAnulacion,
               precuenta_obligatoria_antes_de_caja: precuentaObligatoria,
               enviar_a_caja_requiere_avanzado: cierreRequiereAvanzado,
