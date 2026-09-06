@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { defaultConfig, type AppConfig } from "../src/config.ts";
 import { cuentaActivaPorMesa } from "../src/modules/cuentas/cuentas.ts";
-import { totalEfectivoCuenta } from "../src/modules/cuentas/totales.ts";
+import { totalVigenteCuenta } from "../src/modules/cuentas/totales.ts";
 import { crearEmpleado } from "../src/modules/empleados/empleados.ts";
 import { avanzarEtapa } from "../src/modules/kds/kds.ts";
 import { corregirOrden, type EntradaCorreccion } from "../src/modules/ordenes/correcciones.ts";
 import { enviarOrden } from "../src/modules/ordenes/enviar.ts";
 import { seedCartaDemo } from "../src/modules/productos/seed.ts";
-import { versionEfectivaOrden } from "../src/modules/ordenes/ordenes.ts";
+import { versionVigenteOrden } from "../src/modules/ordenes/ordenes.ts";
 import { MemoryPrinter } from "../src/print/memory.ts";
 import { codigoDe, entornoApi, openTestDb, post, verCuenta } from "./helpers.ts";
 
@@ -47,7 +47,7 @@ async function ordenConHamburguesaEnPreparacion(cfg: AppConfig = defaultConfig()
     .prepare("SELECT id FROM comanda_lineas WHERE comanda_id = ? ORDER BY id LIMIT 1")
     .get(comanda.id) as { id: number };
   avanzarEtapa(db, lineaComanda.id, "en_proceso");
-  return { db, ids, envio, linea: versionEfectivaOrden(db, envio.ordenId)[0] };
+  return { db, ids, envio, linea: versionVigenteOrden(db, envio.ordenId)[0] };
 }
 
 function seedEn(db: Db) {
@@ -99,7 +99,7 @@ describe("fase 0 · anular un plato ya preparado", () => {
       .prepare("SELECT id FROM comanda_lineas WHERE comanda_id = ? ORDER BY id LIMIT 1")
       .get(comanda.id) as { id: number };
     avanzarEtapa(db, lineaComanda.id, "en_proceso");
-    const linea = versionEfectivaOrden(db, envio.ordenId)[0];
+    const linea = versionVigenteOrden(db, envio.ordenId)[0];
 
     await anular(db, {
       ordenId: envio.ordenId,
@@ -145,7 +145,7 @@ describe("fase 0 · anular un plato ya preparado", () => {
       .prepare("SELECT id FROM comanda_lineas WHERE comanda_id = ? ORDER BY id LIMIT 1")
       .get(comanda.id) as { id: number };
     avanzarEtapa(db, lineaComanda.id, "en_proceso");
-    const linea = versionEfectivaOrden(db, envio.ordenId)[0];
+    const linea = versionVigenteOrden(db, envio.ordenId)[0];
 
     await anular(
       db,
@@ -207,13 +207,13 @@ describe("fase 0 · anular un plato ya preparado", () => {
       new MemoryPrinter(),
       defaultConfig(),
     );
-    const linea = versionEfectivaOrden(db, envio.ordenId)[0];
+    const linea = versionVigenteOrden(db, envio.ordenId)[0];
     await anular(db, {
       ordenId: envio.ordenId,
       lineas: [{ lineaClave: linea.lineaClave, productoId: linea.productoId, cantidad: 0, nota: null }],
       motivo: "error de toma",
     });
-    expect(versionEfectivaOrden(db, envio.ordenId).every((l) => l.cantidad === 0)).toBe(true);
+    expect(versionVigenteOrden(db, envio.ordenId).every((l) => l.cantidad === 0)).toBe(true);
     db.close();
   });
 });
@@ -254,6 +254,43 @@ describe("fase 0 · cancelar cuenta", () => {
     expect(anotacion.motivo).toBe("los clientes se retiraron sin pedir");
     expect(anotacion.lineas_liberadas).toBe(2);
     void ordenId;
+    e.db.close();
+  });
+
+  it("registra el total vigente de la cuenta después de una corrección", async () => {
+    const e = await entornoApi();
+    const orden = await post(e.app, "/api/ordenes", {
+      mesaId: e.ids.mesa7,
+      claveIdempotencia: "cancel-total-vigente",
+      pin: "1234",
+      lineas: [{ productoId: e.ids.hamburguesa, cantidad: 2 }],
+    });
+    const { cuentaId, ordenId } = (await orden.json()) as { cuentaId: number; ordenId: number };
+    const linea = versionVigenteOrden(e.db, ordenId)[0];
+
+    const correccion = await post(e.app, `/api/ordenes/${ordenId}/correcciones`, {
+      claveIdempotencia: "cancel-total-vigente-correccion",
+      pin: "1234",
+      lineas: [{
+        lineaClave: linea.lineaClave,
+        productoId: linea.productoId,
+        cantidad: 1,
+        nota: linea.nota,
+      }],
+    });
+    expect(correccion.status).toBe(201);
+
+    const cancelacion = await post(e.app, `/api/cuentas/${cuentaId}/cancelar`, {
+      pin: "2222",
+      motivo: "error al ingresar la cantidad",
+    });
+    expect(cancelacion.status).toBe(200);
+    expect(await cancelacion.json()).toMatchObject({ totalCentavos: 8900 });
+
+    const auditoria = e.db
+      .prepare("SELECT total_centavos FROM cancelaciones_cuentas WHERE cuenta_id = ?")
+      .get(cuentaId) as { total_centavos: number };
+    expect(auditoria.total_centavos).toBe(8900);
     e.db.close();
   });
 
@@ -340,7 +377,7 @@ describe("fase 0 · redondeo de dinero", () => {
       `INSERT INTO orden_lineas (orden_id, producto_id, cantidad, precio_centavos, nota, linea_clave)
        VALUES (?, ?, 0.33, 999, NULL, 'frac-1')`,
     ).run(ordenId, ids.hamburguesa);
-    const total = totalEfectivoCuenta(db, cuenta.id);
+    const total = totalVigenteCuenta(db, cuenta.id);
     expect(total).toBe(Math.round(0.33 * 999));
     expect(Number.isInteger(total)).toBe(true);
     db.close();

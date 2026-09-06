@@ -1,8 +1,8 @@
 import type Database from "better-sqlite3";
-import type { LineaEfectiva } from "../ordenes/ordenes.ts";
+import type { LineaVigente } from "../ordenes/ordenes.ts";
 import { haceCuanto } from "../tiempo.ts";
 import { obtenerCuenta, type EstadoCuenta } from "./cuentas.ts";
-import { totalEfectivoCuenta } from "./totales.ts";
+import { totalVigenteCuenta } from "./totales.ts";
 
 export type CuentaEnCurso = {
   id: number;
@@ -16,7 +16,7 @@ export type CuentaEnCurso = {
   ordenes: {
     id: number;
     numero: number;
-    lineas: LineaEfectiva[];
+    lineas: LineaVigente[];
   }[];
 };
 
@@ -43,7 +43,7 @@ export function listarCuentasActivas(db: Database.Database, ahoraMs = Date.now()
       estado: detalle.estado,
       abiertaEn: row.abierta_en,
       hace: haceCuanto(row.abierta_en, ahoraMs),
-      totalCentavos: totalEfectivoCuenta(db, detalle.id),
+      totalCentavos: totalVigenteCuenta(db, detalle.id),
       ordenes: detalle.ordenes.map((orden) => ({
         id: orden.id,
         numero: orden.numero,

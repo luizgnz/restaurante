@@ -12,7 +12,7 @@ import {
 } from "../src/modules/kds/kds.ts";
 import { corregirOrden } from "../src/modules/ordenes/correcciones.ts";
 import { enviarOrden } from "../src/modules/ordenes/enviar.ts";
-import { versionEfectivaOrden } from "../src/modules/ordenes/ordenes.ts";
+import { versionVigenteOrden } from "../src/modules/ordenes/ordenes.ts";
 import { agregarLinea, enviarACocina, guardarNotasPedido } from "../src/modules/pedidos/pedidos.ts";
 import { seedCartaDemo } from "../src/modules/productos/seed.ts";
 import { abrirMesa } from "../src/modules/salon/salon.ts";
@@ -54,7 +54,7 @@ async function escenarioMixto() {
     printer,
     cfg,
   );
-  const linea = versionEfectivaOrden(db, orden.ordenId)[0];
+  const linea = versionVigenteOrden(db, orden.ordenId)[0];
   const correccion = await corregirOrden(
     db,
     {

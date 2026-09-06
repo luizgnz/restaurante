@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { versionEfectivaOrden } from "../ordenes/ordenes.ts";
+import { versionVigenteOrden } from "../ordenes/ordenes.ts";
 import { obtenerCuenta } from "./cuentas.ts";
 
 /**
@@ -13,11 +13,11 @@ export function totalLineaCentavos(cantidad: number, precioCentavos: number): nu
   return Math.round(cantidad * precioCentavos);
 }
 
-export function totalEfectivoCuenta(db: Database.Database, cuentaId: number): number {
+export function totalVigenteCuenta(db: Database.Database, cuentaId: number): number {
   const ordenes = db.prepare("SELECT id FROM ordenes WHERE cuenta_id = ?").all(cuentaId) as { id: number }[];
   let total = 0;
   for (const orden of ordenes) {
-    for (const linea of versionEfectivaOrden(db, orden.id)) {
+    for (const linea of versionVigenteOrden(db, orden.id)) {
       if (linea.cantidad > 0) total += totalLineaCentavos(linea.cantidad, linea.precioCentavos);
     }
   }
@@ -79,7 +79,7 @@ export function selloCuenta(db: Database.Database, cuentaId: number): string {
 }
 
 /**
- * La cuenta como la ve el cliente: cada orden con su versión efectiva y sus
+ * La cuenta como la ve el cliente: cada orden con su versión vigente y sus
  * indicaciones vigentes.
  *
  * Las líneas en cero quedan en la historia de la cuenta pero no en la
