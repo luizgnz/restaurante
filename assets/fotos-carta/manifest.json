@@ -1,0 +1,80 @@
+[
+  {
+    "producto": "Hamburguesa",
+    "archivo": "hamburguesa.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Cheeseburger.jpg",
+    "licencia": "Public domain"
+  },
+  {
+    "producto": "Completo",
+    "archivo": "completo.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Completo_italiano_-_Flickr_-_B%C3%A1rb_Santelices.jpg",
+    "licencia": "CC0"
+  },
+  {
+    "producto": "Empanada",
+    "archivo": "empanada.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Empanada_de_pino.jpg",
+    "licencia": "CC BY 2.0"
+  },
+  {
+    "producto": "Papas fritas",
+    "archivo": "papas-fritas.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:French_fries_at_Chez_Jolie.jpg",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Ensalada César",
+    "archivo": "ensalada-cesar.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Caesar_Salad_from_Tony_Roma_Restaurant-_March_2024_02.jpg",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Pizza margarita",
+    "archivo": "pizza-margarita.jpg",
+    "fuente": "https://www.pexels.com/photo/top-view-of-a-pizza-margherita-20115306/",
+    "licencia": "Pexels License"
+  },
+  {
+    "producto": "Sopa del día",
+    "archivo": "sopa-del-dia.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Tomato_soup,_rye_bread_and_white_wine.jpg",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Menú del día",
+    "archivo": "menu-del-dia.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Casado_Tico.jpg",
+    "licencia": "CC BY 2.0"
+  },
+  {
+    "producto": "Jugo",
+    "archivo": "jugo.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Orange_juice_1_edit1.jpg",
+    "licencia": "Public domain"
+  },
+  {
+    "producto": "Agua con gas",
+    "archivo": "agua-con-gas.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Sparkling_Water_with_Mint_in_Glass_Cup.jpg",
+    "licencia": "CC BY 2.0"
+  },
+  {
+    "producto": "Café",
+    "archivo": "cafe.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:A_cup_of_espresso.jpg",
+    "licencia": "CC BY-SA 4.0"
+  },
+  {
+    "producto": "Cerveza",
+    "archivo": "cerveza.jpg",
+    "fuente": "https://images.pexels.com/photos/1552630/pexels-photo-1552630.jpeg",
+    "licencia": "Pexels License"
+  },
+  {
+    "producto": "Flan",
+    "archivo": "flan.jpg",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Flan-04926.jpg",
+    "licencia": "CC BY-SA 4.0"
+  }
+]
