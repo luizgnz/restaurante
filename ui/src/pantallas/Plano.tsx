@@ -75,6 +75,9 @@ export function Plano({
   const inputRef = useRef<HTMLInputElement>(null);
   const mapaRef = useRef<HTMLDivElement>(null);
   const [anchoMapa, setAnchoMapa] = useState(1200);
+  /* En el plano espacial el lienzo crece con la pantalla; sin un piso de
+     escala las mesas quedan diminutas y el mapa parece vacío. */
+  const escalaMesas = Math.min(1.5, Math.max(1.15, anchoMapa / 900));
 
   function abrirNumero(numero: number) {
     const mesa = mesas.find((m) => m.numero === numero);
@@ -153,27 +156,13 @@ export function Plano({
 
   return (
     <section className="salon-odoo">
-      <div className="salon-odoo__resumen">
-        <div>
-          <span className="salon-odoo__eyebrow">Servicio de mesas</span>
-          <h1>{piso}</h1>
-          <p>Selecciona una mesa para comenzar o continuar el servicio.</p>
-        </div>
-        <div className="salon-odoo__metricas flex flex-wrap gap-2" aria-label="Resumen del salón, toca para filtrar">
-          <Button type="button" size="sm" variant={filtro === "libres" ? "secondary" : "outline"} aria-pressed={filtro === "libres"} onClick={() => setFiltro(filtro === "libres" ? "todas" : "libres")}><Table2 size={17} aria-hidden="true" /><strong>{libres}</strong><span>libres</span></Button>
-          <Button type="button" size="sm" variant={filtro === "servicio" ? "secondary" : "outline"} aria-pressed={filtro === "servicio"} onClick={() => setFiltro(filtro === "servicio" ? "todas" : "servicio")}><Clock3 size={17} aria-hidden="true" /><strong>{ocupadas}</strong><span>en servicio</span></Button>
-          <Button type="button" size="sm" variant={filtro === "precuenta" ? "secondary" : "outline"} aria-pressed={filtro === "precuenta"} onClick={() => setFiltro(filtro === "precuenta" ? "todas" : "precuenta")}><ReceiptText size={17} aria-hidden="true" /><strong>{enPrecuenta}</strong><span>precuenta</span></Button>
-          <Button type="button" size="sm" variant={filtro === "atrasadas" ? "destructive" : "outline"} aria-pressed={filtro === "atrasadas"} onClick={() => setFiltro(filtro === "atrasadas" ? "todas" : "atrasadas")}><Timer size={17} aria-hidden="true" /><strong>{atrasadas}</strong><span>atrasadas</span></Button>
-        </div>
-      </div>
-      <header className="salon-odoo__pisos">
-        <div className="salon-odoo__pisos-izq">
-          {onNuevoPedido ? (
-            <Button type="button" size="lg" className="tactil salon-odoo__nueva" aria-label="Nueva orden" title="Nueva orden (N)" onClick={onNuevoPedido}>
-              <Plus size={20} aria-hidden="true" /><span>Nueva orden</span>
-            </Button>
-          ) : null}
-        </div>
+      <header className="salon-odoo__cabecera">
+        <h1>{piso}</h1>
+        {onNuevoPedido ? (
+          <Button type="button" className="tactil salon-odoo__nueva" aria-label="Nueva orden" title="Nueva orden (N)" onClick={onNuevoPedido}>
+            <Plus size={18} aria-hidden="true" /><span>Nueva orden</span>
+          </Button>
+        ) : null}
         <div className="salon-odoo__pisos-centro" role="tablist" aria-label="Pisos">
           {listaPisos.map((p) => {
             const actual = (pisoId != null && p.id === pisoId) || (pisoId == null && p.nombre === piso);
@@ -194,6 +183,12 @@ export function Plano({
           })}
         </div>
       </header>
+      <div className="salon-odoo__metricas" aria-label="Resumen del salón, toca para filtrar">
+        <Button type="button" size="sm" variant={filtro === "libres" ? "secondary" : "outline"} aria-pressed={filtro === "libres"} title={`${libres} libres`} aria-label={`Filtrar ${libres} mesas libres`} onClick={() => setFiltro(filtro === "libres" ? "todas" : "libres")}><Table2 size={17} aria-hidden="true" /><strong>{libres}</strong></Button>
+        <Button type="button" size="sm" variant={filtro === "servicio" ? "secondary" : "outline"} aria-pressed={filtro === "servicio"} title={`${ocupadas} en servicio`} aria-label={`Filtrar ${ocupadas} mesas en servicio`} onClick={() => setFiltro(filtro === "servicio" ? "todas" : "servicio")}><Clock3 size={17} aria-hidden="true" /><strong>{ocupadas}</strong></Button>
+        <Button type="button" size="sm" variant={filtro === "precuenta" ? "secondary" : "outline"} aria-pressed={filtro === "precuenta"} title={`${enPrecuenta} en precuenta`} aria-label={`Filtrar ${enPrecuenta} mesas en precuenta`} onClick={() => setFiltro(filtro === "precuenta" ? "todas" : "precuenta")}><ReceiptText size={17} aria-hidden="true" /><strong>{enPrecuenta}</strong></Button>
+        <Button type="button" size="sm" variant={filtro === "atrasadas" ? "destructive" : "outline"} aria-pressed={filtro === "atrasadas"} title={`${atrasadas} atrasadas`} aria-label={`Filtrar ${atrasadas} mesas atrasadas`} onClick={() => setFiltro(filtro === "atrasadas" ? "todas" : "atrasadas")}><Timer size={17} aria-hidden="true" /><strong>{atrasadas}</strong></Button>
+      </div>
       {asignando ? <p>Toque una mesa libre para sentar el pedido</p> : null}
       {buscando ? (
         <div className="buscar-mesa" role="dialog" aria-label="Elegir mesa">
@@ -254,8 +249,8 @@ export function Plano({
             style={{
               left: `${m.pos_x}%`,
               top: `${m.pos_y}%`,
-              width: Math.max(m.ancho * Math.min(1.2, Math.max(0.72, anchoMapa / 1200)), 64),
-              height: Math.max(m.alto * Math.min(1.2, Math.max(0.72, anchoMapa / 1200)), 64),
+              width: Math.max(m.ancho * escalaMesas, 64),
+              height: Math.max(m.alto * escalaMesas, 64),
               backgroundColor: m.fondo_color || undefined,
               backgroundImage: m.fondo_data ? `url("${m.fondo_data}")` : undefined,
               backgroundSize: "cover",

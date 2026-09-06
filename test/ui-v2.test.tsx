@@ -15,27 +15,27 @@ const borrador = {
 };
 
 describe("UI V2 transaction-first", () => {
-  it("organiza marca, vistas de trabajo e iconos sin etiquetas redundantes", () => {
+  it("organiza marca, navegación e iconos sin etiquetas redundantes", () => {
     const html = renderToStaticMarkup(
       createElement(Barra, {
-        uiVersion: "nueva",
         vista: "plano",
-        area: "mesero",
         marca: "Restaurante",
         nombre: "Ana",
         onMesas: () => undefined,
         onOrdenes: () => undefined,
         onInventario: () => undefined,
-        onCocina: () => undefined,
-        onCambiarArea: () => undefined,
         onCerrarSesion: () => undefined,
         onIr: () => undefined,
       }),
     );
     expect(html).toContain('class="pos-nav__identity"');
     expect(html).toContain('class="pos-nav__right"');
-    expect(html).toContain("Vista Mesero");
-    expect(html).toContain("Vista Cocina");
+    expect(html).toContain("Mesas");
+    expect(html).toContain("Órdenes");
+    expect(html).toContain("Inventario");
+    expect(html).toContain('aria-label="Menú y cuenta"');
+    expect(html).not.toContain("Vista Mesero");
+    expect(html).not.toContain("Vista Cocina");
     expect(html).not.toContain(">Sesión<");
     expect(html).not.toContain(">Menú<");
   });

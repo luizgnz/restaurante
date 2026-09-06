@@ -144,7 +144,6 @@ export function Pedidos({
       <header className="page-header">
         <div>
           <span className="page-eyebrow">Vista del mesero</span>
-          <h1>Órdenes</h1>
           <p>Revisa las órdenes y responde lo que cocina propone al cliente.</p>
         </div>
         {incidencias.length ? (

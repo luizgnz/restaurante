@@ -1119,11 +1119,6 @@ button.icono:focus-visible {
   border-radius: 0.7rem;
 }
 
-.mobile-view-context {
-  border-color: var(--border);
-  background: rgb(255 255 255 / 0.85);
-}
-
 main > [role="alert"] {
   width: min(1480px, calc(100% - 2rem));
   margin: 0.75rem auto -0.25rem;
@@ -1162,7 +1157,6 @@ main > [role="alert"] {
   background: var(--accent);
 }
 
-.salon-odoo__resumen h1,
 .constructor-orden__cabecera h1,
 .cuenta-mesa__cabecera h1 {
   color: var(--foreground);
@@ -1201,15 +1195,6 @@ main > [role="alert"] {
   background: var(--warning-soft);
 }
 
-.pos-nav__areas {
-  border-color: var(--border);
-  background: var(--muted);
-}
-
-.pos-nav__areas button.is-on {
-  color: var(--primary);
-}
-
 .modal-caja,
 .armado-plato,
 .correccion-modal {
@@ -1237,13 +1222,8 @@ main > [role="alert"] {
     background: var(--accent);
   }
 
-  .mobile-view-context {
-    margin-top: 0.8rem;
-    border-radius: 0.9rem;
-  }
-
-  .salon-odoo__resumen h1 {
-    font-size: 1.55rem;
+  .salon-odoo__cabecera h1 {
+    font-size: 1.45rem;
   }
 
   .plano-mapa {
@@ -1384,9 +1364,6 @@ textarea:focus {
   background: var(--accent);
   color: var(--accent-foreground);
 }
-.mobile-view-context {
-  display: none;
-}
 .pos-odoo__marca {
   color: var(--foreground);
 }
@@ -1423,26 +1400,6 @@ button.icono {
 .salon-odoo {
   gap: 1rem;
 }
-.salon-odoo__resumen {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-}
-.salon-odoo__resumen h1,
-.salon-odoo__resumen p {
-  margin: 0;
-}
-.salon-odoo__resumen h1 {
-  margin-top: 0.2rem;
-  font-size: clamp(1.65rem, 3vw, 2.4rem);
-  letter-spacing: -0.035em;
-}
-.salon-odoo__resumen p {
-  margin-top: 0.3rem;
-  color: var(--muted-foreground);
-}
-.salon-odoo__eyebrow,
 .constructor-orden__eyebrow,
 .cuenta-mesa__eyebrow,
 .armado-plato__eyebrow {
@@ -1787,28 +1744,6 @@ button.icono {
   .pos-nav__label {
     display: none;
   }
-  .mobile-view-context {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0.7rem 0.75rem 0;
-    padding: 0.55rem 0.7rem;
-    border: 1px solid var(--border);
-    border-radius: 0.8rem;
-    background: var(--card);
-    color: var(--foreground);
-    box-shadow: 0 5px 18px rgb(44 34 22 / 0.06);
-  }
-  .mobile-view-context span {
-    color: var(--muted-foreground);
-    font-size: 0.66rem;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-  .mobile-view-context strong {
-    font-size: 0.9rem;
-  }
   .pos-odoo__marca {
     display: none;
   }
@@ -1826,12 +1761,6 @@ button.icono {
     max-height: 65svh;
     overflow-y: auto;
   }
-  .salon-odoo__resumen {
-    align-items: flex-start;
-  }
-  .salon-odoo__resumen p {
-    display: none;
-  }
   .salon-odoo__pisos {
     display: flex;
     flex-wrap: wrap;
@@ -1841,14 +1770,6 @@ button.icono {
   }
   .salon-odoo__pisos-izq button {
     width: 100%;
-  }
-  .salon-odoo__pisos-izq .salon-odoo__nueva {
-    width: 48px;
-    min-width: 48px;
-    height: 48px;
-    min-height: 48px;
-    padding: 0;
-    border-radius: 50%;
   }
   .salon-odoo__nueva span {
     display: none;
@@ -1991,33 +1912,8 @@ button.icono {
 }
 
 /* --------------------------------------------------------------------------
-   Áreas Mesero / Cocina y coordinación de cambios
+   Badge de avisos de cocina en la navegación
    -------------------------------------------------------------------------- */
-.pos-nav__areas {
-  display: inline-flex;
-  gap: 0.2rem;
-  padding: 0.25rem;
-  border: 1px solid var(--border);
-  border-radius: 0.85rem;
-  background: var(--muted);
-}
-.pos-nav__areas button {
-  display: inline-flex;
-  min-height: 38px;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.4rem 0.65rem;
-  border-radius: 0.65rem;
-  background: transparent;
-  color: var(--muted-foreground);
-  font-size: 0.78rem;
-  font-weight: 750;
-}
-.pos-nav__areas button.is-on {
-  background: var(--card);
-  color: var(--primary);
-  box-shadow: 0 2px 8px rgb(67 48 29 / 0.09);
-}
 .pos-nav__badge {
   display: grid;
   min-width: 1.25rem;
@@ -2158,25 +2054,7 @@ button.icono {
   gap: 0.45rem;
 }
 
-@media (max-width: 900px) {
-}
-
 @media (max-width: 767px) {
-  .pos-nav__areas {
-    flex: 1;
-    align-self: flex-start;
-    justify-content: center;
-    min-height: 54px;
-    padding: 0.25rem;
-  }
-  .pos-nav__areas button {
-    min-width: 0;
-    min-height: 44px;
-    padding: 0.25rem;
-  }
-  .pos-nav__areas button span {
-    display: none;
-  }
   .pos-nav__badge {
     position: absolute;
     top: 0.15rem;
@@ -3454,7 +3332,7 @@ button.icono:focus-visible {
 }
 
 .page-header h1,
-.salon-odoo__resumen h1,
+.salon-odoo__cabecera h1,
 .constructor-orden__cabecera h1,
 .cuenta-mesa__cabecera h1 {
   color: var(--foreground);
@@ -3463,13 +3341,11 @@ button.icono:focus-visible {
 }
 
 .page-header p,
-.salon-odoo__resumen p,
 .constructor-orden__cabecera p {
   color: var(--muted-foreground);
 }
 
 .page-eyebrow,
-.salon-odoo__eyebrow,
 .constructor-orden__eyebrow,
 .cuenta-mesa__eyebrow,
 .armado-plato__eyebrow {
@@ -3556,22 +3432,11 @@ button.icono:focus-visible {
     height: 21px;
   }
 
-  .mobile-view-context {
-    min-height: 44px;
-    margin: 0.65rem 0.7rem 0;
-    padding: 0.5rem 0.65rem;
-    border-color: var(--border);
-    border-radius: 0.85rem;
-    background: rgb(255 255 255 / 0.9);
-    box-shadow: 0 5px 18px rgb(30 67 56 / 0.055);
-  }
-
   .page-shell {
     gap: 0.85rem;
   }
 
   .page-header h1,
-  .salon-odoo__resumen h1,
   .constructor-orden__cabecera h1 {
     font-size: 1.45rem;
   }
@@ -3933,14 +3798,6 @@ button.icono:focus-visible {
     padding: 0 !important;
   }
 }
-.ui-v2 .salon-odoo__resumen {
-  align-items: center;
-}
-.ui-v2 .salon-odoo__resumen h1 {
-  font-size: clamp(1.35rem, 2vw, 1.8rem);
-}
-.ui-v2 .salon-odoo__resumen p,
-.ui-v2 .salon-odoo__eyebrow,
 .ui-v2 .constructor-orden__cabecera p,
 .ui-v2 .constructor-orden__cabecera .constructor-orden__eyebrow {
   display: none;
@@ -4442,5 +4299,81 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
     max-width: none;
     max-height: none;
     min-width: 0;
+  }
+}
+
+/* Limpieza de interfaz 2026-09-06: encabezado del salón lineal y compacto,
+   resumen en una sola línea de chips con icono y toggle de vistas de Órdenes. */
+.salon-odoo__cabecera {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+.salon-odoo__cabecera h1 {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.4vw, 1.9rem);
+  letter-spacing: -0.03em;
+}
+.salon-odoo__cabecera .salon-odoo__pisos-centro {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+.salon-odoo__metricas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.salon-odoo__metricas button {
+  min-width: 44px;
+  min-height: 44px;
+  gap: 0.35rem;
+}
+.ordenes-vistas__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+.ordenes-vistas__cabecera h1 {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.4vw, 1.9rem);
+  letter-spacing: -0.03em;
+}
+.ordenes-vistas__toggle {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--muted);
+}
+.ordenes-vistas__toggle button {
+  min-height: 44px;
+}
+.ordenes-vistas__toggle button.is-on {
+  color: var(--primary);
+}
+.pos-odoo__panel-sep {
+  height: 1px;
+  margin: 0.35rem 0.25rem;
+  background: var(--border);
+}
+/* Sin capa para imponerse a la utilidad justify-center (@layer utilities gana
+   a @layer components, donde vive la regla original del panel). */
+.pos-odoo__panel button {
+  justify-content: flex-start;
+}
+
+/* Plano espacial (≥768 px): lienzo más corto y mesas más grandes para
+   aprovechar el ancho sin dejar franjas vacías; bajo 768 manda el contrato
+   responsive de teléfono. */
+@media (min-width: 768px) {
+  .ui-v2 .plano-mapa {
+    min-height: clamp(24rem, 56vh, 42rem);
   }
 }

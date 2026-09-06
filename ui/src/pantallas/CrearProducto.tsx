@@ -26,7 +26,8 @@ export type CrearProductoProps = {
   onDirtyChange?: (sucio: boolean) => void;
 };
 
-const COLOR_INICIAL = "#714b67";
+// Cobre de marca (--brand); el morado anterior era residuo del tema pre-marca.
+const COLOR_INICIAL = "#8a4a26";
 
 function leerImagen(file: File, cb: (url: string) => void) {
   const r = new FileReader();
