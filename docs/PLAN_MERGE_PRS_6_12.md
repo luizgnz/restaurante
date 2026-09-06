@@ -98,9 +98,9 @@ Todos siguen en borrador y GitHub no tiene checks automáticos configurados. Por
 
 ### E. Puerta de aprobación
 
-- [ ] **E01 — Quitar borrador solo a PR aprobables.** Un PR puede pasar a “Ready for review” únicamente si sus tareas anteriores están completas y su base sigue siendo la rama esperada.
+- [x] **E01 — Quitar borrador solo a PR aprobables.** Un PR puede pasar a “Ready for review” únicamente si sus tareas anteriores están completas y su base sigue siendo la rama esperada.
 - [ ] **E02 — Obtener aprobación externa.** Otra cuenta revisa cada PR. Salida: `reviewDecision` es `APPROVED`; un comentario del autor no cuenta como aprobación formal.
-- [ ] **E03 — Comprobar estado antes de merge.** Para cada PR: `isDraft=false`, `mergeable=MERGEABLE`, `mergeStateStatus=CLEAN`, diff esperado y pruebas verdes.
+- [x] **E03 — Comprobar estado antes de merge.** Para cada PR: `isDraft=false`, `mergeable=MERGEABLE`, `mergeStateStatus=CLEAN`, diff esperado y pruebas verdes.
 - [ ] **E04 — Solicitar autorización final.** Presentar al usuario el estado de los siete PR y pedir autorización explícita para ejecutar el bloque M.
 
 ## Bloque M — Merge final, uno por uno
