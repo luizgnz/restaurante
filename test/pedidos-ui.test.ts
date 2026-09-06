@@ -73,7 +73,7 @@ describe("pantalla Órdenes sobre cuentas", () => {
 
   it("en V2 hace clicable la orden y deja la mesa como contexto", () => {
     const html = renderToStaticMarkup(
-      createElement(Pedidos, { uiVersion: "nueva", cuentas: [cuenta()], onAbrir: () => undefined }),
+      createElement(Pedidos, { cuentas: [cuenta()], onAbrir: () => undefined }),
     );
     expect(html).toContain('aria-label="Abrir acciones de Orden #1, Mesa 7"');
     expect(html).toContain('class="pedido-orden__abrir"');

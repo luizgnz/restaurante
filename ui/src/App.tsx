@@ -78,7 +78,6 @@ function nombreDeVista(vista: Vista, area: "mesero" | "cocina"): string {
 }
 
 export function App() {
-  const uiVersion = "nueva" as const;
   const [sesion, setSesion] = useState<Sesion | null>(null);
   const [vista, setVista] = useState<Vista>("plano");
   const [area, setArea] = useState<"mesero" | "cocina">("mesero");
@@ -601,9 +600,8 @@ export function App() {
   const puedeOrdenes = puedeMesas || roles.includes("caja");
 
   return (
-    <div className="pos-odoo ui-v2" data-ui-version="nueva">
+    <div className="pos-odoo ui-v2">
       <Barra
-        uiVersion={uiVersion}
         vista={vista}
         area={area}
         marca={nombreLocal}
@@ -767,7 +765,6 @@ export function App() {
         ) : null}
         {vista === "plano" ? (
           <Plano
-            uiVersion={uiVersion}
             piso={piso}
             pisoId={pisoId}
             pisos={pisos}
@@ -811,7 +808,6 @@ export function App() {
         ) : null}
         {vista === "pedido" && contextoOrden && borradorOrden ? (
           <ConstructorOrden
-            uiVersion={uiVersion}
             productos={productos}
             borrador={borradorOrden}
             cuentaId={contextoOrden.tipo === "cuenta" ? contextoOrden.cuentaId : undefined}
@@ -879,7 +875,6 @@ export function App() {
         ) : null}
         {vista === "pedidos" ? (
           <Pedidos
-            uiVersion={uiVersion}
             cuentas={cuentasEnCurso}
             incidencias={incidenciasCocina}
             onAceptarSugerencia={async (incidenciaId, pin) => {

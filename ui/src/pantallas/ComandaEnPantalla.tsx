@@ -1,3 +1,6 @@
+import { Button } from "@/components/ui/button.tsx";
+import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";
+
 export type ComandaUi = {
   mesaNumero: number | null;
   ordenNumero: number;
@@ -45,5 +48,3 @@ export function ComandaEnPantalla({ restaurante, comanda, onCerrar }: Props) {
     </Dialog>
   );
 }
-import { Button } from "@/components/ui/button.tsx";
-import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";

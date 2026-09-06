@@ -23,7 +23,7 @@ describe("ticket del pedido", () => {
       }),
     );
     expect(html).toContain("Nueva orden · Mesa #1");
-    expect(html).toContain("Indicaciones del cliente");
+    expect(html).toContain("Agregar indicaciones");
     // La cantidad vive en la tarjeta del menú; no hay notas por producto.
     expect(html).toContain("2 × Hamburguesa");
     expect(html).not.toContain("Nota del producto");
@@ -70,7 +70,7 @@ describe("ticket del pedido", () => {
         onCancelar: () => undefined,
       }),
     );
-    expect(html).toContain('placeholder="Buscar producto"');
+    expect(html).toContain('aria-label="Buscar producto"');
     expect(html).toContain("Todas");
     expect(html).toContain("Comida");
     expect(html).toContain("Bebidas");

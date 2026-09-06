@@ -37,7 +37,6 @@ const ESTADO: Record<string, string> = {
 };
 
 type Props = {
-  uiVersion?: "actual" | "nueva";
   cuentas: CuentaEnCursoUi[];
   incidencias?: IncidenciaCocinaUi[];
   onAbrir: (cuentaId: number, ordenId?: number) => void;
@@ -46,7 +45,6 @@ type Props = {
 };
 
 export function Pedidos({
-  uiVersion = "actual",
   cuentas,
   incidencias = [],
   onAbrir,
@@ -127,34 +125,24 @@ export function Pedidos({
       <div className="kds pedidos-grid">
         {cuentas.map((cuenta) => (
           <Card className="tarjeta pedido-card" key={cuenta.id}>
-            {uiVersion === "nueva" ? <div className="pedido-cabecera">
+            <div className="pedido-cabecera">
               <span className="pedido-card__mesa"><strong>Mesa {cuenta.mesa}</strong><Badge variant="warning">{ESTADO[cuenta.estado] ?? cuenta.estado}</Badge></span>
               <span className="pedido-card__meta"><Clock3 size={15} aria-hidden="true" /> {cuenta.mesero} · {cuenta.hace}</span>
-            </div> : <Button type="button" variant="ghost" className="pedido-cabecera" onClick={() => onAbrir(cuenta.id)}>
-              <span className="pedido-card__mesa"><strong>Mesa {cuenta.mesa}</strong><Badge variant="warning">{ESTADO[cuenta.estado] ?? cuenta.estado}</Badge></span>
-              <span className="pedido-card__meta"><Clock3 size={15} aria-hidden="true" /> {cuenta.mesero} · {cuenta.hace}</span>
-            </Button>}
+            </div>
             <div className="pedido-card__ordenes">
               {cuenta.ordenes.map((orden) => {
                 const avisos = incidencias.filter((incidencia) => incidencia.ordenId === orden.id);
                 return (
                   <div className="pedido-indicaciones" key={orden.id}>
-                    {uiVersion === "nueva" ? (
-                      <button
-                        type="button"
-                        className="pedido-orden__abrir"
-                        aria-label={`Abrir acciones de Orden #${orden.numero}, Mesa ${cuenta.mesa}`}
-                        onClick={() => onAbrir(cuenta.id, orden.id)}
-                      >
-                        <strong>Orden #{orden.numero}</strong>
-                        <span>{orden.lineas.map((linea) => `${linea.cantidad} × ${linea.nombre}${linea.nota ? ` (${linea.nota})` : ""}`).join(", ")}</span>
-                      </button>
-                    ) : (
-                      <>
-                        <strong>Orden #{orden.numero}</strong>
-                        <span>{orden.lineas.map((linea) => `${linea.cantidad} × ${linea.nombre}${linea.nota ? ` (${linea.nota})` : ""}`).join(", ")}</span>
-                      </>
-                    )}
+                    <button
+                      type="button"
+                      className="pedido-orden__abrir"
+                      aria-label={`Abrir acciones de Orden #${orden.numero}, Mesa ${cuenta.mesa}`}
+                      onClick={() => onAbrir(cuenta.id, orden.id)}
+                    >
+                      <strong>Orden #{orden.numero}</strong>
+                      <span>{orden.lineas.map((linea) => `${linea.cantidad} × ${linea.nombre}${linea.nota ? ` (${linea.nota})` : ""}`).join(", ")}</span>
+                    </button>
                     {avisos.map((incidencia) => (
                       <div className={`mesero-incidencia is-${incidencia.tipo}`} key={incidencia.id}>
                         {incidencia.tipo === "sugerencia" ? <ArrowRightLeft size={18} aria-hidden="true" /> : <AlertTriangle size={18} aria-hidden="true" />}

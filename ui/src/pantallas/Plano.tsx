@@ -42,7 +42,6 @@ export type PedidoBarra = {
 };
 
 type Props = {
-  uiVersion?: "actual" | "nueva";
   piso: string;
   pisoId?: number | null;
   pisos?: Piso[];
@@ -74,7 +73,6 @@ const ETIQUETA: Record<string, string> = {
 };
 
 export function Plano({
-  uiVersion = "actual",
   piso,
   pisoId,
   pisos,
@@ -153,11 +151,11 @@ export function Plano({
   }, [buffer, buscando, mesas, bloqueado]);
 
   useEffect(() => {
-    if (uiVersion !== "nueva" || !mapaRef.current) return;
+    if (!mapaRef.current) return;
     const observer = new ResizeObserver(([entry]) => setAnchoMapa(entry.contentRect.width));
     observer.observe(mapaRef.current);
     return () => observer.disconnect();
-  }, [uiVersion]);
+  }, []);
 
   const listaPisos = pisos && pisos.length > 0 ? pisos : [{ id: pisoId ?? 0, nombre: piso }];
   const mesasDelPiso = mesas.filter((m) => pisoId == null || m.piso_id == null || m.piso_id === pisoId);
@@ -205,11 +203,6 @@ export function Plano({
           })}
         </div>
         <div className="salon-odoo__pisos-der">
-        {uiVersion === "actual" ? (
-          <Button type="button" variant="outline" size="icon" className="tactil numeral" title="Elegir mesa por número (#)" onClick={abrirBuscar}>
-            <Search size={21} aria-hidden="true" /><span className="sr-only">#</span>
-          </Button>
-        ) : null}
         {onToggleUltimos ? (
           <Button
             type="button"
@@ -287,8 +280,8 @@ export function Plano({
             style={{
               left: `${m.pos_x}%`,
               top: `${m.pos_y}%`,
-              width: Math.max(m.ancho * (uiVersion === "nueva" ? Math.min(1.2, Math.max(0.72, anchoMapa / 1200)) : 1), 64),
-              height: Math.max(m.alto * (uiVersion === "nueva" ? Math.min(1.2, Math.max(0.72, anchoMapa / 1200)) : 1), 64),
+              width: Math.max(m.ancho * Math.min(1.2, Math.max(0.72, anchoMapa / 1200)), 64),
+              height: Math.max(m.alto * Math.min(1.2, Math.max(0.72, anchoMapa / 1200)), 64),
               backgroundColor: m.fondo_color || undefined,
               backgroundImage: m.fondo_data ? `url("${m.fondo_data}")` : undefined,
               backgroundSize: "cover",

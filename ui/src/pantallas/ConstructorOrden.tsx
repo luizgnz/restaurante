@@ -30,7 +30,6 @@ export type ConfigContornosUi = {
 };
 
 export type ConstructorOrdenProps = {
-  uiVersion?: "actual" | "nueva";
   mesaFija?: { id: number; numero: number };
   cuentaId?: number;
   mesasSeleccionables?: Array<{ id: number; numero: number; estado: "libre" | "ocupada" }>;
@@ -77,22 +76,7 @@ export function lineasPersistibles(lineas: LineaConstructorUi[]): BorradorOrden[
     }));
 }
 
-/**
- * Revela el control de un producto sin sumar unidades. Descarta los revelados
- * anteriores que quedaron en cero: solo siguen activos los que tienen unidades
- * y el último que se tocó.
- */
-export function revelarProducto(
-  lineas: LineaConstructorUi[],
-  productoId: number,
-  generarId: () => string = uuid,
-): LineaConstructorUi[] {
-  if (lineas.some((linea) => linea.productoId === productoId)) return lineas;
-  return [...lineas.filter((linea) => linea.cantidad > 0), { idUi: generarId(), productoId, cantidad: 0, nota: "" }];
-}
-
 export function ConstructorOrden({
-  uiVersion = "actual",
   mesaFija,
   cuentaId,
   mesasSeleccionables = [],
@@ -136,10 +120,6 @@ export function ConstructorOrden({
     cambiar({ lineas: lineasPersistibles(lineas) });
   }
 
-  function mostrarProducto(productoId: number) {
-    cambiarLineas(revelarProducto(lineasUi, productoId));
-  }
-
   function sumarProducto(productoId: number) {
     const linea = lineasUi.find((item) => item.productoId === productoId);
     if (linea) {
@@ -167,8 +147,7 @@ export function ConstructorOrden({
         return;
       }
     }
-    if (uiVersion === "nueva") sumarProducto(producto.id);
-    else mostrarProducto(producto.id);
+    sumarProducto(producto.id);
   }
 
   function confirmarArmado(selecciones: SeleccionArmado[], resumen: string, adicionalCentavos: number) {
@@ -240,7 +219,7 @@ export function ConstructorOrden({
               type="button"
               variant="ghost"
               size="icon"
-              className={`constructor-orden__cerrar-movil${uiVersion === "nueva" ? " md:hidden" : ""}`}
+              className="constructor-orden__cerrar-movil md:hidden"
               aria-label="Cerrar orden"
               onClick={() => setResumenMovilAbierto(false)}
             >
@@ -282,20 +261,20 @@ export function ConstructorOrden({
               <strong>{dinero(totalOrden)}</strong>
             </div>
           )}
-          {uiVersion === "nueva" && !indicacionesAbiertas ? (
+          {!indicacionesAbiertas ? (
             <Button type="button" variant="ghost" size="sm" className="constructor-orden__agregar-nota" onClick={() => setIndicacionesAbiertas(true)}>
               <MessageSquarePlus size={17} aria-hidden="true" /> Agregar indicaciones
             </Button>
           ) : (
             <label className="constructor-orden__indicaciones">
-              {uiVersion === "nueva" ? "Indicaciones para cocina" : "Indicaciones del cliente"}
+              Indicaciones para cocina
               <Textarea
                 className="pedido-nota-area"
-                placeholder={uiVersion === "nueva" ? "Ej.: sin sal, alergia o preparación especial" : "Opcional. Va a cocina."}
+                placeholder="Ej.: sin sal, alergia o preparación especial"
                 value={borrador.indicaciones}
                 onChange={(event) => cambiar({ indicaciones: event.target.value })}
               />
-              {uiVersion === "nueva" && !borrador.indicaciones ? (
+              {!borrador.indicaciones ? (
                 <Button type="button" variant="ghost" size="sm" onClick={() => setIndicacionesAbiertas(false)}>Ocultar</Button>
               ) : null}
             </label>
@@ -324,7 +303,7 @@ export function ConstructorOrden({
             <Badge variant="secondary">{productos.length} disponibles</Badge>
           </div>
           <div className="constructor-catalogo__herramientas">
-            {uiVersion === "nueva" && !busquedaAbierta ? (
+            {!busquedaAbierta ? (
               <Button type="button" variant="outline" size="icon" aria-label="Buscar producto" title="Buscar producto" onClick={() => setBusquedaAbierta(true)}>
                 <Search size={18} aria-hidden="true" />
               </Button>
@@ -332,12 +311,10 @@ export function ConstructorOrden({
               <label className="inventario-busqueda">
                 <Search size={18} aria-hidden="true" />
                 <span className="sr-only">Buscar producto</span>
-                <Input autoFocus={uiVersion === "nueva"} type="search" value={busqueda} placeholder="Buscar producto" onChange={(event) => setBusqueda(event.target.value)} />
-                {uiVersion === "nueva" ? (
-                  <Button type="button" variant="ghost" size="icon" aria-label="Cerrar búsqueda" onClick={() => { setBusqueda(""); setBusquedaAbierta(false); }}>
-                    <X size={17} aria-hidden="true" />
-                  </Button>
-                ) : null}
+                <Input autoFocus type="search" value={busqueda} placeholder="Buscar producto" onChange={(event) => setBusqueda(event.target.value)} />
+                <Button type="button" variant="ghost" size="icon" aria-label="Cerrar búsqueda" onClick={() => { setBusqueda(""); setBusquedaAbierta(false); }}>
+                  <X size={17} aria-hidden="true" />
+                </Button>
               </label>
             )}
             <div className="constructor-categorias" role="tablist" aria-label="Categorías de la carta">
@@ -405,7 +382,7 @@ export function ConstructorOrden({
       <Button
         type="button"
         size="lg"
-        className={`constructor-orden__abrir-resumen${uiVersion === "nueva" ? " md:hidden" : ""}`}
+        className="constructor-orden__abrir-resumen md:hidden"
         onClick={() => setResumenMovilAbierto(true)}
       >
         <ShoppingBag size={20} aria-hidden="true" />

@@ -27,7 +27,6 @@ export type Destino =
   | "opciones";
 
 type Props = {
-  uiVersion?: "actual" | "nueva";
   vista: Destino;
   area: "mesero" | "cocina";
   marca: string;
@@ -49,7 +48,6 @@ type Props = {
 };
 
 export function Barra({
-  uiVersion = "actual",
   vista,
   area,
   marca,
@@ -145,8 +143,8 @@ export function Barra({
       </div>
       <div className="pos-nav__right">
         {(puedeMesas || puedeOrdenes) && puedeCocina ? <div className="pos-nav__areas" role="group" aria-label="Cambiar vista de trabajo">
-          <Button type="button" size="sm" variant={area === "mesero" ? "secondary" : "ghost"} aria-label="Vista Mesero" title="Vista Mesero" className={area === "mesero" ? "is-on" : ""} onClick={() => onCambiarArea("mesero")}><Utensils size={16} aria-hidden="true" /><span>{uiVersion === "nueva" ? "Vista Mesero" : "Mesero"}</span></Button>
-          <Button type="button" size="sm" variant={area === "cocina" ? "secondary" : "ghost"} aria-label="Vista Cocina" title="Vista Cocina" className={area === "cocina" ? "is-on" : ""} onClick={() => onCambiarArea("cocina")}><ChefHat size={16} aria-hidden="true" /><span>{uiVersion === "nueva" ? "Vista Cocina" : "Cocina"}</span></Button>
+          <Button type="button" size="sm" variant={area === "mesero" ? "secondary" : "ghost"} aria-label="Vista Mesero" title="Vista Mesero" className={area === "mesero" ? "is-on" : ""} onClick={() => onCambiarArea("mesero")}><Utensils size={16} aria-hidden="true" /><span>Vista Mesero</span></Button>
+          <Button type="button" size="sm" variant={area === "cocina" ? "secondary" : "ghost"} aria-label="Vista Cocina" title="Vista Cocina" className={area === "cocina" ? "is-on" : ""} onClick={() => onCambiarArea("cocina")}><ChefHat size={16} aria-hidden="true" /><span>Vista Cocina</span></Button>
         </div> : null}
         <div className="pos-odoo__iconos" ref={iconos}>
         <div className="pos-odoo__desplegable">
