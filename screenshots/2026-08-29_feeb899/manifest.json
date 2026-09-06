@@ -1,0 +1,107 @@
+{
+  "createdAt": "2026-08-29T17:04:34.799Z",
+  "commit": "66cf284",
+  "count": 20,
+  "shots": [
+    {
+      "file": "01-mesas-salon.png",
+      "title": "Mesas · salón",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "02-mesa-cuenta.png",
+      "title": "Detalle de cuenta en mesa",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "03-nueva-orden.png",
+      "title": "Constructor de nueva orden",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "04-orden-con-producto.png",
+      "title": "Orden con producto agregado",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "05-orden-indicaciones.png",
+      "title": "Campo de indicaciones abierto",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "06-ordenes-listado.png",
+      "title": "Listado de órdenes",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "07-orden-detalle-modal.png",
+      "title": "Detalle emergente de orden",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "08-inventario.png",
+      "title": "Inventario",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "09-inventario-ajuste.png",
+      "title": "Ajuste de inventario",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "10-inventario-perdida.png",
+      "title": "Registro de pérdida o consumo interno",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "11-cocina.png",
+      "title": "Vista de cocina",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "12-administracion.png",
+      "title": "Administración",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "13-producto-nuevo.png",
+      "title": "Crear producto",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "14-categorias.png",
+      "title": "Categorías",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "15-contornos.png",
+      "title": "Contornos",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "16-recetas.png",
+      "title": "Recetas",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "17-mapa-salon.png",
+      "title": "Editor del mapa del salón",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "18-opciones.png",
+      "title": "Opciones del sistema",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "19-panel-cuenta.png",
+      "title": "Panel de cuenta",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "file": "20-menu-navegacion.png",
+      "title": "Menú de navegación",
+      "url": "http://127.0.0.1:8081/"
+    }
+  ]
+}

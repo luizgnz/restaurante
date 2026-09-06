@@ -10,3 +10,12 @@ ui/dist/
 
 # macOS junk
 .DS_Store
+
+# Local scratch & backups
+tmp/
+output/
+backups/
+__pycache__/
+
+# Heavy local archives
+capturas/*.zip

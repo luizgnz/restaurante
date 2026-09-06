@@ -1,0 +1,13 @@
+{
+  "updatedAt": "2026-09-06T09:34:29.328299Z",
+  "commit": "7e228dd",
+  "count": 6,
+  "shots": [
+    "carta",
+    "cocina-operable",
+    "cocina-tabla-afinada",
+    "cocina-tabla-refinada",
+    "ordenes-tabla",
+    "salon-semaforo"
+  ]
+}
