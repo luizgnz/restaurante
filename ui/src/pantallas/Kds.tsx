@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRightLeft, CheckCheck, ChefHat, CircleOff, Play } from "lucide-react";
+import { AlertTriangle, ArrowRightLeft, CheckCheck, ChefHat, CircleOff, Clock, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Alerta } from "@/components/ui/alerta.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -9,7 +9,7 @@ import { Select } from "@/components/ui/select.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { etiquetaEtapa, tonoEtapa } from "../lib/estados.ts";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
-import { esperaMinutos, nivelEspera, textoEspera } from "../../../src/modules/tiempo.ts";
+import { esperaMinutos } from "../../../src/modules/tiempo.ts";
 
 export type IncidenciaCocinaUi = {
   id: number;
@@ -236,7 +236,6 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
         ) : (
           activas.map((tarjeta) => {
             const espera = esperaMinutos(tarjeta.creadaEn);
-            const nivel = nivelEspera(espera);
             const pendiente = tarjeta.incidencias.some((incidencia) => incidencia.estado === "pendiente");
             return (
               <button
@@ -253,7 +252,7 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
                   {pendiente ? <Badge variant="danger">Cocina esperando respuesta</Badge> : null}
                 </span>
                 <span role="cell">{tarjeta.mesero}</span>
-                <span role="cell"><span className={`chip-espera espera-${nivel}`}>{textoEspera(espera)}</span></span>
+                <span role="cell"><span className="chip-espera" title="Minutos de espera"><Clock size={12} aria-hidden="true" />{espera}</span></span>
                 <span role="cell" className="tabla-ordenes__descripcion">{descripcionOrden(tarjeta)}</span>
               </button>
             );
@@ -295,8 +294,8 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
             <h2>{tituloOrden(seleccionada)}</h2>
             <p className="cocina-orden-modal__meta">
               {mesaTexto(seleccionada)} · Mesero: {seleccionada.mesero}
-              <span className={`chip-espera espera-${nivelEspera(esperaMinutos(seleccionada.creadaEn))}`}>
-                {textoEspera(esperaMinutos(seleccionada.creadaEn))}
+              <span className="chip-espera">
+                <Clock size={12} aria-hidden="true" /> {esperaMinutos(seleccionada.creadaEn)}
               </span>
             </p>
             {seleccionada.indicaciones ? <p className="cocina-indicaciones">{seleccionada.indicaciones}</p> : null}
@@ -316,8 +315,6 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
               ))}
             </ul>
             {(() => {
-              const espera = esperaMinutos(seleccionada.creadaEn);
-              const nivel = nivelEspera(espera);
               const tareas = seleccionada.lineas.filter((linea) => !linea.esAviso && linea.etapa !== "cancelado");
               const porPreparar = tareas.filter((linea) => linea.etapa === "por_preparar").length;
               const bloqueada = seleccionada.incidencias.some((incidencia) => incidencia.estado === "pendiente");

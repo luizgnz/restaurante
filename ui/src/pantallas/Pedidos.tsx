@@ -1,6 +1,6 @@
 import { Fragment } from "react";
 import { useState } from "react";
-import { AlertTriangle, ArrowRightLeft, BellRing, ReceiptText } from "lucide-react";
+import { AlertTriangle, ArrowRightLeft, BellRing, Clock, ReceiptText } from "lucide-react";
 import { Alerta } from "@/components/ui/alerta.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";
@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import type { IncidenciaCocinaUi } from "./Kds.tsx";
-import { etiquetaCuenta, tonoCuenta } from "../lib/estados.ts";
-import { esperaMinutos, nivelEspera, textoEspera } from "../../../src/modules/tiempo.ts";
+import { etiquetaEtapaOrden, tonoEtapaOrden } from "../lib/estados.ts";
+import { esperaMinutos } from "../../../src/modules/tiempo.ts";
 
 export type LineaCuentaUi = {
   lineaClave: string;
@@ -33,6 +33,7 @@ export type CuentaEnCursoUi = {
     id: number;
     numero: number;
     creadaEn?: string;
+    etapa: string;
     lineas: LineaCuentaUi[];
   }[];
 };
@@ -170,7 +171,6 @@ export function Pedidos({
         ) : (
           filas.map(({ cuenta, orden, pendientes }) => {
             const espera = cuenta.espera_min ?? esperaMinutos(cuenta.abiertaEn ?? new Date().toISOString());
-            const nivel = nivelEspera(espera);
             const bloqueada = pendientes.length > 0;
             return (
               <Fragment key={orden.id}>
@@ -187,8 +187,8 @@ export function Pedidos({
                     {bloqueada ? <Badge variant="danger">Cocina esperando respuesta</Badge> : null}
                   </span>
                   <span role="cell">{cuenta.mesero}</span>
-                  <span role="cell"><span className={`chip-espera espera-${nivel}`}>{textoEspera(espera)}</span></span>
-                  <span role="cell"><Badge variant={tonoCuenta(cuenta.estado)}>{etiquetaCuenta(cuenta.estado)}</Badge></span>
+                  <span role="cell"><span className="chip-espera" title="Minutos de espera"><Clock size={12} aria-hidden="true" />{espera}</span></span>
+                  <span role="cell"><Badge variant={tonoEtapaOrden(orden.etapa)}>{etiquetaEtapaOrden(orden.etapa)}</Badge></span>
                   <span role="cell" className="tabla-ordenes__descripcion">{describirOrden(orden)}</span>
                 </button>
                 {pendientes.map((incidencia) => (

@@ -4305,18 +4305,17 @@ button.icono:focus-visible {
 /* Cocina operable (3.4, consolidado en familia): franja de espera por
    tiempo, chip de espera y tarjetas entregadas atenuadas. */
 .chip-espera {
-  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
   padding: 0.1rem 0.55rem;
   border-radius: 999px;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  background: var(--success-soft);
-  color: var(--success);
+  background: var(--muted);
+  color: var(--muted-foreground);
 }
-.chip-espera.espera-medio { background: var(--warning-soft); color: var(--warning); }
-.chip-espera.espera-alto { background: var(--destructive-soft); color: var(--destructive); }
-.chip-espera.espera-critico { background: var(--destructive); color: #fff; }
 
 /* Salón con semáforo (3.3, consolidado en familia): mesa atrasada. */
 .mesa-odoo--atrasada {

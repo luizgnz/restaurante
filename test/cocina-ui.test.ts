@@ -39,7 +39,7 @@ const cuenta: CuentaEnCursoUi = {
   estado: "abierta",
   hace: "Ahora",
   totalCentavos: 10_000,
-  ordenes: [{ id: 30, numero: 1, lineas: [{ lineaClave: "l1", productoId: 1, nombre: "Hamburguesa", cantidad: 1, nota: null }] }],
+  ordenes: [{ id: 30, numero: 1, etapa: "enviado", lineas: [{ lineaClave: "l1", productoId: 1, nombre: "Hamburguesa", cantidad: 1, nota: null }] }],
 };
 
 describe("vistas coordinadas de cocina y mesero", () => {

@@ -16,6 +16,7 @@ function cuenta(parcial: Partial<CuentaEnCursoUi> = {}): CuentaEnCursoUi {
       {
         id: 10,
         numero: 1,
+        etapa: "enviado",
         lineas: [{ lineaClave: "l1", productoId: 3, nombre: "Hamburguesa", cantidad: 2, nota: "sin cebolla" }],
       },
     ],
@@ -32,9 +33,12 @@ describe("pantalla Órdenes sobre cuentas", () => {
     expect(html).not.toContain(">Cocina<");
     expect(html).toContain("Mesa #7");
     expect(html).toContain("Ana");
-    // la espera vive en el chip de color, no en texto relativo
-    expect(html).toContain("0 min");
-    expect(html).toContain("En pedido");
+    // la espera vive en un chip neutral: reloj + minutos, sin texto relativo
+    expect(html).toContain("chip-espera");
+    expect(html).toContain("lucide-clock");
+    expect(html).not.toContain("Hace dos minutos");
+    // el estado de la tabla es el de la orden, no el de la cuenta
+    expect(html).toContain("Enviado");
     expect(html).toContain("Orden #1");
     // Los productos van seguidos por coma, no uno por línea.
     expect(html).toContain("2 × Hamburguesa (sin cebolla)");
@@ -53,19 +57,21 @@ describe("pantalla Órdenes sobre cuentas", () => {
               {
                 id: 10,
                 numero: 1,
+                etapa: "enviado",
                 lineas: [
                   { lineaClave: "l1", productoId: 3, nombre: "Hamburguesa", cantidad: 2, nota: null },
                   { lineaClave: "l3", productoId: 5, nombre: "Agua", cantidad: 3, nota: null },
                 ],
               },
-              { id: 11, numero: 2, lineas: [{ lineaClave: "l2", productoId: 4, nombre: "Jugo", cantidad: 1, nota: null }] },
+              { id: 11, numero: 2, etapa: "enviado", lineas: [{ lineaClave: "l2", productoId: 4, nombre: "Jugo", cantidad: 1, nota: null }] },
             ],
           }),
         ],
         onAbrir: () => undefined,
       }),
     );
-    expect(html).toContain("Precuenta emitida");
+    expect(html).not.toContain("Precuenta emitida");
+    expect(html).toContain("Enviado");
     expect(html).toContain("Orden #1");
     expect(html).toContain("Orden #2");
     expect(html).toContain("2 × Hamburguesa, 3 × Agua");
