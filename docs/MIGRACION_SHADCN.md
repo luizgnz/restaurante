@@ -101,31 +101,33 @@ Orden sugerido: de menor a mayor complejidad, para validar el patrón antes de l
 | # | Archivo | Líneas | Clases | Estado |
 |---|---|---|---|---|
 | 1 | `Login.tsx` | 71 | 0 | **Hecho.** Usa Button/Card/Input/Label. Sin clases heredadas. |
-| 2 | `Complementos.tsx` | 12 | 3 | Pendiente |
-| 3 | `VistaPreviaComanda.tsx` | 32 | 5 | Pendiente |
-| 4 | `ConfirmarCierreCuenta.tsx` | 35 | 6 | Pendiente |
-| 5 | `Backend.tsx` | 56 | 9 | Pendiente |
-| 6 | `PrecuentaEnPantalla.tsx` | 56 | 9 | Pendiente |
-| 7 | `ComandaEnPantalla.tsx` | 57 | 10 | Pendiente |
-| 8 | `ModalOrdenesCuenta.tsx` | 61 | 9 | Pendiente |
-| 9 | `Categorias.tsx` | 70 | 9 | Pendiente |
-| 10 | `PinPad.tsx` | 79 | 6 | Pendiente |
-| 11 | `ModalCrearProducto.tsx` | 83 | 8 | Pendiente |
+| 2 | `Complementos.tsx` | 12 | 3 | **(Archivo retirado: ya no existe en `ui/src/pantallas/`.)** |
+| 3 | `VistaPreviaComanda.tsx` | 32 | 5 | **Hecho** (2026-09-06). Dialog/Button; familia `ticket-preview` en una generación, tokenizada (`--paper`). |
+| 4 | `ConfirmarCierreCuenta.tsx` | 35 | 6 | **Hecho.** Dialog/Button, sin clases heredadas (igual que `ConfirmarCancelarCuenta.tsx`, posterior a esta tabla). |
+| 5 | `Backend.tsx` | 56 | 9 | **Hecho** (2026-09-06). Card/Button; borradas `.backend-odoo__atajos .tactil` (muerta: el JSX usa `.backend-atajo`) y las generaciones pisadas; familia en una definición por token. |
+| 6 | `PrecuentaEnPantalla.tsx` | 56 | 9 | **Hecho** (2026-09-06). Dialog/Button; familia `ticket-papel` única y tokenizada (`--paper`, discontinuas con `color-mix`). |
+| 7 | `ComandaEnPantalla.tsx` | 57 | 10 | **Hecho** (2026-09-06). Misma familia `ticket-papel` que la fila 6. |
+| 8 | `ModalOrdenesCuenta.tsx` | 61 | 9 | **Hecho** (2026-09-06). Dialog/Button; `ordenes-cuenta-modal` en una generación, bordes por token. |
+| 9 | `Categorias.tsx` | 70 | 9 | **Hecho** (2026-09-06). Dos generaciones de `categorias-lista` fusionadas en una (grid + tarjetas por token). |
+| 10 | `PinPad.tsx` | 79 | 6 | **Hecho** (2026-09-06). Familia `pin-*` única; `pin-error` con `--destructive`. |
+| 11 | `ModalCrearProducto.tsx` | 83 | 8 | **Hecho.** Dialog/Button, sin clases heredadas. |
 | 12 | `Recetas.tsx` | 116 | 8 | Pendiente |
 | 13 | `ModalArmadoPlato.tsx` | 175 | 14 | Pendiente |
 | 14 | `CuentaMesa.tsx` | 177 | 19 | Pendiente |
-| 15 | `CrearProducto.tsx` | 180 | 14 | Pendiente |
+| 15 | `CrearProducto.tsx` | 180 | 14 | Pendiente. Ya usa Checkbox/Switch con envoltorio `.settings-switch`; falta la familia `form-odoo`. |
 | 16 | `Pedidos.tsx` | 202 | 27 | Pendiente |
-| 17 | `Pedido.tsx` | 207 | 21 | Pendiente |
-| 18 | `Barra.tsx` | 208 | 24 | Pendiente |
+| 17 | `Pedido.tsx` | 207 | 21 | **(Archivo retirado: absorbido por `Pedidos.tsx`.)** |
+| 18 | `Barra.tsx` | 208 | 24 | Pendiente. JSX rehecho en la ronda de limpieza (2026-09-06); la familia `pos-nav` perdió sus generaciones muertas pero sigue apilada. |
 | 19 | `Inventario.tsx` | 239 | 21 | Pendiente |
-| 20 | `Opciones.tsx` | 262 | 55 | Pendiente. Necesita `switch.tsx`. |
+| 20 | `Opciones.tsx` | 262 | 55 | Pendiente. `switch.tsx` ya existe y se usa (12 controles `role="switch"`); quedan las familias `settings-*` y los checkboxes del selector de roles. |
 | 21 | `Kds.tsx` | 273 | 26 | **Hecho.** `.cocina-tarjeta` consolidada; etapas, espera e incidencias por token. Sin hex cableados. |
 | 22 | `Contornos.tsx` | 275 | 18 | Pendiente |
 | 23 | `Plano.tsx` | 319 | 22 | **Hecho.** `.mesa-odoo` y `.plano-mapa` consolidadas (33 reglas → 2). Estado por token. Corregido el bug del radio en móvil. |
 | 24 | `ModalEditarOrden.tsx` | 322 | 8 | Pendiente |
 | 25 | `ConstructorOrden.tsx` | 385 | 30 | **Hecho.** Familia `carta` consolidada (23 reglas → 10). Píldora de cantidad ya no tapa el precio. |
 | 26 | `EditarMapa.tsx` | 490 | 22 | Pendiente. La más grande: dejar para el final. |
+
+Las columnas «Líneas» y «Clases» son de la auditoría inicial (2026-09-05) y quedan referenciales: los archivos cambiaron desde entonces.
 
 ## 6. Metodología para cada pantalla
 
@@ -162,8 +164,22 @@ Los cinco archivos tocados: `styles.css`, `Barra.tsx`, `ConstructorOrden.tsx`, `
 
 ## 8. Pendientes conocidos
 
-- **Colores cableados en el CSS heredado.** Quedan ~179 valores hex sueltos (`#714b67` morado de Odoo, `#67500f`, `#fff8dc`, etc.) que no responden a los tokens. Se van yendo a medida que cada pantalla se migra; conviene no cazarlos sueltos.
-- **`switch.tsx`** para `Opciones.tsx`.
+- **Colores cableados en el CSS heredado: cerrados (2026-09-06).** 0 hex fuera de `:root` en
+  `styles.css`: los 96 sueltos que quedaban migraron a tokens (`--destructive` y compañía para
+  estados, `color-mix` para bordes suaves) o se borraron porque eran declaraciones oscuras ya
+  pisadas por la generación consolidada (panel, modales, `.tarjeta`, pisos). Se agregó un token:
+  `--paper` (crema cálida de tickets y comprobantes; superficie, no estado). En los `.tsx` solo
+  quedan hex que son *datos* (colores de producto/mapa guardados en la base), no estilos.
+- **`switch.tsx`: hecho (2026-09-06).** Patrón de la casa como `checkbox.tsx` (input nativo +
+  `role="switch"` + utilidades, sin Radix). Opciones lo usa en sus 12 interruptores; el CSS ad hoc
+  `switch-tablet` se retiró (`.settings-switch` lo reemplaza; `switch-compacto` queda solo como
+  etiqueta de texto compacto).
+- **`--paper` no se ve en los modales de ticket (pendiente).** El token está aplicado en
+  `.ticket-papel`/`.ticket-preview__cuerpo` (capa `components`), pero esos elementos llevan también
+  `bg-card` como utilidad de Tailwind (capa `utilities`), y la utilidad gana: el ticket de precuenta
+  y la comanda en modal se pintan blancos. Es idéntico al caso de la §8 bis (utilities siempre le
+  gana a components); se verá al migrar esas pantallas — quitar `bg-card` del JSX o subir la familia
+  de papel, nunca agregar `!important`.
 - **Copia de seguridad** del estado previo al rediseño en `ui/_backup_pre_turno/` — borrar cuando ya no haga falta.
 - La carpeta `tmp/shot/` son artefactos de captura para revisar el diseño; no forma parte de la app.
 
@@ -184,5 +200,7 @@ al final del archivo, fuera de `@layer components` — incluidas las 4 de la fas
   el resumen pasó a Button; el layout ahora son utilidades `flex flex-wrap gap-2` en el JSX).
   `styles.css`: 4.637 → 4.500 líneas.
 - El texto de espera visible usa `textoEspera()` de `src/modules/tiempo.ts` (días/horas/minutos).
-- Pendientes que siguen: `switch.tsx` para Opciones, ~96 hex sueltos, migración de las pantallas
-  pendientes de la tabla §5 (los estados de mesa siguen en 4 generaciones en media queries).
+- Pendientes que siguen (actualizado 2026-09-06): `switch.tsx` y los hex sueltos quedaron
+  cerrados; los estados de mesa están en una sola generación. De la tabla §5 siguen pendientes
+  las pantallas grandes (Opciones, Inventario, EditarMapa, CuentaMesa, Pedidos, Contornos,
+  CrearProducto, Recetas, ModalArmadoPlato, ModalEditarOrden) y la familia `pos-nav` de Barra.
