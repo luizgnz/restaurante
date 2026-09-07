@@ -217,7 +217,7 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
   return (
     <section className="page-shell kds-page cocina-page">
       <header className="page-header">
-        <div><span className="page-eyebrow">Vista del cocinero</span><h1>Cocina</h1><p>Recibe pedidos, prepara cada producto y avisa al mesero cuando haya un problema.</p></div>
+        <div><span className="page-eyebrow">Vista del cocinero</span><p>Recibe pedidos, prepara cada producto y avisa al mesero cuando haya un problema.</p></div>
       </header>
 
       <div className="tabla-ordenes" role="table" aria-label="Órdenes en cocina, de la más nueva a la más vieja">

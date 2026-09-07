@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { ChefHat, Utensils } from "lucide-react";
 import { api } from "./api.ts";
+import { Button } from "./components/ui/button.tsx";
 import { esperaMinutos, nivelEspera } from "../../src/modules/tiempo.ts";
 import { Barra, type Destino } from "./pantallas/Barra.tsx";
 import { Alerta } from "./components/ui/alerta.tsx";
@@ -55,32 +57,17 @@ type RolClave = "administrador" | "mesero" | "cocina" | "caja" | "inventario";
 type UsuarioSesion = { id: number; nombre: string; derecho: string; roles: RolClave[] };
 type Sesion = { abierta: boolean; usuario: UsuarioSesion | null; administrador?: UsuarioSesion | null };
 
-function vistaInicial(roles: RolClave[]): { vista: Vista; area: "mesero" | "cocina" } {
-  if (roles.includes("administrador") || roles.includes("mesero")) return { vista: "plano", area: "mesero" };
-  if (roles.includes("cocina")) return { vista: "kds", area: "cocina" };
-  if (roles.includes("caja")) return { vista: "pedidos", area: "mesero" };
-  return { vista: "inventario", area: "mesero" };
-}
-
-function nombreDeVista(vista: Vista, area: "mesero" | "cocina"): string {
-  if (vista === "plano") return "Mesas";
-  if (vista === "pedido") return "Orden en mesa";
-  if (vista === "pedidos") return "Órdenes";
-  if (vista === "inventario") return "Inventario";
-  if (vista === "kds") return "Cocina";
-  if (vista === "editar-mapa") return "Mapa del salón";
-  if (vista === "categorias") return "Categorías";
-  if (vista === "contornos") return "Contornos";
-  if (vista === "recetas") return "Recetas";
-  if (vista === "backend") return "Administración";
-  if (vista === "opciones") return "Opciones";
-  return area === "cocina" ? "Cocina" : "Restaurante";
+function vistaInicial(roles: RolClave[]): { vista: Vista; ordenTab: "mesero" | "cocina" } {
+  if (roles.includes("administrador") || roles.includes("mesero")) return { vista: "plano", ordenTab: "mesero" };
+  if (roles.includes("cocina")) return { vista: "pedidos", ordenTab: "cocina" };
+  if (roles.includes("caja")) return { vista: "pedidos", ordenTab: "mesero" };
+  return { vista: "inventario", ordenTab: "mesero" };
 }
 
 export function App() {
   const [sesion, setSesion] = useState<Sesion | null>(null);
   const [vista, setVista] = useState<Vista>("plano");
-  const [area, setArea] = useState<"mesero" | "cocina">("mesero");
+  const [ordenTab, setOrdenTab] = useState<"mesero" | "cocina">("mesero");
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [piso, setPiso] = useState("Salón");
   const [pisoId, setPisoId] = useState<number | null>(null);
@@ -256,7 +243,7 @@ export function App() {
     if (!sesion?.abierta || !usuarioActual) return;
     const inicial = vistaInicial(usuarioActual.roles ?? (["administrador"] as RolClave[]));
     setVista(inicial.vista);
-    setArea(inicial.area);
+    setOrdenTab(inicial.ordenTab);
   }, [sesion?.abierta, sesion?.usuario?.id, sesion?.administrador?.id]);
 
   useEffect(() => {
@@ -287,13 +274,13 @@ export function App() {
     const roles = usuarioActual.roles ?? (["administrador"] as RolClave[]);
     const intervalo = window.setInterval(() => {
       if (document.hidden) return;
-      if (area === "mesero" && roles.some((rol) => rol === "mesero" || rol === "administrador")) {
+      if (roles.some((rol) => rol === "mesero" || rol === "administrador")) {
         cargarIncidenciasCocina().catch(() => undefined);
       }
-      if (vista === "kds") cargarKds().catch(() => undefined);
+      if (vista === "pedidos" && ordenTab === "cocina") cargarKds().catch(() => undefined);
     }, 4_000);
     return () => window.clearInterval(intervalo);
-  }, [sesion?.abierta, sesion?.usuario?.id, sesion?.administrador?.id, area, vista]);
+  }, [sesion?.abierta, sesion?.usuario?.id, sesion?.administrador?.id, ordenTab, vista]);
 
   async function conError(fn: () => Promise<void>) {
     try {
@@ -323,8 +310,10 @@ export function App() {
   }
 
   async function ir(v: Destino) {
-    if (v === "pedidos") cargarCuentasEnCurso().catch((e) => setError(String(e)));
-    if (v === "kds") cargarKds().catch((e) => setError(String(e)));
+    if (v === "pedidos") {
+      cargarCuentasEnCurso().catch((e) => setError(String(e)));
+      if (ordenTab === "cocina") cargarKds().catch((e) => setError(String(e)));
+    }
     if (v === "inventario") cargarInventario().catch((e) => setError(String(e)));
     if (v === "plano" || v === "editar-mapa") cargarPlano().catch((e) => setError(String(e)));
     if (v === "categorias") cargarCategorias().catch((e) => setError(String(e)));
@@ -601,7 +590,6 @@ export function App() {
     <div className="pos-odoo ui-v2">
       <Barra
         vista={vista}
-        area={area}
         marca={nombreLocal}
         logo={logoData}
         nombre={usuario.nombre}
@@ -612,36 +600,17 @@ export function App() {
         onMesas={() => ir("plano")}
         onOrdenes={() => ir("pedidos")}
         onInventario={() => ir("inventario")}
-        onCocina={() => ir("kds")}
         notificacionesCocina={incidenciasCocina.length}
-        onCambiarArea={(siguiente) => {
-          setArea(siguiente);
-          setError("");
-          if (siguiente === "cocina") {
-            if (!puedeCocina) return;
-            setVista("kds");
-            cargarKds().catch((e) => setError(String(e)));
-          } else {
-            if (!puedeMesas && !puedeOrdenes) return;
-            setVista(puedeMesas ? "plano" : "pedidos");
-            if (puedeMesas) cargarPlano().catch((e) => setError(String(e)));
-            else cargarCuentasEnCurso().catch((e) => setError(String(e)));
-          }
-        }}
         onCerrarSesion={() =>
           conError(async () => {
             await api("/api/sesion/cerrar", { method: "POST" });
             setSesion({ abierta: false, usuario: null, administrador: null });
-            setArea("mesero");
+            setOrdenTab("mesero");
             setVista("plano");
           })
         }
         onIr={ir}
       />
-      <div className="mobile-view-context" aria-live="polite">
-        <span>Sección actual</span>
-        <strong>{nombreDeVista(vista, area)}</strong>
-      </div>
       {error ? <Alerta onCerrar={() => setError("")}>{error}</Alerta> : null}
       <main>
         {pinPendiente ? (
@@ -845,29 +814,67 @@ export function App() {
             }}
           />
         ) : null}
-        {vista === "kds" ? (
-          <Kds
-            cargando={carga.kds}
-            tarjetas={tarjetasKds}
-            productos={productos}
-            onCambiarEtapa={async (comandaId, etapa) => {
-              await api(`/api/kds/comandas/${comandaId}/etapa`, {
-                method: "POST",
-                body: JSON.stringify({ etapa }),
-              });
-              await cargarKds();
-            }}
-            onCrearIncidencia={async (incidencia) => {
-              await api("/api/cocina/incidencias", {
-                method: "POST",
-                body: JSON.stringify(incidencia),
-              });
-              await Promise.all([cargarKds(), cargarIncidenciasCocina()]);
-            }}
-          />
-        ) : null}
         {vista === "pedidos" ? (
-          <Pedidos
+          <section className="ordenes-vistas">
+            <header className="ordenes-vistas__cabecera">
+              <h1>Órdenes</h1>
+              <div className="ordenes-vistas__toggle" role="group" aria-label="Vista de órdenes">
+                {puedeOrdenes ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={ordenTab === "mesero" ? "secondary" : "ghost"}
+                    aria-pressed={ordenTab === "mesero"}
+                    className={`tactil ${ordenTab === "mesero" ? "is-on" : ""}`}
+                    onClick={() => {
+                      setOrdenTab("mesero");
+                      cargarCuentasEnCurso().catch((e) => setError(String(e)));
+                    }}
+                  >
+                    <Utensils size={16} aria-hidden="true" />
+                    <span>Mesero</span>
+                  </Button>
+                ) : null}
+                {puedeCocina ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={ordenTab === "cocina" ? "secondary" : "ghost"}
+                    aria-pressed={ordenTab === "cocina"}
+                    className={`tactil ${ordenTab === "cocina" ? "is-on" : ""}`}
+                    onClick={() => {
+                      setOrdenTab("cocina");
+                      cargarKds().catch((e) => setError(String(e)));
+                    }}
+                  >
+                    <ChefHat size={16} aria-hidden="true" />
+                    <span>Cocina</span>
+                  </Button>
+                ) : null}
+              </div>
+            </header>
+            {ordenTab === "cocina" && puedeCocina ? (
+              <Kds
+                cargando={carga.kds}
+                tarjetas={tarjetasKds}
+                productos={productos}
+                onCambiarEtapa={async (comandaId, etapa) => {
+                  await api(`/api/kds/comandas/${comandaId}/etapa`, {
+                    method: "POST",
+                    body: JSON.stringify({ etapa }),
+                  });
+                  await cargarKds();
+                }}
+                onCrearIncidencia={async (incidencia) => {
+                  await api("/api/cocina/incidencias", {
+                    method: "POST",
+                    body: JSON.stringify(incidencia),
+                  });
+                  await Promise.all([cargarKds(), cargarIncidenciasCocina()]);
+                }}
+              />
+            ) : (
+              <Pedidos
             cargando={carga.cuentas}
             cuentas={cuentasEnCurso}
             incidencias={incidenciasCocina}
@@ -882,14 +889,16 @@ export function App() {
               });
               await Promise.all([cargarIncidenciasCocina(), cargarKds(), cargarCuentasEnCurso(), cargarPlano()]);
             }}
-            onAbrir={(cuentaId, ordenId) =>
-              conError(async () => {
-                await cargarCuenta(cuentaId);
-                setModalOrdenId(ordenId ?? null);
-                setModalCuentaId(cuentaId);
-              })
-            }
-          />
+                onAbrir={(cuentaId, ordenId) =>
+                  conError(async () => {
+                    await cargarCuenta(cuentaId);
+                    setModalOrdenId(ordenId ?? null);
+                    setModalCuentaId(cuentaId);
+                  })
+                }
+              />
+            )}
+          </section>
         ) : null}
         {vista === "inventario" ? (
           <Inventario

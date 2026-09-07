@@ -26,7 +26,8 @@ export type CrearProductoProps = {
   onDirtyChange?: (sucio: boolean) => void;
 };
 
-const COLOR_INICIAL = "#714b67";
+// Cobre de marca (--brand); el morado anterior era residuo del tema pre-marca.
+const COLOR_INICIAL = "#8a4a26";
 
 function leerImagen(file: File, cb: (url: string) => void) {
   const r = new FileReader();
@@ -162,11 +163,11 @@ export function CrearProducto({ categorias, ingredientesDisponibles = [], error,
         {ingredientesDisponibles.length === 0 ? <p role="alert">Crea primero los materiales que usará la receta.</p> : null}
         {errorReceta ? <p role="alert">{errorReceta}</p> : null}
       </fieldset> : null}
-      <label className="switch-tablet">
+      <label className="settings-switch">
         <Checkbox checked={rastrear} onChange={(e) => setRastrear(e.target.checked)} />
         Rastrear en el inventario
       </label>
-      <label className="switch-tablet">
+      <label className="settings-switch">
         <Checkbox checked={enPos} onChange={(e) => setEnPos(e.target.checked)} />
         Disponible en la carta
       </label>

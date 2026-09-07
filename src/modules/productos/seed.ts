@@ -112,11 +112,6 @@ export function asegurarPlanoDemo(db: Database.Database, pisoId?: number): numbe
   return mesa7;
 }
 
-function fotoSvg(color: string, letra: string): string {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="128" height="128" rx="20" fill="${color}"/><text x="64" y="78" text-anchor="middle" font-size="48" fill="#ffffff" font-family="sans-serif">${letra}</text></svg>`;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-}
-
 export function asegurarProductosDemo(db: Database.Database): void {
   function categoria(nombre: string, estacion: string): number {
     const row = db.prepare("SELECT id FROM categorias_pos WHERE nombre = ?").get(nombre) as { id: number } | undefined;
@@ -127,51 +122,59 @@ export function asegurarProductosDemo(db: Database.Database): void {
   const bebidas = categoria("Bebida", "cocina");
   const postres = categoria("Postres", "cocina");
   const carta = [
-    { nombre: "Hamburguesa", precio: 8900, categoria: principales, letra: "H", color: "#8b4513" },
-    { nombre: "Completo", precio: 4500, categoria: principales, letra: "C", color: "#c45c26" },
-    { nombre: "Empanada", precio: 1800, categoria: principales, letra: "E", color: "#d4a017" },
-    { nombre: "Papas fritas", precio: 2500, categoria: principales, letra: "P", color: "#e0a106" },
-    { nombre: "Ensalada César", precio: 5200, categoria: principales, letra: "S", color: "#3d7a3d" },
-    { nombre: "Pizza margarita", precio: 8900, categoria: principales, letra: "Z", color: "#b33c3c" },
-    { nombre: "Sopa del día", precio: 3200, categoria: principales, letra: "O", color: "#b56b2a" },
-    { nombre: "Menú del día", precio: 8900, categoria: principales, letra: "M", color: "#9b5d32" },
-    { nombre: "Extra", precio: 0, categoria: principales, letra: "+", color: "#6f4a8e" },
-    { nombre: "Jugo", precio: 2500, categoria: bebidas, letra: "J", color: "#e07a2f" },
-    { nombre: "Agua con gas", precio: 1500, categoria: bebidas, letra: "A", color: "#3d8ea8" },
-    { nombre: "Café", precio: 1800, categoria: bebidas, letra: "F", color: "#4a2c1a" },
-    { nombre: "Cerveza", precio: 2800, categoria: bebidas, letra: "V", color: "#c9a227" },
-    { nombre: "Flan", precio: 2200, categoria: postres, letra: "L", color: "#c48a3a" },
+    { nombre: "Hamburguesa", precio: 8900, categoria: principales, letraLegacy: "H", color: "#8b4513" },
+    { nombre: "Completo", precio: 4500, categoria: principales, letraLegacy: "C", color: "#c45c26" },
+    { nombre: "Empanada", precio: 1800, categoria: principales, letraLegacy: "E", color: "#d4a017" },
+    { nombre: "Papas fritas", precio: 2500, categoria: principales, letraLegacy: "P", color: "#e0a106" },
+    { nombre: "Ensalada César", precio: 5200, categoria: principales, letraLegacy: "S", color: "#3d7a3d" },
+    { nombre: "Pizza margarita", precio: 8900, categoria: principales, letraLegacy: "Z", color: "#b33c3c" },
+    { nombre: "Sopa del día", precio: 3200, categoria: principales, letraLegacy: "O", color: "#b56b2a" },
+    { nombre: "Menú del día", precio: 8900, categoria: principales, letraLegacy: "M", color: "#9b5d32" },
+    { nombre: "Extra", precio: 0, categoria: principales, letraLegacy: "+", color: "#6f4a8e" },
+    { nombre: "Jugo", precio: 2500, categoria: bebidas, letraLegacy: "J", color: "#e07a2f" },
+    { nombre: "Agua con gas", precio: 1500, categoria: bebidas, letraLegacy: "A", color: "#3d8ea8" },
+    { nombre: "Café", precio: 1800, categoria: bebidas, letraLegacy: "F", color: "#4a2c1a" },
+    { nombre: "Cerveza", precio: 2800, categoria: bebidas, letraLegacy: "V", color: "#c9a227" },
+    { nombre: "Flan", precio: 2200, categoria: postres, letraLegacy: "L", color: "#c48a3a" },
     // -- Carta extendida de la demostración (fotos reales en assets/fotos-carta) --
-    { nombre: "Chorrillana", precio: 12400, categoria: principales, letra: "R", color: "#a0522d" },
-    { nombre: "Pastel de choclo", precio: 7900, categoria: principales, letra: "T", color: "#c8a13a" },
-    { nombre: "Cazuela de vacuno", precio: 7500, categoria: principales, letra: "Z", color: "#8f6b3d" },
-    { nombre: "Salmón a la plancha", precio: 11900, categoria: principales, letra: "N", color: "#c96f4a" },
-    { nombre: "Pollo asado", precio: 8400, categoria: principales, letra: "O", color: "#b5793a" },
-    { nombre: "Lomo a lo pobre", precio: 10900, categoria: principales, letra: "M", color: "#7a4a2b" },
-    { nombre: "Asado de tira", precio: 11500, categoria: principales, letra: "D", color: "#96442e" },
-    { nombre: "Barros Luco", precio: 6200, categoria: principales, letra: "B", color: "#a86a32" },
-    { nombre: "Sándwich de palta", precio: 4900, categoria: principales, letra: "A", color: "#4a7a3d" },
-    { nombre: "Ceviche de salmón", precio: 7900, categoria: principales, letra: "E", color: "#d07a3f" },
-    { nombre: "Gaseosa", precio: 1900, categoria: bebidas, letra: "S", color: "#8a3d2e" },
-    { nombre: "Pisco sour", precio: 5500, categoria: bebidas, letra: "P", color: "#c9b267" },
-    { nombre: "Vino tinto", precio: 4500, categoria: bebidas, letra: "T", color: "#6b1f2a" },
-    { nombre: "Limonada", precio: 2800, categoria: bebidas, letra: "L", color: "#b8c94a" },
-    { nombre: "Té", precio: 1400, categoria: bebidas, letra: "T", color: "#7a5230" },
-    { nombre: "Kuchen de manzana", precio: 3500, categoria: postres, letra: "K", color: "#b5793f" },
-    { nombre: "Tiramisú", precio: 4200, categoria: postres, letra: "I", color: "#6b4a33" },
-    { nombre: "Helado", precio: 2800, categoria: postres, letra: "H", color: "#d9a3b3" },
+    { nombre: "Chorrillana", precio: 12400, categoria: principales, letraLegacy: "R", color: "#a0522d" },
+    { nombre: "Pastel de choclo", precio: 7900, categoria: principales, letraLegacy: "T", color: "#c8a13a" },
+    { nombre: "Cazuela de vacuno", precio: 7500, categoria: principales, letraLegacy: "Z", color: "#8f6b3d" },
+    { nombre: "Salmón a la plancha", precio: 11900, categoria: principales, letraLegacy: "N", color: "#c96f4a" },
+    { nombre: "Pollo asado", precio: 8400, categoria: principales, letraLegacy: "O", color: "#b5793a" },
+    { nombre: "Lomo a lo pobre", precio: 10900, categoria: principales, letraLegacy: "M", color: "#7a4a2b" },
+    { nombre: "Asado de tira", precio: 11500, categoria: principales, letraLegacy: "D", color: "#96442e" },
+    { nombre: "Barros Luco", precio: 6200, categoria: principales, letraLegacy: "B", color: "#a86a32" },
+    { nombre: "Sándwich de palta", precio: 4900, categoria: principales, letraLegacy: "A", color: "#4a7a3d" },
+    { nombre: "Ceviche de salmón", precio: 7900, categoria: principales, letraLegacy: "E", color: "#d07a3f" },
+    { nombre: "Gaseosa", precio: 1900, categoria: bebidas, letraLegacy: "S", color: "#8a3d2e" },
+    { nombre: "Pisco sour", precio: 5500, categoria: bebidas, letraLegacy: "P", color: "#c9b267" },
+    { nombre: "Vino tinto", precio: 4500, categoria: bebidas, letraLegacy: "T", color: "#6b1f2a" },
+    { nombre: "Limonada", precio: 2800, categoria: bebidas, letraLegacy: "L", color: "#b8c94a" },
+    { nombre: "Té", precio: 1400, categoria: bebidas, letraLegacy: "T", color: "#7a5230" },
+    { nombre: "Kuchen de manzana", precio: 3500, categoria: postres, letraLegacy: "K", color: "#b5793f" },
+    { nombre: "Tiramisú", precio: 4200, categoria: postres, letraLegacy: "I", color: "#6b4a33" },
+    { nombre: "Helado", precio: 2800, categoria: postres, letraLegacy: "H", color: "#d9a3b3" },
   ];
   const insert = db.prepare(
     "INSERT INTO productos (nombre, precio_centavos, categoria_id, tipo_consumo, disponible_en_pos, activo, color, foto_data, rastrear_inventario) VALUES (?, ?, ?, 'no_almacenable', 1, 1, ?, ?, 0)",
   );
-  // El seed solo pone la letra de relleno al CREAR el producto; nunca pisa la
-  // foto de un producto existente (fotos cargadas de carta o subidas por el
-  // administrador sobreviven a los reinicios del servidor).
-  const update = db.prepare("UPDATE productos SET color = ?, disponible_en_pos = 1, activo = 1 WHERE id = ?");
+  // El seed no guarda fotos: sin foto_data la carta dibuja el icono por
+  // categoría. Nunca pisa la foto de un producto existente (fotos cargadas de
+  // carta o subidas por el administrador sobreviven a los reinicios).
+  //
+  // Limpia solo el payload exacto que generaba el seed antiguo. Comparar el
+  // SVG completo y el producto evita borrar imágenes SVG legítimas subidas por
+  // el administrador, aunque compartan tamaño o encabezado con el placeholder.
+  const update = db.prepare(
+    "UPDATE productos SET color = ?, disponible_en_pos = 1, activo = 1, foto_data = CASE WHEN foto_data = ? THEN NULL ELSE foto_data END WHERE id = ?",
+  );
   for (const p of carta) {
     const existing = db.prepare("SELECT id FROM productos WHERE nombre = ?").get(p.nombre) as { id: number } | undefined;
-    if (existing) update.run(p.color, existing.id);
-    else insert.run(p.nombre, p.precio, p.categoria, p.color, fotoSvg(p.color, p.letra));
+    const svgLegacy = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="128" height="128" rx="20" fill="${p.color}"/><text x="64" y="78" text-anchor="middle" font-size="48" fill="#ffffff" font-family="sans-serif">${p.letraLegacy}</text></svg>`;
+    const fotoLegacy = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgLegacy)}`;
+    if (existing) update.run(p.color, fotoLegacy, existing.id);
+    else insert.run(p.nombre, p.precio, p.categoria, p.color, null);
   }
   asegurarContornosDemo(db);
 }

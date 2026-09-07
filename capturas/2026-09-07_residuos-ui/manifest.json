@@ -1,0 +1,24 @@
+{
+  "updatedAt": "2026-09-07T19:30:00Z",
+  "commit": "440ff68",
+  "rama": "feat/limpieza-interfaz",
+  "count": 23,
+  "tema": "Segunda ronda de limpieza: hex a tokens, switch.tsx en Opciones, familias consolidadas (Backend/Categorías/page-header) y pseudo-fotos de la carta eliminadas",
+  "shots": [
+    "opciones-1280", "opciones-768", "opciones-390",
+    "salon-1280", "salon-768", "salon-390",
+    "carta-1280", "carta-390", "carta-extra-icono-1280",
+    "pedidos-1280", "pedidos-768", "pedidos-390",
+    "cocina-1280", "cocina-768", "cocina-390",
+    "administracion-1280", "administracion-390",
+    "categorias-1280", "categorias-390",
+    "crear-producto-1280", "crear-producto-390",
+    "pinpad-1280",
+    "precuenta-1280"
+  ],
+  "notas": [
+    "Extra (sin foto) muestra el icono de su categoria en vez de la inicial guardada como pseudo-foto",
+    "Opciones usa el Switch nuevo (settings-switch); el modal Crear producto conserva Checkbox por semantica",
+    "El ticket de precuenta en modal sigue blanco: bg-card (utilities) gana a .ticket-papel (components), igual que antes de esta ronda; quedo anotado en MIGRACION_SHADCN"
+  ]
+}

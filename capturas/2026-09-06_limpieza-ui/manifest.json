@@ -1,0 +1,16 @@
+{
+  "updatedAt": "2026-09-06",
+  "commit": "46757b8",
+  "count": 9,
+  "shots": [
+    { "file": "01-salon-390.png", "vista": "salón", "ancho": 390 },
+    { "file": "02-ordenes-mesero-390.png", "vista": "órdenes · mesero", "ancho": 390 },
+    { "file": "03-ordenes-cocina-390.png", "vista": "órdenes · cocina", "ancho": 390 },
+    { "file": "04-menu-panel-390.png", "vista": "panel de menú y cuenta", "ancho": 390 },
+    { "file": "05-salon-768.png", "vista": "salón", "ancho": 768 },
+    { "file": "06-ordenes-768.png", "vista": "órdenes · mesero", "ancho": 768 },
+    { "file": "07-salon-1280.png", "vista": "salón", "ancho": 1280 },
+    { "file": "08-ordenes-1280.png", "vista": "órdenes · mesero", "ancho": 1280 },
+    { "file": "09-menu-panel-1280.png", "vista": "panel de menú y cuenta", "ancho": 1280 }
+  ]
+}

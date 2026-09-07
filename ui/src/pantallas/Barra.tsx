@@ -1,16 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Boxes,
-  ChefHat,
-  CircleUserRound,
-  ClipboardList,
-  LayoutGrid,
-  LogOut,
-  Menu,
-  Settings,
-  SlidersHorizontal,
-  Utensils,
-} from "lucide-react";
+import { Boxes, ClipboardList, LayoutGrid, LogOut, Menu, Settings, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 
 export type Destino =
@@ -18,7 +7,6 @@ export type Destino =
   | "pedido"
   | "pedidos"
   | "inventario"
-  | "kds"
   | "editar-mapa"
   | "categorias"
   | "contornos"
@@ -28,7 +16,6 @@ export type Destino =
 
 type Props = {
   vista: Destino;
-  area: "mesero" | "cocina";
   marca: string;
   logo?: string | null;
   nombre: string;
@@ -39,8 +26,6 @@ type Props = {
   onMesas: () => void;
   onOrdenes: () => void;
   onInventario: () => void;
-  onCocina: () => void;
-  onCambiarArea: (area: "mesero" | "cocina") => void;
   notificacionesCocina?: number;
   onCerrarSesion: () => void;
   onCrearProducto?: () => void;
@@ -49,7 +34,6 @@ type Props = {
 
 export function Barra({
   vista,
-  area,
   marca,
   logo,
   nombre,
@@ -60,13 +44,10 @@ export function Barra({
   onMesas,
   onOrdenes,
   onInventario,
-  onCocina,
-  onCambiarArea,
   notificacionesCocina = 0,
   onCerrarSesion,
   onIr,
 }: Props) {
-  const [cuentaAbierta, setCuentaAbierta] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const iconos = useRef<HTMLDivElement>(null);
 
@@ -76,16 +57,14 @@ export function Barra({
   }
 
   useEffect(() => {
-    if (!cuentaAbierta && !menuAbierto) return;
+    if (!menuAbierto) return;
     function cerrar(e: PointerEvent) {
       if (iconos.current && !iconos.current.contains(e.target as Node)) {
-        setCuentaAbierta(false);
         setMenuAbierto(false);
       }
     }
     function tecla(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        setCuentaAbierta(false);
         setMenuAbierto(false);
       }
     }
@@ -95,33 +74,28 @@ export function Barra({
       document.removeEventListener("pointerdown", cerrar);
       document.removeEventListener("keydown", tecla);
     };
-  }, [cuentaAbierta, menuAbierto]);
+  }, [menuAbierto]);
 
   return (
     <nav className="pos-nav" aria-label="Navegación principal">
       <div className="pos-nav__primary">
-        {area === "mesero" ? (
-          <>
-            {puedeMesas ? <Button type="button" variant={vista === "plano" ? "secondary" : "ghost"} className={`tactil pos-nav__item ${vista === "plano" ? "is-on" : ""}`} title="Mesas (M)" onClick={onMesas}>
-              <LayoutGrid size={20} aria-hidden="true" />
-              <span className="pos-nav__label">Mesas</span>
-            </Button> : null}
-            {puedeOrdenes ? <Button
-              type="button"
-              variant={vista === "pedidos" ? "secondary" : "ghost"}
-              className={`tactil pos-nav__item ${vista === "pedidos" ? "is-on" : ""}`}
-              title={notificacionesCocina ? `${notificacionesCocina} cambios pendientes de cocina` : "Órdenes (O)"}
-              onClick={onOrdenes}
-            >
-              <ClipboardList size={20} aria-hidden="true" />
-              <span className="pos-nav__label">Órdenes</span>
-              {notificacionesCocina ? <span className="pos-nav__badge" aria-hidden="true">{notificacionesCocina}</span> : null}
-            </Button> : null}
-          </>
-        ) : puedeCocina ? (
-          <Button type="button" variant={vista === "kds" ? "secondary" : "ghost"} className={`tactil pos-nav__item ${vista === "kds" ? "is-on" : ""}`} title="Pedidos de cocina" onClick={onCocina}>
-            <ChefHat size={20} aria-hidden="true" />
-            <span className="pos-nav__label">Cocina</span>
+        {puedeMesas ? (
+          <Button type="button" variant={vista === "plano" ? "secondary" : "ghost"} className={`tactil pos-nav__item ${vista === "plano" ? "is-on" : ""}`} title="Mesas (M)" onClick={onMesas}>
+            <LayoutGrid size={20} aria-hidden="true" />
+            <span className="pos-nav__label">Mesas</span>
+          </Button>
+        ) : null}
+        {puedeOrdenes || puedeCocina ? (
+          <Button
+            type="button"
+            variant={vista === "pedidos" ? "secondary" : "ghost"}
+            className={`tactil pos-nav__item ${vista === "pedidos" ? "is-on" : ""}`}
+            title={notificacionesCocina ? `${notificacionesCocina} cambios pendientes de cocina` : "Órdenes (O)"}
+            onClick={onOrdenes}
+          >
+            <ClipboardList size={20} aria-hidden="true" />
+            <span className="pos-nav__label">Órdenes</span>
+            {notificacionesCocina ? <span className="pos-nav__badge" aria-hidden="true">{notificacionesCocina}</span> : null}
           </Button>
         ) : null}
         <Button
@@ -142,73 +116,59 @@ export function Barra({
         </span>
       </div>
       <div className="pos-nav__right">
-        {(puedeMesas || puedeOrdenes) && puedeCocina ? <div className="pos-nav__areas" role="group" aria-label="Cambiar vista de trabajo">
-          <Button type="button" size="sm" variant={area === "mesero" ? "secondary" : "ghost"} aria-label="Vista Mesero" title="Vista Mesero" className={area === "mesero" ? "is-on" : ""} onClick={() => onCambiarArea("mesero")}><Utensils size={16} aria-hidden="true" /><span>Vista Mesero</span></Button>
-          <Button type="button" size="sm" variant={area === "cocina" ? "secondary" : "ghost"} aria-label="Vista Cocina" title="Vista Cocina" className={area === "cocina" ? "is-on" : ""} onClick={() => onCambiarArea("cocina")}><ChefHat size={16} aria-hidden="true" /><span>Vista Cocina</span></Button>
-        </div> : null}
         <div className="pos-odoo__iconos" ref={iconos}>
-        <div className="pos-odoo__desplegable">
-          <Button
-            type="button"
-            variant="outline"
-            className="tactil icono"
-            aria-label="Cuenta"
-            aria-expanded={cuentaAbierta}
-            title={`Cuenta (${nombre})`}
-            onClick={() => {
-              setCuentaAbierta((v) => !v);
-              setMenuAbierto(false);
-            }}
-          >
-            <CircleUserRound size={22} aria-hidden="true" />
-          </Button>
-          {cuentaAbierta ? (
-            <div className="pos-odoo__panel" role="menu">
-              <p className="pos-odoo__panel-nombre">{nombre}</p>
-              <Button type="button" variant="ghost" role="menuitem" onClick={onCerrarSesion}>
-                <LogOut size={18} aria-hidden="true" />
-                <span>Cerrar sesión</span>
-              </Button>
-            </div>
-          ) : null}
+          <div className="pos-odoo__desplegable">
+            <Button
+              type="button"
+              variant="outline"
+              className="tactil icono"
+              aria-label="Menú y cuenta"
+              aria-expanded={menuAbierto}
+              title={`Menú (${nombre})`}
+              onClick={() => setMenuAbierto((v) => !v)}
+            >
+              <Menu size={22} aria-hidden="true" />
+            </Button>
+            {menuAbierto ? (
+              <div className="pos-odoo__panel" role="menu">
+                <p className="pos-odoo__panel-nombre">{nombre}</p>
+                {puedeMesas ? (
+                  <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("plano")}>
+                    <LayoutGrid size={18} aria-hidden="true" />
+                    <span>Mesas</span>
+                  </Button>
+                ) : null}
+                {puedeOrdenes || puedeCocina ? (
+                  <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("pedidos")}>
+                    <ClipboardList size={18} aria-hidden="true" />
+                    <span>Órdenes</span>
+                  </Button>
+                ) : null}
+                <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("inventario")}>
+                  <Boxes size={18} aria-hidden="true" />
+                  <span>Inventario</span>
+                </Button>
+                {puedeAdministrar ? (
+                  <>
+                    <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("backend")}>
+                      <SlidersHorizontal size={18} aria-hidden="true" />
+                      <span>Administración</span>
+                    </Button>
+                    <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("opciones")}>
+                      <Settings size={18} aria-hidden="true" />
+                      <span>Opciones</span>
+                    </Button>
+                  </>
+                ) : null}
+                <div className="pos-odoo__panel-sep" role="separator" aria-hidden="true" />
+                <Button type="button" variant="ghost" role="menuitem" onClick={onCerrarSesion}>
+                  <LogOut size={18} aria-hidden="true" />
+                  <span>Cerrar sesión</span>
+                </Button>
+              </div>
+            ) : null}
+          </div>
         </div>
-        <div className="pos-odoo__desplegable">
-          <Button
-            type="button"
-            variant="outline"
-            className="tactil icono"
-            aria-label="Menú"
-            aria-expanded={menuAbierto}
-            title="Menú"
-            onClick={() => {
-              setMenuAbierto((v) => !v);
-              setCuentaAbierta(false);
-            }}
-          >
-            <Menu size={22} aria-hidden="true" />
-          </Button>
-          {menuAbierto ? (
-            <div className="pos-odoo__panel" role="menu">
-              {area === "mesero" ? (
-                <>
-                  {puedeMesas ? <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("plano")}><LayoutGrid size={18} aria-hidden="true" /><span>Mesas</span></Button> : null}
-                  {puedeOrdenes ? <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("pedidos")}><ClipboardList size={18} aria-hidden="true" /><span>Órdenes</span></Button> : null}
-                </>
-              ) : puedeCocina ? <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("kds")}><ChefHat size={18} aria-hidden="true" /><span>Cocina</span></Button> : null}
-              <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("inventario")}>
-                <Boxes size={18} aria-hidden="true" />
-                <span>Inventario</span>
-              </Button>
-              {puedeAdministrar ? (
-                <>
-                  <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("backend")}><SlidersHorizontal size={18} aria-hidden="true" /><span>Administración</span></Button>
-                  <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("opciones")}><Settings size={18} aria-hidden="true" /><span>Opciones</span></Button>
-                </>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      </div>
       </div>
     </nav>
   );

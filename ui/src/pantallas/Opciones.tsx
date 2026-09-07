@@ -3,6 +3,7 @@ import { CheckCircle2, CircleUserRound, EthernetPort, FilePenLine, LoaderCircle,
 import { api } from "../api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
+import { Switch } from "@/components/ui/switch.tsx";
 
 export type ImpresoraConfigUi = { habilitada: boolean; nombre: string; host: string; puerto: number; ancho_mm: 58 | 80 };
 export type PlantillaImpresionUi = { titulo: string; encabezado: string; pie: string };
@@ -84,7 +85,7 @@ function SeccionImpresora({ tipo, impresora, plantilla, onImpresora, onPlantilla
     <header className="printer-card__header">
       <div className="settings-icon"><Printer size={21} aria-hidden="true" /></div>
       <div><h3>{titulo}</h3><p>Conexión ESC/POS directa por red, sin controlador instalado en este equipo.</p></div>
-      <label className="switch-compacto"><input type="checkbox" checked={impresora.habilitada} onChange={(event) => onImpresora({ ...impresora, habilitada: event.target.checked })} /><span>{impresora.habilitada ? "Activa" : "Inactiva"}</span></label>
+      <label className="switch-compacto"><Switch checked={impresora.habilitada} onChange={(event) => onImpresora({ ...impresora, habilitada: event.target.checked })} /><span>{impresora.habilitada ? "Activa" : "Inactiva"}</span></label>
     </header>
     <div className="printer-grid">
       <label>Nombre<input value={impresora.nombre} onChange={(event) => onImpresora({ ...impresora, nombre: event.target.value })} placeholder="Ej.: Cocina caliente" /></label>
@@ -151,7 +152,7 @@ function GestionUsuarios() {
         <label>{form.id ? "Nueva contraseña" : "Contraseña"}<input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder={form.id ? "Dejar vacío para conservar" : "Obligatoria para iniciar sesión"} /></label>
       </div>
       <fieldset className="role-picker"><legend>Roles</legend>{roles.map((rol) => <label key={rol.clave}><input type="checkbox" checked={form.roles.includes(rol.clave)} onChange={(event) => setForm({ ...form, roles: event.target.checked ? [...form.roles, rol.clave] : form.roles.filter((item) => item !== rol.clave) })} /><span><strong>{rol.nombre}</strong><small>{rol.descripcion}</small></span></label>)}</fieldset>
-      {form.id ? <label className="switch-tablet"><input type="checkbox" checked={form.activo} onChange={(event) => setForm({ ...form, activo: event.target.checked })} />Usuario activo</label> : null}
+      {form.id ? <label className="settings-switch"><Switch checked={form.activo} onChange={(event) => setForm({ ...form, activo: event.target.checked })} />Usuario activo</label> : null}
       <div className="user-editor__actions"><Button type="button" variant="outline" onClick={() => setAbierto(false)}>Cancelar</Button><Button type="button" disabled={guardando || !form.nombre.trim() || !form.usuario.trim() || !form.roles.length || (!form.id && (!form.pin.trim() || !form.password.trim()))} onClick={guardar}>{guardando ? "Guardando…" : "Guardar usuario"}</Button></div>
     </Card> : null}
     {estado ? <p className="settings-feedback" role="status">{estado}</p> : null}
@@ -166,7 +167,7 @@ function EstadoServidor({ valores, onCambiar }: Props) {
   return <fieldset className="form-odoo__tarjeta settings-card settings-card--wide network-settings" id="red-local">
     <legend>Servidor y red local</legend>
     <div className="settings-section-heading"><div><h2>Acceso desde otros equipos</h2><p>Meseros, cocina y administración pueden abrir la misma web desde la red Wi-Fi o cableada del restaurante.</p></div><Button type="button" variant="outline" onClick={cargar}><RefreshCw size={18} />Diagnosticar</Button></div>
-    <label className="switch-tablet"><input type="checkbox" checked={valores.servidor_red_habilitado} onChange={(event) => onCambiar({ servidor_red_habilitado: event.target.checked })} />Permitir conexiones desde la red local</label>
+    <label className="settings-switch"><Switch checked={valores.servidor_red_habilitado} onChange={(event) => onCambiar({ servidor_red_habilitado: event.target.checked })} />Permitir conexiones desde la red local</label>
     <label>Nombre del servidor<input maxLength={60} value={valores.nombre_servidor} onChange={(event) => onCambiar({ nombre_servidor: event.target.value })} /></label>
     <div className="network-status"><span className={`network-status__icon ${estado?.habilitado ? "is-online" : ""}`}><Wifi size={23} /></span><div><strong>{estado?.habilitado ? "Servidor disponible" : "Acceso local desactivado"}</strong><span>Puerto {estado?.puerto ?? "—"} · Estado {estado?.salud ?? "comprobando"}</span></div></div>
     <div className="network-addresses"><strong>Direcciones para conectar tablets y teléfonos</strong>{estado?.urls.length ? estado.urls.map((url) => <code key={url}>{url}</code>) : <span>No hay direcciones de red disponibles.</span>}</div>
@@ -239,16 +240,16 @@ export function Opciones({ valores, onCambiar }: Props) {
     <fieldset className="form-odoo__tarjeta settings-card settings-card--wide">
       <legend>Seguridad y autorizaciones</legend>
       <div className="security-grid">
-        <label className="switch-tablet"><input type="checkbox" checked={valores.pin_habilitado} onChange={(event) => onCambiar({ pin_habilitado: event.target.checked })} />Pedir PIN al enviar cada orden</label>
-        <label className="switch-tablet"><input type="checkbox" checked={valores.pin_al_emitir_precuenta} onChange={(event) => onCambiar({ pin_al_emitir_precuenta: event.target.checked })} />Pedir PIN al emitir precuenta</label>
-        <label className="switch-tablet"><input type="checkbox" checked={valores.pin_al_enviar_caja} onChange={(event) => onCambiar({ pin_al_enviar_caja: event.target.checked })} />Pedir PIN al enviar a caja</label>
-        <label className="switch-tablet"><input type="checkbox" checked={valores.confirmar_comanda} onChange={(event) => onCambiar({ confirmar_comanda: event.target.checked })} />Mostrar vista previa de la comanda antes de enviar</label>
-        <label className="switch-tablet"><input type="checkbox" checked={valores.precuenta_obligatoria_antes_de_caja} onChange={(event) => onCambiar({ precuenta_obligatoria_antes_de_caja: event.target.checked })} />Pedir precuenta antes de cerrar la cuenta</label>
-        <label className="switch-tablet"><input type="checkbox" checked={valores.enviar_a_caja_requiere_avanzado} onChange={(event) => onCambiar({ enviar_a_caja_requiere_avanzado: event.target.checked })} />El PIN de caja debe ser de un usuario con rol de caja o administrador</label>
-        <label className="switch-tablet"><input type="checkbox" checked={valores.auditoria_anulaciones} onChange={(event) => onCambiar({ auditoria_anulaciones: event.target.checked, ...(event.target.checked ? {} : { justificacion_anulacion: false }) })} />Guardar registro de órdenes anuladas</label>
-        {valores.auditoria_anulaciones ? <label className="switch-tablet"><input type="checkbox" checked={valores.justificacion_anulacion} onChange={(event) => onCambiar({ justificacion_anulacion: event.target.checked })} />Pedir justificación al anular</label> : null}
-        <label className="switch-tablet">
-          <input type="checkbox" checked={valores.devolver_insumos_preparados} onChange={(event) => onCambiar({ devolver_insumos_preparados: event.target.checked })} />
+        <label className="settings-switch"><Switch checked={valores.pin_habilitado} onChange={(event) => onCambiar({ pin_habilitado: event.target.checked })}  />Pedir PIN al enviar cada orden</label>
+        <label className="settings-switch"><Switch checked={valores.pin_al_emitir_precuenta} onChange={(event) => onCambiar({ pin_al_emitir_precuenta: event.target.checked })}  />Pedir PIN al emitir precuenta</label>
+        <label className="settings-switch"><Switch checked={valores.pin_al_enviar_caja} onChange={(event) => onCambiar({ pin_al_enviar_caja: event.target.checked })}  />Pedir PIN al enviar a caja</label>
+        <label className="settings-switch"><Switch checked={valores.confirmar_comanda} onChange={(event) => onCambiar({ confirmar_comanda: event.target.checked })}  />Mostrar vista previa de la comanda antes de enviar</label>
+        <label className="settings-switch"><Switch checked={valores.precuenta_obligatoria_antes_de_caja} onChange={(event) => onCambiar({ precuenta_obligatoria_antes_de_caja: event.target.checked })}  />Pedir precuenta antes de cerrar la cuenta</label>
+        <label className="settings-switch"><Switch checked={valores.enviar_a_caja_requiere_avanzado} onChange={(event) => onCambiar({ enviar_a_caja_requiere_avanzado: event.target.checked })}  />El PIN de caja debe ser de un usuario con rol de caja o administrador</label>
+        <label className="settings-switch"><Switch checked={valores.auditoria_anulaciones} onChange={(event) => onCambiar({ auditoria_anulaciones: event.target.checked, ...(event.target.checked ? {} : { justificacion_anulacion: false }) })}  />Guardar registro de órdenes anuladas</label>
+        {valores.auditoria_anulaciones ? <label className="settings-switch"><Switch checked={valores.justificacion_anulacion} onChange={(event) => onCambiar({ justificacion_anulacion: event.target.checked })}  />Pedir justificación al anular</label> : null}
+        <label className="settings-switch">
+          <Switch checked={valores.devolver_insumos_preparados} onChange={(event) => onCambiar({ devolver_insumos_preparados: event.target.checked })} />
           Devolver ingredientes de platos anulados o cancelados ya preparados (para reutilizarlos)
         </label>
         {valores.devolver_insumos_preparados ? null : (
