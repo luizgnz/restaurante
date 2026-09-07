@@ -43,4 +43,4 @@ En macOS la app también se abre con doble clic en `Iniciar Restaurante.command`
 ## Antes de dar un trabajo por terminado
 
 - `npm test` en verde y `npm run build` sin errores de tipos.
-- Actualizar `TAREAS.md` si el trabajo cierra pendientes o genera nuevos.
+- Actualizar `TAREAS_V2.md` (lista viva) si el trabajo cierra pendientes o genera nuevos; `TAREAS.md` es historial cerrado.
