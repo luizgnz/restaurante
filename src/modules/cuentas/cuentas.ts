@@ -55,9 +55,15 @@ export function cuentaActivaPorMesa(
   db: Database.Database,
   mesaId: number,
 ): { id: number; estado: EstadoCuenta } | null {
+  // NULL solo puede venir de una base/fixture anterior a 023. Se considera
+  // activa para no intentar insertar otra fila que chocaría con el índice
+  // único; la migración real enlaza todas las cuentas abiertas a la jornada.
   const row = db
     .prepare(
-      "SELECT id, estado FROM cuentas WHERE mesa_id = ? AND estado IN ('abierta', 'precuenta_emitida')",
+      `SELECT c.id, c.estado FROM cuentas c
+       LEFT JOIN jornadas_operativas j ON j.id = c.jornada_id
+       WHERE c.mesa_id = ? AND c.estado IN ('abierta', 'precuenta_emitida')
+         AND (j.estado = 'abierta' OR c.jornada_id IS NULL)`,
     )
     .get(mesaId) as CuentaActivaRow | undefined;
   return row ?? null;

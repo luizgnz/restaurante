@@ -55,6 +55,7 @@ export function listarCuentasActivas(db: Database.Database, ahoraMs = Date.now()
       `SELECT c.id, c.abierta_en, e.nombre AS mesero
        FROM cuentas c
        LEFT JOIN empleados e ON e.id = c.abierta_por_empleado_id
+       JOIN jornadas_operativas j ON j.id = c.jornada_id AND j.estado = 'abierta'
        WHERE c.estado IN ('abierta', 'precuenta_emitida')
        ORDER BY c.id`,
     )

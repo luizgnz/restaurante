@@ -1,5 +1,6 @@
 import type Database from "better-sqlite3";
 import { indicacionesVigentesOrden } from "../ordenes/ordenes.ts";
+import { exigirJornadaAbierta } from "../jornadas/jornadas.ts";
 import { incidenciasDeComanda, type IncidenciaCocina } from "./incidencias.ts";
 
 export type TipoComanda = "legacy" | "orden" | "correccion" | "anulacion";
@@ -75,9 +76,10 @@ export function crearComanda(
   },
 ): number {
   const tipo = tipoDeComanda(input);
+  const jornada = exigirJornadaAbierta(db);
   const info = db
     .prepare(
-      "INSERT INTO comandas (pedido_id, envio_n, mesero_id, creada_en, orden_id, correccion_id, tipo) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO comandas (pedido_id, envio_n, mesero_id, creada_en, orden_id, correccion_id, tipo, jornada_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .run(
       input.pedidoId ?? null,
@@ -87,6 +89,7 @@ export function crearComanda(
       input.ordenId ?? null,
       input.correccionId ?? null,
       tipo,
+      jornada.id,
     );
   const comandaId = Number(info.lastInsertRowid);
   const insertLinea = db.prepare(
@@ -120,7 +123,12 @@ export function avanzarEtapa(db: Database.Database, comandaLineaId: number, etap
   if (!(ETAPAS_DESTINO as readonly string[]).includes(etapa)) {
     throw new KdsError("etapa_invalida", `Etapa desconocida: ${etapa}`);
   }
-  const linea = db.prepare("SELECT etapa, comanda_id FROM comanda_lineas WHERE id = ?").get(comandaLineaId) as
+  const linea = db.prepare(
+    `SELECT cl.etapa, cl.comanda_id FROM comanda_lineas cl
+     JOIN comandas c ON c.id = cl.comanda_id
+     JOIN jornadas_operativas j ON j.id = c.jornada_id AND j.estado = 'abierta'
+     WHERE cl.id = ?`,
+  ).get(comandaLineaId) as
     | { etapa: string; comanda_id: number }
     | undefined;
   if (!linea) throw new KdsError("linea_inexistente", "Línea de comanda inexistente");
@@ -157,9 +165,11 @@ export function avanzarEtapaDeComanda(db: Database.Database, comandaId: number, 
   const origenes = etapa === "en_proceso" ? "('por_preparar')" : "('por_preparar','en_proceso')";
   const filas = db
     .prepare(
-      `SELECT id, etapa FROM comanda_lineas
-       WHERE comanda_id = ? AND etapa IN ${origenes}
-       ORDER BY id`,
+      `SELECT cl.id, cl.etapa FROM comanda_lineas cl
+       JOIN comandas c ON c.id = cl.comanda_id
+       JOIN jornadas_operativas j ON j.id = c.jornada_id AND j.estado = 'abierta'
+       WHERE cl.comanda_id = ? AND cl.etapa IN ${origenes}
+       ORDER BY cl.id`,
     )
     .all(comandaId) as Array<{ id: number; etapa: string }>;
   if (filas.length === 0) {
@@ -347,6 +357,7 @@ export function tarjetasKds(db: Database.Database): TarjetaKds[] {
        LEFT JOIN cuentas cu ON cu.id = o.cuenta_id
        LEFT JOIN mesas mc ON mc.id = cu.mesa_id
        LEFT JOIN orden_correcciones oc ON oc.id = c.correccion_id
+       JOIN jornadas_operativas jo ON jo.id = c.jornada_id AND jo.estado = 'abierta'
        ORDER BY c.id DESC`,
     )
     .all() as ComandaRow[];

@@ -125,7 +125,11 @@ export function crearIncidenciaCocina(
 
   return db.transaction(() => {
     const comanda = db
-      .prepare("SELECT id, orden_id, tipo FROM comandas WHERE id = ?")
+      .prepare(
+        `SELECT c.id, c.orden_id, c.tipo FROM comandas c
+         JOIN jornadas_operativas j ON j.id = c.jornada_id AND j.estado = 'abierta'
+         WHERE c.id = ?`,
+      )
       .get(input.comandaId) as { id: number; orden_id: number | null; tipo: string } | undefined;
     if (!comanda?.orden_id || comanda.tipo !== "orden") {
       throw new IncidenciaCocinaError("comanda_no_gestionable", "Esta comanda no admite solicitudes nuevas");
@@ -218,7 +222,10 @@ export function prepararSustitucion(
 
 export function listarIncidenciasMesero(db: Database.Database): IncidenciaCocina[] {
   return (db
-    .prepare(`${SELECT_INCIDENCIA} WHERE i.estado = 'pendiente' ORDER BY i.id DESC`)
+    .prepare(`${SELECT_INCIDENCIA}
+      JOIN comandas co ON co.id = i.comanda_id
+      JOIN jornadas_operativas j ON j.id = co.jornada_id AND j.estado = 'abierta'
+      WHERE i.estado = 'pendiente' ORDER BY i.id DESC`)
     .all() as IncidenciaRow[]).map(deFila);
 }
 

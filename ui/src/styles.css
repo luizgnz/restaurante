@@ -2363,6 +2363,67 @@ button.icono {
 }
 
 /* Administración */
+.backend-jornada {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(360px, 1fr);
+  gap: 1rem 1.5rem;
+  padding: 1.2rem;
+}
+.backend-jornada__encabezado {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.backend-jornada__icono {
+  display: grid;
+  flex: 0 0 auto;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  border-radius: 1rem;
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.backend-jornada__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.backend-jornada__encabezado p {
+  margin: 0.3rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.88rem;
+}
+.backend-jornada__metricas {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-column: 1 / -1;
+  gap: 0.65rem;
+  margin: 0;
+}
+.backend-jornada__metricas div {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--background);
+}
+.backend-jornada__metricas dt {
+  color: var(--muted-foreground);
+  font-size: 0.74rem;
+}
+.backend-jornada__metricas dd {
+  margin: 0.15rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 750;
+}
+.backend-jornada__acciones {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  grid-column: 2;
+  grid-row: 1;
+  gap: 0.65rem;
+}
 .backend-odoo__atajos {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2776,6 +2837,14 @@ button.icono {
   .backend-odoo__atajos {
     grid-template-columns: 1fr;
   }
+  .backend-jornada {
+    grid-template-columns: 1fr;
+  }
+  .backend-jornada__acciones {
+    justify-content: flex-start;
+    grid-column: auto;
+    grid-row: auto;
+  }
 }
 
 @media (max-width: 767px) {
@@ -2847,6 +2916,16 @@ button.icono {
   }
   .backend-odoo__atajos .backend-atajo {
     grid-template-columns: auto minmax(0, 1fr);
+  }
+  .backend-jornada__metricas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .backend-jornada__acciones {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .backend-jornada__acciones button {
+    width: 100%;
   }
   .backend-atajo > button {
     grid-column: 1 / -1;

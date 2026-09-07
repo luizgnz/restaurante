@@ -161,12 +161,24 @@ function migrarUno(
   if (pedido.mesa_id == null) {
     throw new MigracionError(`Pedido ${pedido.id} sin mesa: se exportó como borrador y no se convierte en cuenta`);
   }
+  const jornada = db.prepare("SELECT id FROM jornadas_operativas WHERE estado = 'abierta'").get() as
+    | { id: number }
+    | undefined;
+  const esDeHoy = (db.prepare("SELECT date(?, 'localtime') = date('now', 'localtime') AS si").get(pedido.abierto_en) as {
+    si: number;
+  }).si === 1;
+  const perteneceAJornada =
+    pedido.estado !== "en_caja" && pedido.estado !== "cancelado"
+      ? jornada?.id ?? null
+      : esDeHoy
+        ? jornada?.id ?? null
+        : null;
   const cuentaId = Number(
     db
       .prepare(
         `INSERT INTO cuentas
-          (mesa_id, estado, abierta_por_empleado_id, abierta_en, cerrada_en, nota_privada, legacy_pedido_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          (mesa_id, estado, abierta_por_empleado_id, abierta_en, cerrada_en, nota_privada, legacy_pedido_id, jornada_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         pedido.mesa_id,
@@ -176,6 +188,7 @@ function migrarUno(
         pedido.estado === "en_caja" || pedido.estado === "cancelado" ? pedido.abierto_en : null,
         pedido.nota_privada,
         pedido.id,
+        perteneceAJornada,
       ).lastInsertRowid,
   );
 

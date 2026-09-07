@@ -989,6 +989,9 @@ export function App() {
             onRecetas={() => ir("recetas")}
             onEditarMapa={() => ir("editar-mapa")}
             onMesas={() => ir("plano")}
+            onMovimientoActualizado={async () => {
+              await Promise.all([cargarPlano(), cargarCuentasEnCurso(), cargarKds(), cargarIncidenciasCocina()]);
+            }}
           />
         ) : null}
         {vista === "recetas" ? <Recetas productos={productosAdmin} onVolver={() => ir("backend")} /> : null}
