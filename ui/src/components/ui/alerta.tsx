@@ -37,7 +37,7 @@ export function Alerta({ tono = "peligro", children, onCerrar, className, ...pro
         <button
           type="button"
           aria-label="Cerrar aviso"
-          className="-m-1 shrink-0 rounded-md p-1 transition-colors hover:bg-card/60"
+          className="-m-1 shrink-0 rounded-md bg-transparent p-1 text-inherit transition-colors hover:bg-card/60"
           onClick={onCerrar}
         >
           <X size={16} aria-hidden="true" />

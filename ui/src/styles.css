@@ -72,6 +72,9 @@
   --destructive-foreground: #ffffff;
   --destructive-soft: #fbecea;
 
+  /* -- papel: crema cálida de tickets y comprobantes. Superficie, no estado -- */
+  --paper: #f4efe4;
+
   /* -- forma -- */
   --radius: 0.625rem;
 
@@ -124,6 +127,7 @@
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-paper: var(--paper);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --radius-sm: calc(var(--radius) - 4px);
@@ -176,14 +180,15 @@ button {
   border: 0;
   border-radius: 8px;
   padding: 0.6rem 0.9rem;
-  background: #3a3a3a;
-  color: inherit;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 button.primario {
   background: var(--brand);
 }
 button.peligro {
-  background: #875a5a;
+  background: var(--destructive);
+  color: var(--destructive-foreground);
 }
 button.is-on {
   background: var(--brand);
@@ -194,7 +199,6 @@ nav {
   padding: 10px 12px;
   flex-wrap: wrap;
   align-items: center;
-  background: #111;
 }
 .pos-odoo {
   min-height: 100%;
@@ -217,7 +221,7 @@ nav {
   width: 40px;
   object-fit: contain;
   border-radius: 6px;
-  background: #fff;
+  background: var(--card);
 }
 .pos-odoo__iconos {
   display: flex;
@@ -249,15 +253,12 @@ button.icono {
   right: 0;
   top: calc(100% + 6px);
   min-width: 200px;
-  background: #1c1c1c;
-  border: 1px solid #333;
   border-radius: 10px;
   padding: 8px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   z-index: 20;
-  box-shadow: 0 8px 24px #0006;
 }
 .pos-odoo__panel-nombre {
   margin: 0;
@@ -277,7 +278,6 @@ button.icono {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: #1c1c1c;
   padding: 20px;
   border-radius: 12px;
 }
@@ -300,8 +300,6 @@ button.icono {
   font-size: 0.9rem;
 }
 .modal-caja {
-  background: #1c1c1c;
-  border: 1px solid #333;
   border-radius: 14px;
   padding: 20px;
   min-width: min(340px, 90vw);
@@ -309,7 +307,6 @@ button.icono {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 12px 32px #0008;
 }
 .modal-caja h2 {
   margin: 0;
@@ -336,8 +333,8 @@ button.icono {
   z-index: 41;
 }
 .ticket-papel {
-  background: #f4efe4;
-  color: #222;
+  background: var(--paper);
+  color: var(--foreground);
   align-items: stretch;
   width: min(400px, 92vw);
   border-radius: 6px;
@@ -364,8 +361,8 @@ button.icono {
   list-style: none;
   margin: 0;
   padding: 8px 0;
-  border-top: 1px dashed #999;
-  border-bottom: 1px dashed #999;
+  border-top: 1px dashed color-mix(in oklab, var(--muted-foreground) 55%, transparent);
+  border-bottom: 1px dashed color-mix(in oklab, var(--muted-foreground) 55%, transparent);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -382,7 +379,7 @@ button.icono {
 .ticket-papel__indicaciones {
   margin: 8px 0 0;
   padding: 6px 8px;
-  border: 1px dashed #999;
+  border: 1px dashed color-mix(in oklab, var(--muted-foreground) 55%, transparent);
   border-radius: 6px;
   font-style: italic;
 }
@@ -402,7 +399,7 @@ button.icono {
   overflow-y: auto;
 }
 .ordenes-cuenta-modal__orden {
-  border: 1px solid #333;
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 8px 10px;
 }
@@ -419,20 +416,6 @@ button.icono {
 .ordenes-cuenta-modal__productos {
   margin: 6px 0 0;
   opacity: 0.85;
-}
-.categorias-lista {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.categorias-lista li {
-  padding: 8px 10px;
-  background: #151515;
-  border: 1px solid #333;
-  border-radius: 8px;
 }
 .kds-contornos {
   display: flex;
@@ -463,8 +446,8 @@ button.icono {
 .ticket-preview__cuerpo {
   margin: 0;
   padding: 16px;
-  background: #f4efe4;
-  color: #1a1a1a;
+  background: var(--paper);
+  color: var(--foreground);
   font-family: var(--font-mono);
   font-size: 0.95rem;
   line-height: 1.4;
@@ -492,20 +475,6 @@ button.icono {
   flex-wrap: wrap;
   align-items: end;
 }
-.backend-odoo {
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.backend-odoo__atajos {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 12px;
-}
-.backend-odoo__atajos .tactil {
-  min-height: 72px;
-}
 .editor-grupos {
   display: grid;
   gap: 12px;
@@ -521,7 +490,6 @@ button.icono {
   flex-wrap: wrap;
   gap: 8px;
   align-items: end;
-  border: 1px solid #333;
   border-radius: 12px;
   padding: 10px 12px 12px;
   margin: 0;
@@ -580,7 +548,8 @@ button.icono {
   width: 48px;
   min-width: 48px;
   padding: 0;
-  background: #3a3a3a;
+  background: var(--primary);
+  color: var(--primary-foreground);
   border-radius: 8px;
   cursor: pointer;
 }
@@ -665,8 +634,8 @@ main {
   margin: 0;
   padding: 10px;
   border-radius: 8px;
-  background: #6f2f2f;
-  color: #fff;
+  background: var(--destructive);
+  color: var(--destructive-foreground);
 }
 .salon-odoo {
   flex: 1;
@@ -694,10 +663,6 @@ main {
   justify-content: center;
   justify-self: center;
 }
-.salon-odoo__piso.is-on {
-  background: var(--brand);
-  box-shadow: inset 0 0 0 2px #fff6;
-}
 .salon-odoo__fondo {
   display: flex;
   align-items: center;
@@ -716,13 +681,6 @@ main {
   background: transparent;
   padding: 0 0 8px;
 }
-.pedido-estado {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #3a3a3a;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
 .pedido-linea {
   display: flex;
   gap: 8px;
@@ -736,15 +694,6 @@ main {
   background: transparent;
   padding: 4px 0;
 }
-.switch-tablet {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-.salon-odoo__piso {
-  background: #3a3a3a;
-}
 .carta {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -754,11 +703,6 @@ main {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-.tarjeta {
-  background: #1c1c1c;
-  padding: 12px;
-  border-radius: 12px;
 }
 .constructor-orden,
 .cuenta-mesa {
@@ -808,7 +752,7 @@ main {
 }
 .constructor-linea {
   padding: 10px 0;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border);
 }
 .constructor-linea__abrir {
   flex: 1;
@@ -852,7 +796,6 @@ main {
 .cuenta-mesa__pie {
   position: sticky;
   bottom: 0;
-  background: #111;
   border-radius: 12px;
   padding: 12px;
 }
@@ -942,7 +885,7 @@ main {
   align-items: start;
 }
 .contornos-admin__grupo {
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border);
   padding-block: 0.6rem;
 }
 .contornos-admin__grupo ul {
@@ -959,7 +902,6 @@ main {
 .contornos-admin__slot {
   margin-top: 1rem;
   padding: 1rem;
-  border: 1px solid #555;
   border-radius: 0.65rem;
 }
 .contornos-admin__checks {
@@ -1028,7 +970,7 @@ textarea {
 
 input::placeholder,
 textarea::placeholder {
-  color: #91a09a;
+  color: var(--muted-foreground);
 }
 
 .pos-odoo {
@@ -1052,28 +994,6 @@ textarea::placeholder {
   box-shadow: 0 7px 24px rgb(30 64 54 / 0.07);
 }
 
-.pos-nav__item {
-  min-height: 44px;
-  padding: 0.55rem 0.8rem;
-  border: 1px solid transparent;
-  color: #66756f;
-  font-size: 0.86rem;
-}
-
-.pos-nav__item:hover,
-.pos-nav__item:focus-visible {
-  border-color: var(--border);
-  background: var(--muted);
-  color: var(--foreground);
-}
-
-.pos-nav__item.is-on {
-  border-color: #c4e8dc;
-  background: var(--accent);
-  color: var(--accent-foreground);
-  box-shadow: inset 0 0 0 1px rgb(8 127 106 / 0.05);
-}
-
 .pos-odoo__marca {
   justify-content: flex-start;
   margin-inline: auto;
@@ -1087,22 +1007,6 @@ textarea::placeholder {
   height: 34px;
   border: 1px solid var(--border);
   border-radius: 0.7rem;
-}
-
-button.icono {
-  width: 42px;
-  min-width: 42px;
-  min-height: 42px;
-  border: 1px solid var(--border);
-  background: #f5f8f6;
-  color: #42625a;
-}
-
-button.icono:hover,
-button.icono:focus-visible {
-  border-color: #b9d9ce;
-  background: var(--accent);
-  color: var(--accent-foreground);
 }
 
 .pos-odoo__panel {
@@ -1123,38 +1027,21 @@ main > [role="alert"] {
   width: min(1480px, calc(100% - 2rem));
   margin: 0.75rem auto -0.25rem;
   padding: 0.75rem 0.9rem;
-  border: 1px solid #f0c7c7;
+  border: 1px solid color-mix(in oklab, var(--destructive) 35%, var(--border));
   border-radius: 0.8rem;
-  background: #fff3f3;
-  color: #9c3333;
+  background: var(--destructive-soft);
+  color: var(--destructive);
 }
 
 .tarjeta,
 .cuenta-orden,
-.backend-odoo__atajos .tactil,
-.cuenta-mesa__nota,
-
-.tarjeta {
+.cuenta-mesa__nota {
   padding: 1rem;
   border-radius: 1rem;
 }
 
-.backend-odoo,
 .contornos-admin {
   padding: clamp(0.9rem, 2vw, 1.4rem);
-}
-
-.backend-odoo__atajos .tactil {
-  min-height: 82px;
-  padding: 0.85rem;
-  border-radius: 1rem;
-  color: var(--foreground);
-}
-
-.backend-odoo__atajos .tactil:hover,
-.backend-odoo__atajos .tactil:focus-visible {
-  border-color: #b9d9ce;
-  background: var(--accent);
 }
 
 .constructor-orden__cabecera h1,
@@ -1246,16 +1133,6 @@ main > [role="alert"] {
   .carta__foto,
   .carta__icono {
     height: 100px;
-  }
-
-  .backend-odoo__atajos {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.65rem;
-  }
-
-  .backend-odoo__atajos .tactil {
-    min-height: 72px;
-    font-size: 0.82rem;
   }
 }
 
@@ -2015,11 +1892,6 @@ button.icono {
 .mesero-notificacion span {
   font-size: 0.84rem;
 }
-.mesero-error {
-  margin: 0;
-  padding: 0.75rem;
-  background: #fff0ef;
-}
 .mesero-incidencia {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -2032,9 +1904,9 @@ button.icono {
   color: var(--warning);
 }
 .mesero-incidencia.is-rechazo {
-  border-color: #e7a49d;
-  background: #fff0ef;
-  color: #873830;
+  border-color: color-mix(in oklab, var(--destructive) 40%, var(--border));
+  background: var(--destructive-soft);
+  color: var(--destructive);
 }
 .mesero-incidencia__texto {
   display: flex;
@@ -2138,7 +2010,9 @@ button.icono {
 }
 .page-header h1 {
   margin-top: 0.2rem;
+  color: var(--foreground);
   font-size: clamp(1.65rem, 3vw, 2.35rem);
+  font-weight: 780;
   letter-spacing: -0.04em;
 }
 .page-header p {
@@ -2148,9 +2022,9 @@ button.icono {
 }
 .page-eyebrow {
   color: var(--primary);
-  font-size: 0.72rem;
+  font-size: 0.69rem;
   font-weight: 800;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 .tarjeta,
@@ -2211,8 +2085,8 @@ button.icono {
   color: var(--accent-foreground);
 }
 .inventario-resumen > div.is-alert > svg {
-  background: #ffe8e6;
-  color: #a33d34;
+  background: var(--destructive-soft);
+  color: var(--destructive);
 }
 .inventario-resumen div div {
   display: flex;
@@ -2344,10 +2218,6 @@ button.icono {
   flex-direction: column;
   gap: 0.4rem;
   font-weight: 650;
-}
-.inventario-modal__error {
-  padding: 0.65rem 0.75rem;
-  background: #fff0ef;
 }
 .inventario-modal__acciones {
   display: grid;
@@ -2493,9 +2363,6 @@ button.icono {
 }
 
 /* Administración */
-.backend-odoo {
-  padding: 0;
-}
 .backend-odoo__atajos {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2539,6 +2406,7 @@ button.icono {
   padding: 1.15rem;
 }
 .categorias-lista {
+  list-style: none;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 0.65rem;
@@ -2631,19 +2499,11 @@ button.icono {
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
-.switch-tablet {
-  border-color: var(--border);
-  background: var(--background);
-}
-.form-odoo__tarjeta .switch-tablet input[type="checkbox"],
-.form-odoo__tarjeta .switch-compacto input[type="checkbox"] {
-  width: 20px;
-  min-width: 20px;
-  height: 20px;
-  min-height: 20px;
-  margin: 0;
-  padding: 0;
-  accent-color: var(--primary);
+.settings-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: var(--control-h);
 }
 .settings-section-heading,
 .printer-card__header,
@@ -2773,10 +2633,10 @@ button.icono {
   margin: 0;
   padding: 1rem;
   overflow: auto;
-  border: 1px dashed #aaa;
+  border: 1px dashed color-mix(in oklab, var(--muted-foreground) 55%, transparent);
   border-radius: 0.35rem;
-  background: #fff;
-  color: #191919;
+  background: var(--card);
+  color: var(--foreground);
   font: 12px/1.5 ui-monospace, monospace;
   white-space: pre-wrap;
   box-shadow: 0 8px 25px rgb(40 30 20 / 0.1);
@@ -2797,7 +2657,7 @@ button.icono {
 }
 .settings-callout svg { flex: 0 0 auto; }
 .settings-callout.is-warning {
-  border-color: #e2c370;
+  border-color: color-mix(in oklab, var(--warning) 40%, var(--border));
   background: var(--warning-soft);
   color: var(--warning);
 }
@@ -3054,11 +2914,6 @@ button.icono {
     padding: 0.58rem 0.65rem;
     font-size: 0.9rem;
   }
-  .opciones-page .switch-tablet {
-    margin-bottom: 0;
-    padding: 0.55rem;
-    line-height: 1.3;
-  }
   .opciones-page .login-odoo__ayuda,
   .opciones-page .settings-callout {
     font-size: 0.75rem;
@@ -3230,7 +3085,7 @@ button[data-variant="default"]:hover:not(:disabled) {
 
 button[data-variant="outline"]:hover:not(:disabled),
 button[data-variant="secondary"]:hover:not(:disabled) {
-  border-color: #b6ccc3;
+  border-color: color-mix(in oklab, var(--foreground) 20%, var(--border));
   background: var(--accent);
   color: var(--accent-foreground);
 }
@@ -3287,7 +3142,7 @@ textarea:focus {
 }
 
 .pos-nav__item.is-on {
-  border-color: #c2e4d8;
+  border-color: var(--border);
   background: var(--accent);
   color: var(--accent-foreground);
   box-shadow: none;
@@ -3304,14 +3159,14 @@ button.icono {
   min-width: 42px;
   min-height: 42px;
   border: 1px solid var(--border);
-  background: #f7faf8;
-  color: #3f6057;
+  background: var(--secondary);
+  color: var(--secondary-foreground);
   box-shadow: none;
 }
 
 button.icono:hover,
 button.icono:focus-visible {
-  border-color: #b9d8cd;
+  border-color: color-mix(in oklab, var(--foreground) 20%, var(--border));
   background: var(--accent);
   color: var(--accent-foreground);
 }
@@ -3331,7 +3186,6 @@ button.icono:focus-visible {
   animation: ui-enter 220ms ease-out both;
 }
 
-.page-header h1,
 .salon-odoo__cabecera h1,
 .constructor-orden__cabecera h1,
 .cuenta-mesa__cabecera h1 {
@@ -3340,12 +3194,10 @@ button.icono:focus-visible {
   letter-spacing: -0.04em;
 }
 
-.page-header p,
 .constructor-orden__cabecera p {
   color: var(--muted-foreground);
 }
 
-.page-eyebrow,
 .constructor-orden__eyebrow,
 .cuenta-mesa__eyebrow,
 .armado-plato__eyebrow {

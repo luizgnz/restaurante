@@ -163,11 +163,11 @@ export function CrearProducto({ categorias, ingredientesDisponibles = [], error,
         {ingredientesDisponibles.length === 0 ? <p role="alert">Crea primero los materiales que usará la receta.</p> : null}
         {errorReceta ? <p role="alert">{errorReceta}</p> : null}
       </fieldset> : null}
-      <label className="switch-tablet">
+      <label className="settings-switch">
         <Checkbox checked={rastrear} onChange={(e) => setRastrear(e.target.checked)} />
         Rastrear en el inventario
       </label>
-      <label className="switch-tablet">
+      <label className="settings-switch">
         <Checkbox checked={enPos} onChange={(e) => setEnPos(e.target.checked)} />
         Disponible en la carta
       </label>
