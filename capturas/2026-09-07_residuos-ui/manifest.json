@@ -1,6 +1,6 @@
 {
   "updatedAt": "2026-09-07T19:30:00Z",
-  "commit": "5a30116",
+  "commit": "440ff68",
   "rama": "feat/limpieza-interfaz",
   "count": 23,
   "tema": "Segunda ronda de limpieza: hex a tokens, switch.tsx en Opciones, familias consolidadas (Backend/Categorías/page-header) y pseudo-fotos de la carta eliminadas",
