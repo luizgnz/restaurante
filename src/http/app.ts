@@ -44,6 +44,8 @@ import {
   type MotivoPerdidaInventario,
 } from "../modules/inventario/gestion.ts";
 import { InventarioError } from "../modules/inventario/asientos.ts";
+import { reiniciarDiaDemo } from "../modules/jornadas/demo.ts";
+import { abrirJornada, cerrarJornada, estadoJornada, JornadaError } from "../modules/jornadas/jornadas.ts";
 import { corregirOrden, CorreccionError } from "../modules/ordenes/correcciones.ts";
 import { OrdenError } from "../modules/ordenes/enviar.ts";
 import { PrecuentaError } from "../modules/precuenta/precuenta.ts";
@@ -97,6 +99,7 @@ function tieneRol(usuario: UsuarioSesion, permitidos: RolClave[]): boolean {
 function rolesDeRuta(pathname: string, method: string): RolClave[] | null {
   if (pathname === "/api/salud" || pathname === "/api/sesion" || pathname === "/api/sesion/abrir") return null;
   if (pathname.startsWith("/api/usuarios")) return ["administrador"];
+  if (pathname.startsWith("/api/jornadas")) return ["administrador"];
   if (pathname.startsWith("/api/empleados")) return ["administrador"];
   if (pathname.startsWith("/api/impresoras") || pathname.startsWith("/api/impresion")) return ["administrador"];
   if (pathname.startsWith("/api/red/")) return ["administrador"];
@@ -152,6 +155,11 @@ const CODIGOS_409 = new Set([
   "producto_ya_iniciado",
   "orden_ya_iniciada",
   "stock_insuficiente",
+  "jornada_cerrada",
+  "jornada_ya_abierta",
+  "jornada_con_cuentas",
+  "jornada_con_cocina",
+  "jornada_con_incidencias",
 ]);
 
 function statusPorCodigo(codigo: string): StatusError {
@@ -181,7 +189,8 @@ function codigoStatus(err: unknown): StatusError {
     err instanceof IncidenciaCocinaError ||
     err instanceof ContornoError ||
     err instanceof InventarioError ||
-    err instanceof EmpleadoError
+    err instanceof EmpleadoError ||
+    err instanceof JornadaError
   ) {
     return statusPorCodigo(err.codigo);
   }
@@ -214,6 +223,7 @@ function codigoDe(err: unknown): string {
     err instanceof ContornoError ||
     err instanceof InventarioError ||
     err instanceof EmpleadoError ||
+    err instanceof JornadaError ||
     err instanceof SolicitudError
   ) {
     return err.codigo;
@@ -351,6 +361,25 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
   app.route("/api/cuentas", rutasCuentas({ db, config, printer }));
   app.route("/api/ordenes", rutasOrdenes({ db, config, printer }));
   app.route("/api/contornos", rutasContornos({ db, config, printer }));
+
+  const empleadoActual = (usuario: UsuarioSesion | null): number | null =>
+    usuario?.id ?? sesionAbierta(db)?.administrador.id ?? null;
+
+  app.get("/api/jornadas/actual", (c) => c.json(estadoJornada(db)));
+
+  app.post("/api/jornadas/abrir", (c) => {
+    const jornada = abrirJornada(db, empleadoActual(c.get("usuario")));
+    return c.json({ jornada, resumen: estadoJornada(db).resumen }, 201);
+  });
+
+  app.post("/api/jornadas/cerrar", async (c) => {
+    return c.json(await cerrarJornada(db, empleadoActual(c.get("usuario")), dataDir));
+  });
+
+  app.post("/api/jornadas/demo/reiniciar", async (c) => {
+    const resultado = await reiniciarDiaDemo(db, empleadoActual(c.get("usuario")), dataDir);
+    return c.json({ ...resultado, estado: estadoJornada(db) });
+  });
 
   app.get("/api/productos/:id/slots", (c) => c.json({ slots: slotsDeProducto(db, idDeRuta(c)) }));
 

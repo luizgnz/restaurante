@@ -6,6 +6,7 @@ import { validarSelecciones } from "../contornos/contornos.ts";
 import { cuentaActivaPorMesa } from "../cuentas/cuentas.ts";
 import { empleadoPorId } from "../empleados/empleados.ts";
 import { controlarStock, registrarConsumoDeOrden, type LineaOrdenConsumo } from "../inventario/asientos.ts";
+import { exigirJornadaAbierta } from "../jornadas/jornadas.ts";
 import { crearComanda } from "../kds/kds.ts";
 import type { NuevaOrden } from "./ordenes.ts";
 
@@ -59,6 +60,7 @@ export async function enviarOrden(
   cfg: AppConfig,
 ): Promise<ResultadoEnvio> {
   const result = db.transaction((): ResultadoEnvio => {
+    const jornada = exigirJornadaAbierta(db);
     const existente = db
       .prepare("SELECT id, cuenta_id FROM ordenes WHERE clave_idempotencia = ?")
       .get(input.claveIdempotencia) as OrdenExistente | undefined;
@@ -80,9 +82,9 @@ export async function enviarOrden(
       if (!mesa) throw new OrdenError("mesa_inexistente", "Mesa inexistente");
       const info = db
         .prepare(
-          "INSERT INTO cuentas (mesa_id, estado, abierta_por_empleado_id, abierta_en) VALUES (?, 'abierta', ?, ?)",
+          "INSERT INTO cuentas (mesa_id, estado, abierta_por_empleado_id, abierta_en, jornada_id) VALUES (?, 'abierta', ?, ?, ?)",
         )
-        .run(input.mesaId, empleado.id, ahora);
+        .run(input.mesaId, empleado.id, ahora, jornada.id);
       cuenta = { id: Number(info.lastInsertRowid), estado: "abierta" };
     }
 

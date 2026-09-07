@@ -93,5 +93,8 @@ describe("pantallas módulo restaurante", () => {
     expect(html).toContain("Editar mapa");
     expect(html).toContain("Administración");
     expect(html).toContain("Editar recetas");
+    expect(html).toContain("Día operativo");
+    expect(html).toContain("Consultando jornada");
+    expect(html).toContain("Reiniciar día de demostración");
   });
 });
