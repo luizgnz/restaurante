@@ -3684,11 +3684,15 @@ button.icono:focus-visible {
   font-family: "Fraunces Variable", Georgia, "Times New Roman", serif;
   letter-spacing: -0.02em;
 }
-@media (min-width: 1050px) {
+@media (min-width: 768px) {
   .ui-v2 .pos-nav {
     position: sticky;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "identity identity"
+      "primary right";
+    row-gap: 0.25rem;
   }
   .ui-v2 .pos-nav__primary,
   .ui-v2 .pos-nav__identity,
@@ -3698,20 +3702,23 @@ button.icono:focus-visible {
     align-items: center;
   }
   .ui-v2 .pos-nav__primary {
+    grid-area: primary;
     gap: 0.4rem;
     justify-self: start;
   }
   .ui-v2 .pos-nav__identity {
+    grid-area: identity;
     justify-self: center;
   }
   .ui-v2 .pos-nav__right {
+    grid-area: right;
     gap: 0.55rem;
     justify-self: end;
   }
   .ui-v2 .pos-odoo__marca {
     position: static;
     flex: 0 1 auto;
-    max-width: 24vw;
+    max-width: min(70vw, 46rem);
     margin: 0;
     overflow: hidden;
     justify-content: center;
