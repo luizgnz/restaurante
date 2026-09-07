@@ -19,11 +19,13 @@ Cerrada el 2026-09-06 en la rama `feat/limpieza-interfaz` (commits `46757b8` y `
 
 ### Residuos de color y código muerto
 
-- [x] Púrpura fuera de marca: `COLOR_INICIAL = "#714b67"` en `ui/src/pantallas/CrearProducto.tsx:29` es el color por defecto de todo producto nuevo (se pinta en las fichas del constructor de orden). Es un residuo del tema viejo estilo Odoo, anterior a la marca; no hace sentido junto al cobre actual. Sustituirlo por el cobre de marca (`--brand` `#8a4a26`) o por un neutro, y revisar productos creados a mano en la base real que hayan guardado ese color. El seed demo no lo usa.
-- [ ] ~96 hex sueltos en pantallas viejas: migrarlos a las variables de marca/tokens existentes.
-- [ ] `switch.tsx` para Opciones (hoy hay un control ad hoc).
-- [ ] Pantallas de tabla del §5 de `MIGRACION_SHADCN` sin migrar a JSX.
-- [ ] Pseudo-fotos de la carta: letras iniciales guardadas como `foto_data` que impiden usar iconos por categoría; limpiarlas.
+Cerrados el 2026-09-07 en la misma rama `feat/limpieza-interfaz` (commits `440ff68` y `42a2e9a`, capturas en `capturas/2026-09-07_residuos-ui/`, PR #14 ampliado). Detalle del cierre:
+
+- [x] Púrpura fuera de marca: `COLOR_INICIAL` de `CrearProducto.tsx` pasó al cobre de marca `#8a4a26` (cerrado con la ronda del 2026-09-06).
+- [x] ~96 hex sueltos en pantallas viejas: migrarlos a las variables de marca/tokens existentes. Quedaron 0 hex fuera de `:root` en `styles.css` (tokens, `color-mix` para bordes suaves o declaraciones muertas borradas); un token nuevo justificado: `--paper` (crema de tickets).
+- [x] `switch.tsx` para Opciones (hoy hay un control ad hoc). Patrón de la casa sin Radix; 12 interruptores migrados; fuera el CSS `switch-tablet`.
+- [x] Pantallas de tabla del §5 de `MIGRACION_SHADCN` sin migrar a JSX. Resultó desactualizado: todas ya usan shadcn; el trabajo real era consolidar las familias CSS apiladas (Backend, Categorías, page-header quedaron en una sola generación). Quedan pendientes las pantallas grandes de la tabla §5.
+- [x] Pseudo-fotos de la carta: el seed ya no las guarda y cada arranque limpia las existentes por huella GLOB (fotos reales intactas); "Extra" muestra su icono de categoría.
 
 ## 2. Backlog de producto y operación
 
