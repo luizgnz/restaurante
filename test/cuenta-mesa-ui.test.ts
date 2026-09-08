@@ -99,8 +99,8 @@ describe("constructor de orden", () => {
     expect(html).toContain("Nueva orden");
     expect(html).toContain("<select");
     expect(html).toContain("Selecciona una mesa");
-    expect(html).toContain("Mesa #7");
-    expect(html).not.toContain("Mesa #8");
+    expect(html).toContain("Mesa #7 · Libre");
+    expect(html).toContain("Mesa #8 · En servicio");
   });
 
   it("en contexto de mesa fija muestra el título y no el selector", () => {
@@ -117,17 +117,19 @@ describe("constructor de orden", () => {
 
     expect(html).toContain("Nueva orden · Mesa #7");
     expect(html).not.toContain("<select");
-    // La cantidad se controla en la propia tarjeta del menú, sin popup.
-    expect(html).toContain("2 × Hamburguesa");
+    // La cantidad se controla en la tarjeta; el detalle queda plegado en la cinta.
     expect(html).toContain('aria-label="Agregar una unidad de Hamburguesa"');
     expect(html).toContain('aria-label="Quitar una unidad de Hamburguesa"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('aria-label="Ver resumen de la orden, 2 productos, total $17.800"');
+    expect(html).not.toContain("2 × Hamburguesa");
     expect(html).not.toContain('role="dialog"');
     expect(html).not.toContain("Agregar línea");
     // Un producto sin línea no muestra controles todavía.
     expect(html).not.toContain('aria-label="Agregar una unidad de Jugo"');
     // Sin notas por producto: solo indicaciones generales de la orden.
     expect(html).not.toContain("Nota del producto");
-    expect(html).toContain("Indicaciones para cocina");
+    expect(html).not.toContain("Indicaciones para cocina");
   });
 
   it("revelar un producto muestra el control en cero sin sumarlo a la orden", () => {
@@ -145,10 +147,10 @@ describe("constructor de orden", () => {
     expect(html).toContain('aria-label="Agregar una unidad de Jugo"');
     expect(html).toContain('aria-label="Quitar una unidad de Jugo"');
     expect(html).toContain(">0<");
-    // En cero no aparece en la orden ni habilita el envío.
+    // En cero la cinta sigue vacía y el detalle no se monta hasta abrirla.
     expect(html).not.toContain("0 × Jugo");
-    expect(html).toContain("Toca un producto del menú para agregarlo");
-    expect(html).toContain("disabled");
+    expect(html).toContain('aria-label="Ver resumen de la orden, 0 productos, total $0"');
+    expect(html).not.toContain(">Enviar<");
   });
 
   it("restaura duplicados y cambia solo la línea elegida", () => {
@@ -178,8 +180,9 @@ describe("constructor de orden", () => {
         onCancelar: () => undefined,
       }),
     );
-    expect(html).toContain("2 × Hamburguesa");
-    expect(html).toContain("3 × Hamburguesa");
+    expect(html).toContain('aria-label="Ver resumen de la orden, 5 productos, total $44.500"');
+    expect(html).not.toContain("2 × Hamburguesa");
+    expect(html).not.toContain("3 × Hamburguesa");
     expect(html).not.toContain("Nota del producto");
   });
 });

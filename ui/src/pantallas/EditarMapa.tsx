@@ -1,4 +1,4 @@
-import { useMemo, useState, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type PointerEvent, type ReactNode } from "react";
 import {
   Circle,
   Copy,
@@ -110,13 +110,43 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
   const [arrastre, setArrastre] = useState<{ id: number; dx: number; dy: number } | null>(null);
   const [aviso, setAviso] = useState("");
   const [confirmarQuitar, setConfirmarQuitar] = useState<{ tipo: "mesa"; mesa: MesaDraft } | { tipo: "piso" } | null>(null);
+  const [pisosAuto, setPisosAuto] = useState<Set<number>>(() => new Set());
 
   const piso = pisos.find((p) => p.id === pisoId);
   const visibles = useMemo(
     () => mesas.filter((m) => (m.piso_id ?? pisos[0]?.id) === pisoId && !quitar.includes(m.id)),
     [mesas, pisoId, pisos, quitar],
   );
+  const autoActivo = pisosAuto.has(pisoId);
+  const firmaVisibles = useMemo(
+    () => visibles.map((m) => `${m.id}:${m.numero}`).sort().join("|"),
+    [visibles],
+  );
   const seleccion = mesas.find((m) => m.id === sel && !quitar.includes(m.id));
+
+  useEffect(() => {
+    if (!autoActivo) return;
+    const ordenadas = new Map(ordenarMesas(visibles).map((m) => [m.id, m]));
+    setMesas((prev) => {
+      let cambio = false;
+      const siguiente = prev.map((m) => {
+        const o = ordenadas.get(m.id);
+        if (
+          !o ||
+          (m.pos_x === o.pos_x &&
+            m.pos_y === o.pos_y &&
+            m.forma === o.forma &&
+            m.ancho === o.ancho &&
+            m.alto === o.alto)
+        ) {
+          return m;
+        }
+        cambio = true;
+        return { ...m, pos_x: o.pos_x, pos_y: o.pos_y, forma: o.forma, ancho: o.ancho, alto: o.alto };
+      });
+      return cambio ? siguiente : prev;
+    });
+  }, [autoActivo, firmaVisibles, pisoId]);
 
   function patchPiso(patch: Partial<PisoDraft>) {
     setPisos((prev) => prev.map((p) => (p.id === pisoId ? { ...p, ...patch } : p)));
@@ -251,19 +281,28 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
     setAviso("");
   }
 
-  function ordenarPiso() {
-    const ordenadas = new Map(ordenarMesas(visibles).map((m) => [m.id, m]));
-    setMesas((prev) =>
-      prev.map((m) => {
-        const o = ordenadas.get(m.id);
-        return o ? { ...m, pos_x: o.pos_x, pos_y: o.pos_y, forma: o.forma, ancho: o.ancho, alto: o.alto } : m;
-      }),
-    );
+  function alternarAuto() {
+    setPisosAuto((prev) => {
+      const siguiente = new Set(prev);
+      if (siguiente.has(pisoId)) siguiente.delete(pisoId);
+      else siguiente.add(pisoId);
+      return siguiente;
+    });
     setSel(null);
     setAviso("");
   }
 
+  function desactivarAuto() {
+    setPisosAuto((prev) => {
+      if (!prev.has(pisoId)) return prev;
+      const siguiente = new Set(prev);
+      siguiente.delete(pisoId);
+      return siguiente;
+    });
+  }
+
   function redimensionar(m: MesaDraft, paso: number) {
+    desactivarAuto();
     patchMesa(m.id, {
       ancho: Math.min(220, Math.max(64, m.ancho + paso)),
       alto: Math.min(220, Math.max(64, m.alto + paso)),
@@ -283,6 +322,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
 
   function pointerMove(e: PointerEvent<HTMLDivElement>) {
     if (!arrastre) return;
+    desactivarAuto();
     const mapa = e.currentTarget.getBoundingClientRect();
     const x = Math.min(90, Math.max(0, ((e.clientX - mapa.left) / mapa.width) * 100 - arrastre.dx));
     const y = Math.min(90, Math.max(0, ((e.clientY - mapa.top) / mapa.height) * 100 - arrastre.dy));
@@ -377,9 +417,17 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
           <Boton icono={<Layers size={20} aria-hidden="true" />} onClick={addPiso}>
             Nuevo piso
           </Boton>
-          <Boton icono={<LayoutGrid size={20} aria-hidden="true" />} onClick={ordenarPiso}>
-            Ordenar mesas en cuadrícula
-          </Boton>
+          <Button
+            type="button"
+            variant={autoActivo ? "default" : "outline"}
+            className="tactil editor-auto"
+            aria-pressed={autoActivo}
+            title="Ordenar y dimensionar mesas automáticamente"
+            onClick={alternarAuto}
+          >
+            <LayoutGrid size={18} aria-hidden="true" />
+            <span>Auto</span>
+          </Button>
           <SubirImagen onImagen={(url) => patchPiso({ fondo_data: url, fondo_quitar_imagen: false, tiene_fondo: 1 })}>
             Imagen de fondo
           </SubirImagen>
@@ -444,11 +492,23 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
             Agrandar
           </Boton>
           {seleccion?.forma === "round" ? (
-            <Boton icono={<Square size={20} aria-hidden="true" />} onClick={() => patchMesa(seleccion.id, { forma: "square" })}>
+            <Boton
+              icono={<Square size={20} aria-hidden="true" />}
+              onClick={() => {
+                desactivarAuto();
+                patchMesa(seleccion.id, { forma: "square" });
+              }}
+            >
               Forma cuadrada
             </Boton>
           ) : seleccion ? (
-            <Boton icono={<Circle size={20} aria-hidden="true" />} onClick={() => patchMesa(seleccion.id, { forma: "round" })}>
+            <Boton
+              icono={<Circle size={20} aria-hidden="true" />}
+              onClick={() => {
+                desactivarAuto();
+                patchMesa(seleccion.id, { forma: "round" });
+              }}
+            >
               Forma redonda
             </Boton>
           ) : null}

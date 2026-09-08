@@ -1,4 +1,17 @@
-import { Boxes, Clock3, Minus, PackageCheck, Plus, RefreshCw, Search, ShieldCheck, TriangleAlert } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Boxes,
+  Clock3,
+  Minus,
+  PackageCheck,
+  Plus,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  TriangleAlert,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { Alerta } from "@/components/ui/alerta.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -30,16 +43,35 @@ type Props = {
 
 type FiltroInventario = "todos" | "disponibles" | "sin-stock" | "con-reservas";
 type TipoAjusteInventario = "entrada" | "perdida";
+export type ColumnaOrdenInventario = "nombre" | "enMano" | "reservado" | "disponible" | "estado";
+export type OrdenInventario = { columna: ColumnaOrdenInventario; direccion: "asc" | "desc" };
 export type MotivoPerdidaInventario = "producto_danado" | "consumo_interno";
 
 function cantidad(valor: number): string {
   return new Intl.NumberFormat("es-CL", { maximumFractionDigits: 2 }).format(valor);
 }
 
-function estado(material: MaterialInventarioUi): { texto: string; variante: "success" | "warning" | "danger" } {
-  if (material.disponible <= 0) return { texto: "Sin stock", variante: "danger" };
-  if (material.reservado > 0) return { texto: "Con reservas", variante: "warning" };
-  return { texto: "Disponible", variante: "success" };
+export function estadoInventario(material: MaterialInventarioUi): {
+  texto: "Sin stock" | "Poco stock" | "Disponible";
+  variante: "success" | "warning" | "danger";
+  prioridad: number;
+} {
+  if (material.disponible <= 0) return { texto: "Sin stock", variante: "danger", prioridad: 0 };
+  const umbralPocoStock = Math.max(2, material.enMano * 0.2);
+  if (material.disponible <= umbralPocoStock) return { texto: "Poco stock", variante: "warning", prioridad: 1 };
+  return { texto: "Disponible", variante: "success", prioridad: 2 };
+}
+
+export function ordenarMateriales(materiales: MaterialInventarioUi[], orden: OrdenInventario): MaterialInventarioUi[] {
+  const factor = orden.direccion === "asc" ? 1 : -1;
+  return [...materiales].sort((a, b) => {
+    let comparacion = 0;
+    if (orden.columna === "nombre") comparacion = a.nombre.localeCompare(b.nombre, "es");
+    else if (orden.columna === "estado") {
+      comparacion = estadoInventario(a).prioridad - estadoInventario(b).prioridad || a.disponible - b.disponible;
+    } else comparacion = a[orden.columna] - b[orden.columna];
+    return comparacion === 0 ? a.nombre.localeCompare(b.nombre, "es") : comparacion * factor;
+  });
 }
 
 export function Inventario({
@@ -52,6 +84,7 @@ export function Inventario({
 }: Props) {
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState<FiltroInventario>("todos");
+  const [orden, setOrden] = useState<OrdenInventario>({ columna: "estado", direccion: "asc" });
   const [seleccionado, setSeleccionado] = useState<MaterialInventarioUi | null>(null);
   const [entrada, setEntrada] = useState("");
   const [tipoAjuste, setTipoAjuste] = useState<TipoAjusteInventario>("entrada");
@@ -63,16 +96,45 @@ export function Inventario({
 
   const visibles = useMemo(() => {
     const termino = busqueda.trim().toLocaleLowerCase("es");
-    return materiales.filter((material) => {
+    const filtrados = materiales.filter((material) => {
       if (filtro === "disponibles" && material.disponible <= 0) return false;
       if (filtro === "sin-stock" && material.disponible > 0) return false;
       if (filtro === "con-reservas" && material.reservado <= 0) return false;
       return !termino || material.nombre.toLocaleLowerCase("es").includes(termino) || material.codigo?.toLocaleLowerCase("es").includes(termino);
     });
-  }, [busqueda, filtro, materiales]);
+    return ordenarMateriales(filtrados, orden);
+  }, [busqueda, filtro, materiales, orden]);
 
   const sinStock = materiales.filter((material) => material.disponible <= 0).length;
-  const reservados = materiales.filter((material) => material.reservado > 0).length;
+  const conReservas = materiales.filter((material) => material.reservado > 0).length;
+
+  function alternarOrden(columna: ColumnaOrdenInventario) {
+    setOrden((actual) => ({
+      columna,
+      direccion: actual.columna === columna && actual.direccion === "asc" ? "desc" : "asc",
+    }));
+  }
+
+  function cabeceraOrdenable(columna: ColumnaOrdenInventario, etiqueta: string) {
+    const activa = orden.columna === columna;
+    const direccion = activa ? orden.direccion : null;
+    const IconoOrden = direccion === "asc" ? ArrowUp : direccion === "desc" ? ArrowDown : ArrowUpDown;
+    return (
+      <span role="columnheader" aria-sort={direccion === "asc" ? "ascending" : direccion === "desc" ? "descending" : "none"}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={`inventario-cabecera__boton${columna === "nombre" ? " inventario-cabecera__boton--inicio" : ""}`}
+          aria-label={`Ordenar por ${etiqueta}${activa ? `, ${direccion === "asc" ? "ascendente" : "descendente"}` : ""}`}
+          onClick={() => alternarOrden(columna)}
+        >
+          <span>{etiqueta}</span>
+          <IconoOrden size={14} aria-hidden="true" />
+        </Button>
+      </span>
+    );
+  }
 
   async function recargar() {
     setRecargando(true);
@@ -87,7 +149,7 @@ export function Inventario({
     <div
       className="inventario-resumen"
       role="group"
-      aria-label="Filtrar por estado del inventario"
+      aria-label="Filtrar inventario"
     >
       <Button type="button" size="sm" variant={filtro === "todos" ? "secondary" : "outline"} aria-pressed={filtro === "todos"} onClick={() => setFiltro("todos")}>
         <Boxes size={17} aria-hidden="true" /><div><strong>{materiales.length}</strong><span>Todos</span></div>
@@ -98,8 +160,8 @@ export function Inventario({
       <Button type="button" size="sm" variant={filtro === "sin-stock" ? "secondary" : "outline"} aria-pressed={filtro === "sin-stock"} onClick={() => setFiltro("sin-stock")}>
         <TriangleAlert size={17} aria-hidden="true" /><div><strong>{sinStock}</strong><span>Sin stock</span></div>
       </Button>
-      <Button type="button" size="sm" variant={filtro === "con-reservas" ? "secondary" : "outline"} aria-pressed={filtro === "con-reservas"} onClick={() => setFiltro("con-reservas")}>
-        <Clock3 size={17} aria-hidden="true" /><div><strong>{reservados}</strong><span>Reservado</span></div>
+      <Button type="button" size="sm" variant={filtro === "con-reservas" ? "secondary" : "outline"} aria-pressed={filtro === "con-reservas"} aria-label={`Mostrar ${conReservas} materiales con reservas`} onClick={() => setFiltro("con-reservas")}>
+        <Clock3 size={17} aria-hidden="true" /><div><strong>{conReservas}</strong><span>Con reservas</span></div>
       </Button>
     </div>
   );
@@ -160,7 +222,7 @@ export function Inventario({
         <div>
           <span className="page-eyebrow">Control de materiales</span>
           <h1>Inventario</h1>
-          <p>Existencias en mano, reservas de órdenes y cantidad realmente disponible.</p>
+          <p>Existencia física, cantidad comprometida por órdenes y saldo disponible para nuevas ventas.</p>
         </div>
       </header>
 
@@ -181,12 +243,37 @@ export function Inventario({
         </div>
 
         <div className="inventario-tabla" role="table" aria-label="Materiales disponibles">
+          <div className="inventario-orden-movil">
+            <label>
+              Ordenar por
+              <Select
+                aria-label="Columna para ordenar el inventario"
+                value={orden.columna}
+                onChange={(event) => setOrden({ columna: event.target.value as ColumnaOrdenInventario, direccion: "asc" })}
+              >
+                <option value="estado">Estado</option>
+                <option value="nombre">Material</option>
+                <option value="enMano">Existencia física</option>
+                <option value="reservado">Comprometido</option>
+                <option value="disponible">Disponible</option>
+              </Select>
+            </label>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label={`Orden ${orden.direccion === "asc" ? "ascendente" : "descendente"}`}
+              onClick={() => setOrden((actual) => ({ ...actual, direccion: actual.direccion === "asc" ? "desc" : "asc" }))}
+            >
+              {orden.direccion === "asc" ? <ArrowUp size={18} aria-hidden="true" /> : <ArrowDown size={18} aria-hidden="true" />}
+            </Button>
+          </div>
           <div className="inventario-fila inventario-fila--cabecera" role="row">
-            <span role="columnheader">Material</span>
-            <span role="columnheader">En mano</span>
-            <span role="columnheader">Reservado</span>
-            <span role="columnheader">Disponible</span>
-            <span role="columnheader">Estado</span>
+            {cabeceraOrdenable("nombre", "Material")}
+            {cabeceraOrdenable("enMano", "Existencia física")}
+            {cabeceraOrdenable("reservado", "Comprometido")}
+            {cabeceraOrdenable("disponible", "Disponible")}
+            {cabeceraOrdenable("estado", "Estado")}
           </div>
           {cargando && visibles.length === 0 ? (
             <div aria-hidden="true">
@@ -198,7 +285,7 @@ export function Inventario({
             </div>
           ) : (
             visibles.map((material) => {
-            const estadoMaterial = estado(material);
+            const estadoMaterial = estadoInventario(material);
             return (
               <div className="inventario-fila" role="row" key={material.id}>
                 <span className="inventario-material" role="cell" data-label="Material">
@@ -219,12 +306,15 @@ export function Inventario({
                     </>
                   )}
                 </span>
-                <span role="cell" data-label="En mano">{cantidad(material.enMano)}</span>
-                <span role="cell" data-label="Reservado">{cantidad(material.reservado)}</span>
+                <span role="cell" data-label="Existencia física">{cantidad(material.enMano)}</span>
+                <span role="cell" data-label="Comprometido">{cantidad(material.reservado)}</span>
                 <strong role="cell" data-label="Disponible">{cantidad(material.disponible)}</strong>
                 <span role="cell" data-label="Estado">
-                  <Badge variant={estadoMaterial.variante}>
-                    {estadoMaterial.texto === "Con reservas" ? "Reservado" : estadoMaterial.texto}
+                  <Badge
+                    variant={estadoMaterial.variante}
+                    title={estadoMaterial.texto === "Poco stock" ? "Queda el 20% o menos de la existencia física, o un máximo de 2 unidades" : undefined}
+                  >
+                    {estadoMaterial.texto}
                   </Badge>
                 </span>
               </div>
@@ -245,7 +335,7 @@ export function Inventario({
           <DialogContent className="inventario-modal w-[min(440px,calc(100vw-1.5rem))] p-[1.4rem]">
             <span className="page-eyebrow">Movimiento de inventario</span>
             <h2>Ajustar {seleccionado.nombre}</h2>
-            <p>En mano actualmente: <strong>{cantidad(seleccionado.enMano)}</strong></p>
+            <p>Existencia física actual: <strong>{cantidad(seleccionado.enMano)}</strong></p>
             <div className="inventario-ajuste__tipo" role="group" aria-label="Tipo de movimiento">
                 <Button
                   type="button"

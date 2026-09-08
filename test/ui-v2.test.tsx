@@ -69,7 +69,8 @@ describe("UI V2 transaction-first", () => {
     );
     expect(html).toContain('aria-label="Buscar producto"');
     expect(html).not.toContain('placeholder="Buscar producto"');
-    expect(html).toContain("Agregar indicaciones");
+    expect(html).toContain('aria-controls="resumen-orden"');
+    expect(html).not.toContain("Agregar indicaciones");
     expect(html).not.toContain("Ej.: sin sal");
   });
 

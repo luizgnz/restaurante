@@ -65,8 +65,9 @@ describe("armado de platos", () => {
         onCancelar: () => undefined,
       }),
     );
-    expect(html).toContain("1 × Menú del día");
-    expect(html).toContain("Pollo · Arroz · Ensalada rusa");
+    expect(html).toContain('aria-label="Ver resumen de la orden, 1 producto, total $8.900"');
+    expect(html).not.toContain("1 × Menú del día");
+    expect(html).not.toContain("Pollo · Arroz · Ensalada rusa");
   });
 });
 

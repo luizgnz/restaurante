@@ -65,6 +65,7 @@ function vistaInicial(roles: RolClave[]): { vista: Vista; ordenTab: "mesero" | "
 }
 
 export function App() {
+  const propuestaMesas = new URLSearchParams(window.location.search).get("propuesta-mesas");
   const [sesion, setSesion] = useState<Sesion | null>(null);
   const [vista, setVista] = useState<Vista>("plano");
   const [ordenTab, setOrdenTab] = useState<"mesero" | "cocina">("mesero");
@@ -587,7 +588,7 @@ export function App() {
   }
 
   return (
-    <div className="pos-odoo ui-v2">
+    <div className={`pos-odoo ui-v2${propuestaMesas === "areas-v3" ? " propuesta-cabecera-v3" : ""}`}>
       <Barra
         vista={vista}
         marca={nombreLocal}
@@ -732,6 +733,9 @@ export function App() {
         ) : null}
         {vista === "plano" ? (
           <Plano
+            vistaPrevia={propuestaMesas !== null}
+            nuevaOrdenV2={propuestaMesas === "areas-v2"}
+            soloSalon={propuestaMesas === "areas-v3"}
             cargando={carga.plano}
             esperaPorMesa={esperaPorMesa}
             piso={piso}

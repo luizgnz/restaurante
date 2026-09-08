@@ -57,14 +57,20 @@ function Dialog({
   );
 }
 
-function DialogContent({ className, children, ...props }: ComponentProps<typeof DialogPrimitive.Content>) {
+function DialogContent({
+  className,
+  children,
+  placement = "center",
+  ...props
+}: ComponentProps<typeof DialogPrimitive.Content> & { placement?: "center" | "bottom" }) {
   const ariaLabel = useContext(DialogLabelContext);
   return (
     <DialogPrimitive.Content
       aria-modal="true"
       aria-label={ariaLabel}
       className={cn(
-        "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100svh-1.5rem)] w-[min(420px,92vw)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-xl border border-border bg-card p-5 text-card-foreground shadow-[0_16px_48px_rgb(16_18_22_/_0.14)] outline-none",
+        "fixed z-50 flex max-h-[calc(100svh-1.5rem)] w-[min(420px,92vw)] flex-col gap-4 overflow-y-auto rounded-xl border border-border bg-card p-5 text-card-foreground shadow-[0_16px_48px_rgb(16_18_22_/_0.14)] outline-none",
+        placement === "center" ? "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" : "bottom-0 left-1/2",
         className,
       )}
       {...props}

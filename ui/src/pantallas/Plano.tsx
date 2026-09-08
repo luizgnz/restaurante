@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { interpretarTecla } from "../../../src/modules/salon/teclado.ts";
 import type { NivelEspera } from "../../../src/modules/tiempo.ts";
 import { textoEspera } from "../../../src/modules/tiempo.ts";
-import { Clock3, Plus, ReceiptText, Table2, Timer } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
@@ -34,7 +34,34 @@ export type Piso = {
   fondo_quitar_imagen?: boolean;
 };
 
+export function alturaAutomaticaPlano(mesas: Mesa[], escala = 1, esMuestra = false): number {
+  if (mesas.length === 0) return 240;
+
+  const posicionesY = mesas.map((mesa) => mesa.pos_y).sort((a, b) => a - b);
+  let filas = 0;
+  let ultimaFila = Number.NEGATIVE_INFINITY;
+  for (const posicionY of posicionesY) {
+    if (posicionY - ultimaFila > 12) {
+      filas += 1;
+      ultimaFila = posicionY;
+    }
+  }
+
+  const reservaInferior = esMuestra ? 64 : 40;
+  const alturaPorFilas = 90 + filas * 140;
+  const alturaPorExtremo = Math.max(...mesas.map((mesa) => {
+    const altoMesa = Math.max(mesa.alto * escala, 64);
+    const espacioRestante = Math.max(0.18, 1 - mesa.pos_y / 100);
+    return Math.ceil((altoMesa + reservaInferior) / espacioRestante);
+  }));
+
+  return Math.min(672, Math.max(230, alturaPorFilas, alturaPorExtremo));
+}
+
 type Props = {
+  vistaPrevia?: boolean;
+  nuevaOrdenV2?: boolean;
+  soloSalon?: boolean;
   piso: string;
   pisoId?: number | null;
   pisos?: Piso[];
@@ -53,6 +80,9 @@ type Props = {
 
 
 export function Plano({
+  vistaPrevia = false,
+  nuevaOrdenV2 = false,
+  soloSalon = false,
   piso,
   pisoId,
   pisos,
@@ -71,13 +101,13 @@ export function Plano({
   const [buscando, setBuscando] = useState(false);
   const [buffer, setBuffer] = useState("");
   const [aviso, setAviso] = useState("");
-  const [filtro, setFiltro] = useState<"todas" | "libres" | "servicio" | "precuenta" | "atrasadas">("todas");
+  const [areaDemo, setAreaDemo] = useState<Piso | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const mapaRef = useRef<HTMLDivElement>(null);
   const [anchoMapa, setAnchoMapa] = useState(1200);
-  /* En el plano espacial el lienzo crece con la pantalla; sin un piso de
-     escala las mesas quedan diminutas y el mapa parece vacío. */
-  const escalaMesas = Math.min(1.5, Math.max(1.15, anchoMapa / 900));
+  /* La escala responde al ancho, pero queda acotada para respetar la distancia
+     vertical entre las posiciones guardadas de cada fila. */
+  const escalaMesas = Math.min(1.05, Math.max(1, anchoMapa / 1050));
 
   function abrirNumero(numero: number) {
     const mesa = mesas.find((m) => m.numero === numero);
@@ -99,7 +129,7 @@ export function Plano({
   }
 
   useEffect(() => {
-    if (bloqueado) return;
+    if (bloqueado || areaDemo) return;
     function onKey(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement | null)?.tagName;
       const inputActivo = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
@@ -127,68 +157,87 @@ export function Plano({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [buffer, buscando, mesas, bloqueado]);
+  }, [buffer, buscando, mesas, bloqueado, areaDemo]);
 
   useEffect(() => {
     if (!mapaRef.current) return;
     const observer = new ResizeObserver(([entry]) => setAnchoMapa(entry.contentRect.width));
     observer.observe(mapaRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [areaDemo, pisoId]);
 
   const listaPisos = pisos && pisos.length > 0 ? pisos : [{ id: pisoId ?? 0, nombre: piso }];
-  const mesasDelPiso = mesas.filter((m) => pisoId == null || m.piso_id == null || m.piso_id === pisoId);
+  const areas = vistaPrevia && !soloSalon
+    ? [...listaPisos, { id: -1, nombre: "Terraza" }, { id: -2, nombre: "Barra" }]
+    : listaPisos;
+  const areaActual = areaDemo ?? listaPisos.find((p) => p.id === pisoId) ?? listaPisos[0];
+  const mesasEjemplo: Mesa[] = areaDemo ? Array.from({ length: areaDemo.id === -1 ? 4 : 3 }, (_, i) => ({
+    id: -10 - i, numero: (areaDemo.id === -1 ? 11 : 15) + i,
+    estado: "libre", cuentaId: null, asientos: areaDemo.id === -1 ? 4 : 2,
+    pos_x: 12 + (i % 3) * 29, pos_y: 14 + Math.floor(i / 3) * 42,
+    forma: areaDemo.id === -1 ? "round" : "square", ancho: 96, alto: 96,
+  })) : [];
+  const mesasDelPiso = areaDemo ? mesasEjemplo : mesas.filter((m) => pisoId == null || m.piso_id == null || m.piso_id === pisoId);
   const atrasada = (mesa: Mesa) => {
     const nivel = esperaPorMesa[mesa.id]?.nivel;
     return nivel === "alto" || nivel === "critico";
   };
-  const libres = mesasDelPiso.filter((mesa) => mesa.estado === "libre").length;
-  const ocupadas = mesasDelPiso.length - libres;
-  const enPrecuenta = mesasDelPiso.filter((mesa) => mesa.estado === "precuenta").length;
-  const atrasadas = mesasDelPiso.filter(atrasada).length;
-  const mesasVisibles = mesasDelPiso.filter((mesa) => {
-    if (filtro === "libres") return mesa.estado === "libre";
-    if (filtro === "servicio") return mesa.estado !== "libre";
-    if (filtro === "precuenta") return mesa.estado === "precuenta";
-    if (filtro === "atrasadas") return atrasada(mesa);
-    return true;
-  });
+  const mesasVisibles = mesasDelPiso;
+  const alturaMapa = alturaAutomaticaPlano(mesasVisibles, escalaMesas, Boolean(areaDemo));
 
   return (
-    <section className="salon-odoo">
+    <section className={`salon-odoo${soloSalon ? " salon-odoo--solo" : ""}`}>
       <header className="salon-odoo__cabecera">
-        <h1>{piso}</h1>
-        {onNuevoPedido ? (
-          <Button type="button" className="tactil salon-odoo__nueva" aria-label="Nueva orden" title="Nueva orden (N)" onClick={onNuevoPedido}>
+        <h1 className={soloSalon ? "salon-odoo__titulo-area" : "sr-only"}>{soloSalon ? areaActual.nombre : "Mesas"}</h1>
+        {onNuevoPedido && !areaDemo ? (
+          <Button
+            type="button"
+            variant={nuevaOrdenV2 ? "outline" : "default"}
+            className={`tactil salon-odoo__nueva${nuevaOrdenV2 ? " salon-odoo__nueva--v2" : ""}${soloSalon ? " salon-odoo__nueva--v3" : ""}`}
+            aria-label="Nueva orden"
+            title="Nueva orden (N)"
+            onClick={onNuevoPedido}
+          >
             <Plus size={18} aria-hidden="true" /><span>Nueva orden</span>
           </Button>
         ) : null}
-        <div className="salon-odoo__pisos-centro" role="tablist" aria-label="Pisos">
-          {listaPisos.map((p) => {
-            const actual = (pisoId != null && p.id === pisoId) || (pisoId == null && p.nombre === piso);
+        {!soloSalon ? <div className="salon-odoo__pisos-centro" role="tablist" aria-label="Áreas del restaurante"
+          onKeyDown={(event) => {
+            const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+            const index = tabs.indexOf(document.activeElement as HTMLButtonElement);
+            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+            event.preventDefault();
+            const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1
+              : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+            tabs[next]?.focus();
+            tabs[next]?.click();
+          }}
+        >
+          {areas.map((p) => {
+            const actual = areaActual.id === p.id;
             return (
               <Button
                 key={p.id}
                 type="button"
                 variant={actual ? "secondary" : "ghost"}
                 role="tab"
+                id={`area-${p.id}`}
+                aria-controls="mesas-del-area"
+                tabIndex={actual ? 0 : -1}
                 aria-selected={actual}
                 className={`salon-odoo__piso${actual ? " is-on" : ""} tactil`}
                 title={actual ? `${p.nombre} (piso actual)` : p.nombre}
-                onClick={() => onPiso?.(p)}
+                onClick={() => {
+                  setAreaDemo(p.id < 0 ? p : null);
+                  if (p.id >= 0) onPiso?.(p);
+                }}
               >
                 {p.nombre}
               </Button>
             );
           })}
-        </div>
+        </div> : null}
       </header>
-      <div className="salon-odoo__metricas" aria-label="Resumen del salón, toca para filtrar">
-        <Button type="button" size="sm" variant={filtro === "libres" ? "secondary" : "outline"} aria-pressed={filtro === "libres"} title={`${libres} libres`} aria-label={`Filtrar ${libres} mesas libres`} onClick={() => setFiltro(filtro === "libres" ? "todas" : "libres")}><Table2 size={17} aria-hidden="true" /><strong>{libres}</strong></Button>
-        <Button type="button" size="sm" variant={filtro === "servicio" ? "secondary" : "outline"} aria-pressed={filtro === "servicio"} title={`${ocupadas} en servicio`} aria-label={`Filtrar ${ocupadas} mesas en servicio`} onClick={() => setFiltro(filtro === "servicio" ? "todas" : "servicio")}><Clock3 size={17} aria-hidden="true" /><strong>{ocupadas}</strong></Button>
-        <Button type="button" size="sm" variant={filtro === "precuenta" ? "secondary" : "outline"} aria-pressed={filtro === "precuenta"} title={`${enPrecuenta} en precuenta`} aria-label={`Filtrar ${enPrecuenta} mesas en precuenta`} onClick={() => setFiltro(filtro === "precuenta" ? "todas" : "precuenta")}><ReceiptText size={17} aria-hidden="true" /><strong>{enPrecuenta}</strong></Button>
-        <Button type="button" size="sm" variant={filtro === "atrasadas" ? "destructive" : "outline"} aria-pressed={filtro === "atrasadas"} title={`${atrasadas} atrasadas`} aria-label={`Filtrar ${atrasadas} mesas atrasadas`} onClick={() => setFiltro(filtro === "atrasadas" ? "todas" : "atrasadas")}><Timer size={17} aria-hidden="true" /><strong>{atrasadas}</strong></Button>
-      </div>
       {asignando ? <p>Toque una mesa libre para sentar el pedido</p> : null}
       {buscando ? (
         <div className="buscar-mesa" role="dialog" aria-label="Elegir mesa">
@@ -225,14 +274,22 @@ export function Plano({
         </div>
       ) : null}
       <div
+        key={areaActual.id}
+        id="mesas-del-area"
+        role="tabpanel"
+        aria-label={soloSalon ? areaActual.nombre : undefined}
+        aria-labelledby={soloSalon ? undefined : `area-${areaActual.id}`}
+        tabIndex={0}
         ref={mapaRef}
-        className="plano-mapa plano-mapa--operativo"
+        className={`plano-mapa plano-mapa--operativo${vistaPrevia ? " plano-mapa--auto" : ""}`}
         style={{
-          backgroundColor: pisos?.find((p) => p.id === pisoId)?.fondo_color || undefined,
-          backgroundImage: fondoUrl ? `url("${fondoUrl}")` : undefined,
+          backgroundColor: areaDemo ? undefined : pisos?.find((p) => p.id === pisoId)?.fondo_color || undefined,
+          backgroundImage: !areaDemo && fondoUrl ? `url("${fondoUrl}")` : undefined,
           backgroundSize: "cover",
-        }}
+          "--plano-altura-auto": `${alturaMapa}px`,
+        } as CSSProperties}
       >
+        {areaDemo ? <p className="salon-odoo__ejemplo">Área de ejemplo · mesas de muestra</p> : null}
         {cargando && mesasDelPiso.length === 0 ? (
           <div className="flex flex-wrap content-start gap-6 p-6" aria-hidden="true">
             {Array.from({ length: 8 }, (_, i) => (
@@ -256,6 +313,7 @@ export function Plano({
               backgroundSize: "cover",
             }}
             title={`Mesa ${m.numero}`}
+            disabled={Boolean(areaDemo)}
             onClick={() => onMesa(m)}
           >
             <span className="mesa-odoo__num">Mesa {m.numero}</span>
@@ -270,7 +328,7 @@ export function Plano({
           </Button>
           ))
         )}
-        {!cargando && mesasVisibles.length === 0 ? <div className="empty-state">No hay mesas con este filtro.</div> : null}
+        {!cargando && mesasVisibles.length === 0 ? <div className="empty-state">Aún no hay mesas en esta área.</div> : null}
       </div>
     </section>
   );
