@@ -29,6 +29,8 @@ Cerrados el 2026-09-07 en la misma rama `feat/limpieza-interfaz` (commits `440ff
 
 ## 2. Backlog de producto y operación
 
+- [x] Ajustar la configuración de `act(...)` en las pruebas de interacción de precuenta (2026-09-12). `test/precuenta-cierre.test.ts` y `test/precuenta-flujo.test.ts` activan y restauran `IS_REACT_ACT_ENVIRONMENT`; `onTestFinished` desmonta la raíz dentro de `await act(...)` y elimina el contenedor incluso si falla una aserción. No se silenció la consola ni se eliminaron comprobaciones. Verificación: ambas pruebas focalizadas y suite completa de 494 pruebas/81 archivos aprobadas sin avisos de `act` ni salida `stderr`; Go y build de producción aprobados. React y React DOM se mantienen en 19.2.8; la evaluación de 19.3.0 no implica una actualización de dependencias.
+
 - [x] Botón "Reiniciar día de demostración" en Administración. El botón y `scripts/reiniciar-dia-demo.ts` usan el mismo endpoint administrativo; antes de reemplazar el movimiento crea un respaldo consistente, abre una jornada demo nueva y registra el evento.
 - [x] Día operativo: cuentas, órdenes, comandas e incidencias quedan asociadas a una jornada; cocina y Órdenes muestran solo la abierta. Administración permite abrir y cerrar explícitamente, bloquea el cierre con trabajo pendiente y conserva resumen, responsables, horas y ruta del respaldo en la auditoría. Cerrado el 2026-09-07 en `feat/jornada-operativa`, con pruebas de migración, filtros, cierre, respaldo y reinicio, más revisión visual a 390/768/1280.
 - [ ] Fase 4.3: matriz formal de capturas 390/768/1280 de las 5 pantallas core, unificando las capturas que ya existen por ronda.
