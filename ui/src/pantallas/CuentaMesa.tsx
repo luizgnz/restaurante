@@ -1,10 +1,17 @@
-import { Ban, Clock3, Pencil, Plus, ReceiptText, Send, Trash2, UserRound } from "lucide-react";
+import {
+  Ban,
+  Clock3,
+  Pencil,
+  Plus,
+  ReceiptText,
+  Send,
+  Trash2,
+  UserRound,
+} from "lucide-react";
 import { dinero, fechaCorta } from "../../../src/modules/formato.ts";
-import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
-import { Textarea } from "@/components/ui/textarea.tsx";
 import { etiquetaCuenta, etiquetaOrden, tonoCuenta, tonoOrden } from "../lib/estados.ts";
 
 export type LineaOrdenUi = {
@@ -22,6 +29,7 @@ export type OrdenCuentaUi = {
   id: number;
   numero: number;
   estado: "enviada" | "corregida" | "anulada";
+  etapa?: "enviado" | "en_preparacion" | "listo" | "entregado";
   indicaciones: string | null;
   indicacionesOriginales: string | null;
   creadaEn: string;
@@ -29,9 +37,16 @@ export type OrdenCuentaUi = {
   lineas: LineaOrdenUi[];
 };
 
+export function ordenPuedeEditar(orden: OrdenCuentaUi): boolean {
+  return (orden.etapa ?? "enviado") === "enviado";
+}
+
 export type CuentaDetalleUi = {
   id: number;
   mesa: { id: number; numero: number };
+  tipoServicio?: "mesa" | "para_llevar";
+  numeroServicio?: number | null;
+  clienteNombre?: string | null;
   estado: "abierta" | "precuenta_emitida" | "en_caja" | "cancelada";
   notaPrivada: string | null;
   totalCentavos: number;
@@ -48,7 +63,6 @@ type Props = {
   onCerrarCuenta: () => void;
   onCancelarCuenta?: () => void;
   onReimprimir?: () => void;
-  onNotaPrivada: (nota: string) => Promise<void>;
 };
 
 export function CuentaMesa({
@@ -61,22 +75,16 @@ export function CuentaMesa({
   onCerrarCuenta,
   onCancelarCuenta,
   onReimprimir,
-  onNotaPrivada,
 }: Props) {
   const aceptaConsumo = cuenta.estado === "abierta" || cuenta.estado === "precuenta_emitida";
-  const [notaPrivada, setNotaPrivada] = useState(cuenta.notaPrivada ?? "");
-  const [errorNota, setErrorNota] = useState("");
-
-  useEffect(() => {
-    setNotaPrivada(cuenta.notaPrivada ?? "");
-  }, [cuenta.id, cuenta.notaPrivada]);
+  const esParaLlevar = cuenta.tipoServicio === "para_llevar";
 
   return (
     <section className="cuenta-mesa">
       <header className="cuenta-mesa__cabecera">
         <div>
           <span className="cuenta-mesa__eyebrow">Servicio en curso</span>
-          <h1>Cuenta de mesa #{cuenta.mesa.numero}</h1>
+          <h1>{esParaLlevar ? `Pedido para llevar #${cuenta.numeroServicio}` : `Cuenta de mesa #${cuenta.mesa.numero}`}</h1>
           <div className="cuenta-mesa__resumen">
             <Badge variant={tonoCuenta(cuenta.estado)}>
               {etiquetaCuenta(cuenta.estado)}
@@ -84,8 +92,8 @@ export function CuentaMesa({
             <strong>Total {dinero(cuenta.totalCentavos)}</strong>
           </div>
         </div>
-        {aceptaConsumo ? (
-          <Button type="button" size="lg" onClick={onNuevaOrden}>
+        {aceptaConsumo && !esParaLlevar ? (
+          <Button type="button" className="cuenta-mesa__nueva" onClick={onNuevaOrden}>
             <Plus size={18} aria-hidden="true" /> Nueva orden
           </Button>
         ) : null}
@@ -96,18 +104,19 @@ export function CuentaMesa({
           <Card className="tarjeta cuenta-orden" key={orden.id}>
             <header className="cuenta-orden__cabecera">
               <div>
-                <h2>Orden #{orden.numero}</h2>
+                <h2>Orden #{orden.id}</h2>
                 <Badge variant={tonoOrden(orden.estado)}>
                   {etiquetaOrden(orden.estado)}
                 </Badge>
               </div>
-              {aceptaConsumo && orden.estado !== "anulada" ? (
+              {aceptaConsumo && orden.estado !== "anulada" && ordenPuedeEditar(orden) ? (
                 <div className="cuenta-orden__acciones">
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
                     className="icono-secundario"
+                    aria-label={`Editar Orden #${orden.id}`}
                     title="Editar orden"
                     onClick={() => onEditarOrden(orden)}
                   >
@@ -118,7 +127,8 @@ export function CuentaMesa({
                     variant="ghost"
                     size="icon"
                     className="icono-secundario peligro"
-                    title="Anular orden"
+                    aria-label={`Anular Orden #${orden.id}`}
+                    title="Anular orden · requiere motivo y PIN"
                     onClick={() => onAnularOrden(orden)}
                   >
                     <Trash2 size={19} aria-hidden="true" />
@@ -147,43 +157,33 @@ export function CuentaMesa({
         ))}
       </div>
 
-      <label className="tarjeta cuenta-mesa__nota">
-        Nota privada
-        <Textarea
-          value={notaPrivada}
-          placeholder="Solo visible en el sistema. No va a cocina."
-          onChange={(event) => setNotaPrivada(event.target.value)}
-          onBlur={() => {
-            setErrorNota("");
-            onNotaPrivada(notaPrivada).catch((error) =>
-              setErrorNota(error instanceof Error ? error.message : String(error)),
-            );
-          }}
-        />
-        <span className="login-odoo__ayuda">Solo visible en el sistema.</span>
-        {errorNota ? <span role="alert">{errorNota}</span> : null}
-      </label>
-
       <footer className="cuenta-mesa__pie">
         <div><span>Total de la cuenta</span><strong>{dinero(cuenta.totalCentavos)}</strong></div>
-        {aceptaConsumo ? (
+          {aceptaConsumo && !esParaLlevar ? (
           <>
-            <Button type="button" variant="outline" onClick={onPrecuenta}>
-              <ReceiptText size={18} aria-hidden="true" /> Precuenta
-            </Button>
             {cuenta.estado === "precuenta_emitida" && onReimprimir ? (
-              <Button type="button" variant="outline" onClick={onReimprimir}>
-                <ReceiptText size={18} aria-hidden="true" /> Reimprimir
+              <Button type="button" variant="outline" className="cuenta-mesa__accion-pie" onClick={onReimprimir}>
+                <ReceiptText size={18} aria-hidden="true" />
+                <span className="cuenta-mesa__accion-larga">Reimprimir</span>
+                <span className="cuenta-mesa__accion-corta">Ticket</span>
               </Button>
-            ) : null}
+            ) : (
+              <Button type="button" variant="outline" className="cuenta-mesa__accion-pie" onClick={onPrecuenta}>
+                <ReceiptText size={18} aria-hidden="true" /> Precuenta
+              </Button>
+            )}
             {puedeCerrar ? (
-              <Button type="button" onClick={onCerrarCuenta}>
-                <Send size={18} aria-hidden="true" /> Cerrar cuenta
+              <Button type="button" className="cuenta-mesa__accion-pie" onClick={onCerrarCuenta}>
+                <Send size={18} aria-hidden="true" />
+                <span className="cuenta-mesa__accion-larga">Cerrar cuenta</span>
+                <span className="cuenta-mesa__accion-corta">Cerrar</span>
               </Button>
             ) : null}
             {onCancelarCuenta ? (
-              <Button type="button" variant="outline" className="peligro" onClick={onCancelarCuenta}>
-                <Ban size={18} aria-hidden="true" /> Cancelar cuenta
+              <Button type="button" variant="outline" className="peligro cuenta-mesa__accion-pie" onClick={onCancelarCuenta}>
+                <Ban size={18} aria-hidden="true" />
+                <span className="cuenta-mesa__accion-larga">Cancelar cuenta</span>
+                <span className="cuenta-mesa__accion-corta">Cancelar</span>
               </Button>
             ) : null}
           </>

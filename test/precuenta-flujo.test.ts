@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, onTestFinished, vi } from "vitest";
 import { App } from "../ui/src/App.tsx";
 
 const cuentaDetalle = {
@@ -50,13 +50,14 @@ function responder(url: string, init?: RequestInit): { status: number; body: unk
   if (url === "/api/carta") return { status: 200, body: { productos: [{ id: 1, nombre: "Hamburguesa", precio_centavos: 8900, armable: 0 }] } };
   if (url === "/api/cuentas") return { status: 200, body: { cuentas: [] } };
   if (url === "/api/config") return { status: 200, body: { pin_habilitado: true } };
-  if (url === "/api/cuentas/1") return { status: 200, body: { ...cuentaDetalle, estado: "precuenta_emitida" } };
+  if (url === "/api/cuentas/1") return { status: 200, body: cuentaDetalle };
   if (url === "/api/cuentas/1/precuenta" && metodo === "POST") return { status: 201, body: { precuentaId: 9, numero: 1, totalCentavos: 17800 } };
   return { status: 404, body: { codigo: "no_encontrado" } };
 }
 
 describe("flujo precuenta en el POS", () => {
   beforeAll(() => {
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: unknown, init?: RequestInit) => {
@@ -73,6 +74,13 @@ describe("flujo precuenta en el POS", () => {
     const contenedor = document.createElement("div");
     document.body.appendChild(contenedor);
     const root = createRoot(contenedor);
+    onTestFinished(async () => {
+      try {
+        await act(async () => root.unmount());
+      } finally {
+        contenedor.remove();
+      }
+    });
 
     await act(async () => {
       root.render(createElement(App));
@@ -130,6 +138,5 @@ describe("flujo precuenta en el POS", () => {
     });
 
     expect(document.body.textContent).not.toContain("PRECUENTA");
-    root.unmount();
   });
 });

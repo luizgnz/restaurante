@@ -1,5 +1,6 @@
 import type Database from "better-sqlite3";
 import { indicacionesVigentesOrden, versionVigenteOrden, type LineaVigente } from "../ordenes/ordenes.ts";
+import { etapaDeOrden, type EtapaOrden } from "./etapas.ts";
 
 export type EstadoCuenta = "abierta" | "precuenta_emitida" | "en_caja" | "cancelada";
 export type EstadoOrden = "enviada" | "corregida" | "anulada";
@@ -16,12 +17,16 @@ export class CuentaError extends Error {
 export type CuentaDetalle = {
   id: number;
   mesa: { id: number; numero: number };
+  tipoServicio: "mesa" | "para_llevar";
+  numeroServicio: number | null;
+  clienteNombre: string | null;
   estado: EstadoCuenta;
   notaPrivada: string | null;
   ordenes: Array<{
     id: number;
     numero: number;
     estado: EstadoOrden;
+    etapa: EtapaOrden;
     /** Indicaciones vigentes: las de la última corrección que las cambió. */
     indicaciones: string | null;
     /** Las que se enviaron a cocina la primera vez; nunca se sobrescriben. */
@@ -40,6 +45,9 @@ type CuentaRow = {
   nota_privada: string | null;
   mesa_id: number;
   mesa_numero: number;
+  tipo_servicio: "mesa" | "para_llevar";
+  numero_servicio: number | null;
+  cliente_nombre: string | null;
 };
 
 type OrdenRow = {
@@ -72,7 +80,8 @@ export function cuentaActivaPorMesa(
 export function obtenerCuenta(db: Database.Database, cuentaId: number): CuentaDetalle {
   const cuenta = db
     .prepare(
-      `SELECT c.id, c.estado, c.nota_privada, m.id AS mesa_id, m.numero AS mesa_numero
+      `SELECT c.id, c.estado, c.nota_privada, c.tipo_servicio, c.numero_servicio, c.cliente_nombre,
+              m.id AS mesa_id, m.numero AS mesa_numero
        FROM cuentas c
        JOIN mesas m ON m.id = c.mesa_id
        WHERE c.id = ?`,
@@ -93,12 +102,16 @@ export function obtenerCuenta(db: Database.Database, cuentaId: number): CuentaDe
   return {
     id: cuenta.id,
     mesa: { id: cuenta.mesa_id, numero: cuenta.mesa_numero },
+    tipoServicio: cuenta.tipo_servicio,
+    numeroServicio: cuenta.numero_servicio,
+    clienteNombre: cuenta.cliente_nombre,
     estado: cuenta.estado,
     notaPrivada: cuenta.nota_privada,
     ordenes: ordenes.map((orden) => ({
       id: orden.id,
       numero: orden.numero,
       estado: orden.estado,
+      etapa: etapaDeOrden(db, orden.id),
       indicaciones: indicacionesVigentesOrden(db, orden.id),
       indicacionesOriginales: orden.indicaciones,
       creadaEn: orden.creada_en,

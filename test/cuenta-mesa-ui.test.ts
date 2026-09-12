@@ -41,6 +41,7 @@ const cuenta: CuentaDetalleUi = {
       id: 11,
       numero: 1,
       estado: "enviada",
+      etapa: "enviado",
       indicaciones: null,
       indicacionesOriginales: null,
       creadaEn: "2026-08-22T12:00:00.000Z",
@@ -61,6 +62,7 @@ const cuenta: CuentaDetalleUi = {
       id: 12,
       numero: 2,
       estado: "corregida",
+      etapa: "enviado",
       indicaciones: "Con hielo",
       indicacionesOriginales: null,
       creadaEn: "2026-08-22T12:10:00.000Z",
@@ -98,9 +100,10 @@ describe("constructor de orden", () => {
 
     expect(html).toContain("Nueva orden");
     expect(html).toContain("<select");
-    expect(html).toContain("Selecciona una mesa");
-    expect(html).toContain("Mesa #7");
-    expect(html).not.toContain("Mesa #8");
+    expect(html).toContain("Selecciona mesa o para llevar");
+    expect(html).toContain("Para llevar");
+    expect(html).toContain("Mesa #7 · Libre");
+    expect(html).toContain("Mesa #8 · En servicio");
   });
 
   it("en contexto de mesa fija muestra el título y no el selector", () => {
@@ -117,17 +120,19 @@ describe("constructor de orden", () => {
 
     expect(html).toContain("Nueva orden · Mesa #7");
     expect(html).not.toContain("<select");
-    // La cantidad se controla en la propia tarjeta del menú, sin popup.
-    expect(html).toContain("2 × Hamburguesa");
+    // La cantidad se controla en la tarjeta; el detalle queda plegado en la cinta.
     expect(html).toContain('aria-label="Agregar una unidad de Hamburguesa"');
     expect(html).toContain('aria-label="Quitar una unidad de Hamburguesa"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('aria-label="Ver resumen de la orden, 2 productos, total $17.800"');
+    expect(html).not.toContain("2 × Hamburguesa");
     expect(html).not.toContain('role="dialog"');
     expect(html).not.toContain("Agregar línea");
     // Un producto sin línea no muestra controles todavía.
     expect(html).not.toContain('aria-label="Agregar una unidad de Jugo"');
     // Sin notas por producto: solo indicaciones generales de la orden.
     expect(html).not.toContain("Nota del producto");
-    expect(html).toContain("Indicaciones para cocina");
+    expect(html).not.toContain("Indicaciones para cocina");
   });
 
   it("revelar un producto muestra el control en cero sin sumarlo a la orden", () => {
@@ -145,10 +150,10 @@ describe("constructor de orden", () => {
     expect(html).toContain('aria-label="Agregar una unidad de Jugo"');
     expect(html).toContain('aria-label="Quitar una unidad de Jugo"');
     expect(html).toContain(">0<");
-    // En cero no aparece en la orden ni habilita el envío.
+    // En cero la cinta sigue vacía y el detalle no se monta hasta abrirla.
     expect(html).not.toContain("0 × Jugo");
-    expect(html).toContain("Toca un producto del menú para agregarlo");
-    expect(html).toContain("disabled");
+    expect(html).toContain('aria-label="Ver resumen de la orden, 0 productos, total $0"');
+    expect(html).not.toContain(">Enviar<");
   });
 
   it("restaura duplicados y cambia solo la línea elegida", () => {
@@ -178,8 +183,9 @@ describe("constructor de orden", () => {
         onCancelar: () => undefined,
       }),
     );
-    expect(html).toContain("2 × Hamburguesa");
-    expect(html).toContain("3 × Hamburguesa");
+    expect(html).toContain('aria-label="Ver resumen de la orden, 5 productos, total $44.500"');
+    expect(html).not.toContain("2 × Hamburguesa");
+    expect(html).not.toContain("3 × Hamburguesa");
     expect(html).not.toContain("Nota del producto");
   });
 });
@@ -195,25 +201,25 @@ describe("cuenta de mesa", () => {
         onAnularOrden: () => undefined,
         onPrecuenta: () => undefined,
         onCerrarCuenta: () => undefined,
-        onNotaPrivada: async () => undefined,
       }),
     );
 
     expect(html).toContain("Cuenta de mesa #7");
-    expect(html).toContain("Orden #1");
-    expect(html).toContain("Orden #2");
+    expect(html).toContain("Orden #11");
+    expect(html).toContain("Orden #12");
     expect(html).toContain("Hamburguesa");
     expect(html).toContain("Jugo");
     expect(html).toContain('title="Editar orden"');
-    expect(html).toContain('title="Anular orden"');
+    expect(html).toContain('title="Anular orden · requiere motivo y PIN"');
     expect(html).toContain("Nueva orden");
     expect(html).not.toContain(">Enviar<");
     expect(html).not.toContain('aria-label="Agregar una unidad"');
     expect(html).not.toContain('aria-label="Quitar una unidad"');
-    expect(html).toContain("Nota privada");
-    expect(html).toContain("Solo visible en el sistema");
+    expect(html).not.toContain("Nota privada");
+    expect(html).not.toContain("Solo visible en el sistema");
     // Sin precuenta emitida (y exigida) no se ofrece cerrar la cuenta.
     expect(html).toContain("Precuenta");
+    expect(html).not.toContain("Reimprimir");
     expect(html).not.toContain("Cerrar cuenta");
     expect(html).not.toContain("Enviar a caja");
   });
@@ -228,11 +234,12 @@ describe("cuenta de mesa", () => {
         onAnularOrden: () => undefined,
         onPrecuenta: () => undefined,
         onCerrarCuenta: () => undefined,
-        onNotaPrivada: async () => undefined,
+        onReimprimir: () => undefined,
       }),
     );
 
-    expect(html).toContain("Precuenta");
+    expect(html).toContain("Reimprimir");
+    expect(html).not.toContain(" Precuenta</button>");
     expect(html).toContain("Cerrar cuenta");
   });
 
@@ -265,11 +272,30 @@ describe("cuenta de mesa", () => {
         onAnularOrden: () => undefined,
         onPrecuenta: () => undefined,
         onCerrarCuenta: () => undefined,
-        onNotaPrivada: async () => undefined,
       }),
     );
 
     expect(html).not.toContain("Producto cancelado");
+  });
+
+  it("oculta editar y anular cuando cocina inició", () => {
+    const html = renderToStaticMarkup(
+      createElement(CuentaMesa, {
+        cuenta: {
+          ...cuenta,
+          ordenes: [{ ...cuenta.ordenes[0], etapa: "en_preparacion" }],
+        },
+        puedeCerrar: false,
+        onNuevaOrden: () => undefined,
+        onEditarOrden: () => undefined,
+        onAnularOrden: () => undefined,
+        onPrecuenta: () => undefined,
+        onCerrarCuenta: () => undefined,
+      }),
+    );
+
+    expect(html).not.toContain('aria-label="Editar Orden #1"');
+    expect(html).not.toContain("Anular Orden #1");
   });
 });
 

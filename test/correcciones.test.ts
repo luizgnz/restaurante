@@ -54,6 +54,7 @@ async function ordenEnviada(
   const db = openTestDb();
   const ids = seedCartaDemo(db);
   await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });
+  await crearEmpleado(db, { nombre: "Jefa", pin: "2222", derecho: "avanzado" });
   const envio = await enviarOrden(
     db,
     {
@@ -1231,11 +1232,14 @@ describe("corregirOrden y las etapas de cocina", () => {
       ) as { id: number };
       avanzarEtapa(e.db, original.id, terminal);
 
-      const result = await corregir(e.db, { ordenId: e.ordenId, lineas: [cambio(e.lineas[0], 0)] });
+      await expect(corregir(e.db, {
+        ordenId: e.ordenId,
+        lineas: [cambio(e.lineas[0], 0)],
+        pin: "2222",
+      })).rejects.toMatchObject({ codigo: "orden_en_preparacion" });
 
       expect(etapaDeOrdenLinea(e.db, e.lineas[0].ordenLineaId)).toBe(terminal);
-      expect(etapasDeCorreccion(e.db, result.correccionId)).toEqual(["aviso"]);
-      expect(versionVigenteOrden(e.db, e.ordenId)[0].cantidad).toBe(0);
+      expect(versionVigenteOrden(e.db, e.ordenId)[0].cantidad).toBe(2);
       e.db.close();
     });
   }
@@ -1256,16 +1260,17 @@ describe("corregirOrden y las etapas de cocina", () => {
     e.db.close();
   });
 
-  it("cancela una etapa no terminal como en_proceso", async () => {
+  it("el mesero no cancela una etapa en_proceso", async () => {
     const e = await ordenEnviada((ids) => [{ productoId: ids.jugo, cantidad: 2 }]);
     const original = e.db.prepare("SELECT id FROM comanda_lineas WHERE orden_linea_id = ?").get(
       e.lineas[0].ordenLineaId,
     ) as { id: number };
     avanzarEtapa(e.db, original.id, "en_proceso");
 
-    await corregir(e.db, { ordenId: e.ordenId, lineas: [cambio(e.lineas[0], 0)] });
+    await expect(corregir(e.db, { ordenId: e.ordenId, lineas: [cambio(e.lineas[0], 0)], pin: "2222" }))
+      .rejects.toMatchObject({ codigo: "orden_en_preparacion" });
 
-    expect(etapaDeOrdenLinea(e.db, e.lineas[0].ordenLineaId)).toBe("cancelado");
+    expect(etapaDeOrdenLinea(e.db, e.lineas[0].ordenLineaId)).toBe("en_proceso");
     e.db.close();
   });
 

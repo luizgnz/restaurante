@@ -23,9 +23,10 @@ describe("ticket del pedido", () => {
       }),
     );
     expect(html).toContain("Nueva orden · Mesa #1");
-    expect(html).toContain("Agregar indicaciones");
-    // La cantidad vive en la tarjeta del menú; no hay notas por producto.
-    expect(html).toContain("2 × Hamburguesa");
+    // La cantidad vive en la tarjeta; el detalle y las indicaciones se abren desde la cinta.
+    expect(html).toContain('aria-label="Ver resumen de la orden, 2 productos, total $17.800"');
+    expect(html).not.toContain("Agregar indicaciones");
+    expect(html).not.toContain("2 × Hamburguesa");
     expect(html).not.toContain("Nota del producto");
     expect(html).toContain('aria-label="Agregar una unidad de Hamburguesa"');
     expect(html).toContain('aria-label="Quitar una unidad de Hamburguesa"');
@@ -51,8 +52,9 @@ describe("ticket del pedido", () => {
         onCancelar: () => undefined,
       }),
     );
-    expect(html).toContain("Toca un producto del menú para agregarlo");
-    expect(html).toContain("disabled");
+    expect(html).toContain('aria-label="Ver resumen de la orden, 0 productos, total $0"');
+    expect(html).not.toContain("Toca un producto del menú para agregarlo");
+    expect(html).not.toContain(">Enviar<");
   });
 
   it("organiza la carta con búsqueda y categorías", () => {

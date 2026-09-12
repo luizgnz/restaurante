@@ -553,6 +553,12 @@ button.icono {
   border-radius: 8px;
   cursor: pointer;
 }
+.editor-grupo .editor-auto {
+  width: auto;
+  min-width: 84px;
+  padding-inline: 14px;
+  gap: 7px;
+}
 .editor-grupo:disabled .boton-herramienta {
   cursor: default;
 }
@@ -803,16 +809,6 @@ main {
   margin-right: auto;
   font-size: 1.15rem;
 }
-.cuenta-mesa__nota {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.cuenta-mesa__nota textarea {
-  width: 100%;
-  min-height: 70px;
-  font-size: 1rem;
-}
 .correccion-modal {
   width: min(720px, 94vw);
   max-height: 90vh;
@@ -1034,8 +1030,7 @@ main > [role="alert"] {
 }
 
 .tarjeta,
-.cuenta-orden,
-.cuenta-mesa__nota {
+.cuenta-orden {
   padding: 1rem;
   border-radius: 1rem;
 }
@@ -1362,8 +1357,7 @@ button.icono {
   font-size: 1.35rem;
 }
 .constructor-orden__cerrar-movil,
-.constructor-orden__abrir-resumen,
-.constructor-orden__velo {
+.constructor-orden__abrir-resumen {
   display: none;
 }
 .constructor-linea {
@@ -1559,11 +1553,9 @@ button.icono {
   padding-left: 0.7rem;
   border-left: 2px solid var(--accent);
 }
-.cuenta-mesa__nota {
-  border-color: var(--border);
-  background: var(--card);
-  color: var(--foreground);
-  box-shadow: 0 8px 26px rgb(67 48 29 / 0.05);
+.cuenta-mesa__nueva {
+  min-block-size: 44px;
+  padding-inline: 0.9rem;
 }
 .cuenta-mesa__pie {
   position: fixed;
@@ -1588,6 +1580,9 @@ button.icono {
 .cuenta-mesa__pie > div strong {
   margin: 0;
   font-size: 1.3rem;
+}
+.cuenta-mesa__accion-corta {
+  display: none;
 }
 
 @media (max-width: 767px) {
@@ -1697,44 +1692,9 @@ button.icono {
   .carta__icono {
     height: 105px;
   }
-  .constructor-orden__resumen {
-    position: fixed;
-    z-index: 51;
-    inset: auto 0 0;
-    display: flex;
-    max-height: 86svh;
-    border-radius: 1.5rem 1.5rem 0 0;
-    transform: translateY(105%);
-    transition: transform 220ms ease;
-    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
-  }
-  .constructor-orden__resumen.is-mobile-open {
-    transform: translateY(0);
-  }
   .constructor-orden__cerrar-movil,
   .constructor-orden__abrir-resumen {
     display: inline-flex;
-  }
-  .constructor-orden__abrir-resumen {
-    position: fixed;
-    z-index: 25;
-    inset: auto 0.75rem calc(74px + env(safe-area-inset-bottom));
-    width: calc(100% - 1.5rem);
-    box-shadow: 0 14px 35px rgb(25 56 43 / 0.25);
-  }
-  .constructor-orden__abrir-resumen svg:last-child {
-    margin-left: auto;
-    transform: rotate(180deg);
-  }
-  .constructor-orden__velo {
-    position: fixed;
-    z-index: 50;
-    inset: 0;
-    display: block;
-    width: 100%;
-    height: 100%;
-    border-radius: 0;
-    background: rgb(24 20 16 / 0.5);
   }
   .armado-plato {
     width: 100%;
@@ -1768,8 +1728,12 @@ button.icono {
     align-items: stretch;
   }
   .cuenta-mesa__cabecera > div,
-  .cuenta-mesa__cabecera > button {
+  .cuenta-mesa__cabecera > button:not(.cuenta-mesa__nueva) {
     width: 100%;
+  }
+  .cuenta-mesa__cabecera > .cuenta-mesa__nueva {
+    width: auto;
+    align-self: flex-end;
   }
   .cuenta-mesa__ordenes {
     grid-template-columns: 1fr;
@@ -1777,15 +1741,35 @@ button.icono {
   .cuenta-mesa__pie {
     inset: auto 0.6rem calc(72px + env(safe-area-inset-bottom));
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.35rem;
   }
   .cuenta-mesa__pie > div {
     grid-column: 1 / -1;
   }
   .cuenta-mesa__pie button {
+    min-width: 0;
     width: 100%;
+    padding-inline: 0.4rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
   }
+  .cuenta-mesa__accion-pie {
+    gap: 0.25rem;
+    overflow: hidden;
+  }
+  .cuenta-mesa__accion-larga {
+    display: none;
+  }
+  .cuenta-mesa__accion-corta {
+    display: inline;
+  }
+}
+
+.cuenta-orden__acciones [aria-disabled="true"],
+.ordenes-cuenta-modal [aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.38;
 }
 
 /* --------------------------------------------------------------------------
@@ -2168,6 +2152,19 @@ button.icono {
   color: var(--muted-foreground);
   font-size: 0.75rem;
 }
+.inventario-material__nombre {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+.inventario-material__unidad {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
 .inventario-material__accion {
   display: flex;
   min-width: 0;
@@ -2318,11 +2315,30 @@ button.icono {
 }
 .ordenes-cuenta-modal__acciones-principales {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.6rem;
+  gap: 0.35rem;
 }
 .ordenes-cuenta-modal__acciones-principales button {
   justify-content: center;
+  min-height: 46px;
+}
+.ordenes-cuenta-modal__titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.ordenes-cuenta-modal__titulo > button {
+  min-width: 44px;
+  min-height: 44px;
+  flex: 0 0 auto;
+}
+.ordenes-cuenta-modal__eliminar {
+  color: var(--destructive);
+}
+.ordenes-cuenta-modal__eliminar:hover,
+.ordenes-cuenta-modal__eliminar:focus-visible {
+  background: var(--destructive-soft);
+  color: var(--destructive);
 }
 
 /* Órdenes: tarjetas breves que no se estiran para llenar toda la fila. */
@@ -3897,11 +3913,12 @@ button.icono:focus-visible {
 }
 .ui-v2 .inventario-herramientas {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) max-content auto;
+  grid-template-columns: minmax(240px, 340px) minmax(0, 1fr) auto;
   gap: 0.6rem;
   padding: 0.65rem;
 }
 .ui-v2 .inventario-busqueda {
+  width: 100%;
   max-width: none;
   height: var(--control-h);
   padding-left: 0.65rem;
@@ -3922,7 +3939,7 @@ button.icono:focus-visible {
 }
 .ui-v2 .inventario-resumen > button {
   justify-content: flex-start;
-  min-width: 112px;
+  min-width: 132px;
   padding-inline: 0.6rem;
 }
 .ui-v2 .inventario-resumen > button > div {
@@ -3947,12 +3964,10 @@ button.icono:focus-visible {
   line-height: 1;
 }
 .ui-v2 .inventario-resumen span {
-  overflow: hidden;
   color: var(--foreground);
   font-size: 0.78rem;
   font-weight: 550;
   line-height: 1.1;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ui-v2 .inventario-filtros {
@@ -3964,11 +3979,15 @@ button.icono:focus-visible {
   min-height: 54px;
   padding: 0.5rem 0.75rem;
 }
+.ui-v2 .inventario-fila > :nth-child(2),
+.ui-v2 .inventario-fila > :nth-child(3),
+.ui-v2 .inventario-fila > :nth-child(4) {
+  justify-self: center;
+  text-align: center;
+}
 .ui-v2 .inventario-material__accion strong {
-  color: var(--primary);
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--primary) 30%, transparent);
-  text-underline-offset: 0.18em;
+  color: var(--foreground);
+  text-decoration: none;
 }
 .ui-v2 .inventario-ajuste__tipo {
   display: grid;
@@ -3987,7 +4006,6 @@ button.icono:focus-visible {
   gap: 0.35rem;
   font-size: 0.76rem;
 }
-
 @media (max-width: 767px) {
   .ui-v2 .constructor-orden__catalogo {
     display: block;
@@ -4022,6 +4040,9 @@ button.icono:focus-visible {
   .ui-v2 .inventario-resumen {
     grid-column: 1 / -1;
   }
+  .ui-v2 .inventario-busqueda {
+    max-width: none;
+  }
   .ui-v2 .inventario-resumen {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4034,8 +4055,19 @@ button.icono:focus-visible {
     justify-self: end;
   }
   .ui-v2 .inventario-fila {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 0.75rem;
     min-height: auto;
     padding: 0.75rem;
+  }
+  .ui-v2 .inventario-fila > span:last-child {
+    grid-column: auto;
+  }
+  .ui-v2 .inventario-fila > :nth-child(2),
+  .ui-v2 .inventario-fila > :nth-child(3),
+  .ui-v2 .inventario-fila > :nth-child(4) {
+    justify-self: stretch;
+    text-align: left;
   }
 }
 
@@ -4147,6 +4179,17 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.tabla-ordenes__abriendo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--foreground);
+  font-weight: 600;
+}
+.tabla-ordenes__abriendo svg {
+  animation: orden-cargando 700ms linear infinite;
+}
+@keyframes orden-cargando { to { rotate: 1turn; } }
 .tabla-ordenes__fila.is-nueva { animation: llegada-orden 6s ease-out; }
 @keyframes llegada-orden {
   0%, 65% {
@@ -4161,8 +4204,18 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
 .cocina-orden-modal__meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.6rem;
   color: var(--muted-foreground);
+}
+.cocina-orden-modal__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.cocina-orden-modal__cabecera h2 {
+  margin: 0.2rem 0 0;
 }
 .cocina-orden-modal__lineas {
   display: flex;
@@ -4175,6 +4228,82 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
   border-radius: var(--radius);
   padding: 0.6rem 0.75rem;
 }
+.cocina-orden-modal__acciones {
+  display: grid;
+  gap: 0.65rem;
+  padding-top: 0.15rem;
+  border-top: 1px solid var(--border);
+}
+.cocina-orden-modal__acciones-principales,
+.cocina-orden-modal__acciones-incidencias {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+.cocina-orden-modal__acciones button {
+  width: 100%;
+}
+.cocina-orden-modal__no-disponible {
+  color: var(--destructive);
+}
+
+/* Tablero de cocina: dos carriles sobrios. Lo listo vive en el contador del
+   encabezado y no reserva una tercera columna vacía. */
+.kds-tablero {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+.kds-columna {
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklab, var(--muted) 56%, var(--background));
+}
+.kds-columna > header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.15rem 0.1rem 0.75rem;
+}
+.kds-columna > header h2 { margin: 0; font-size: 0.86rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.kds-columna > header .badge { margin-left: auto; }
+.kds-columna__punto { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--muted-foreground); }
+.kds-columna.is-en_proceso .kds-columna__punto { background: var(--warning); }
+.kds-columna__lista { display: grid; gap: 0.65rem; }
+.kds-tarjeta { display: grid; gap: 0.55rem; padding: 0.75rem; box-shadow: none; }
+.kds-tarjeta.is-bloqueada { border-color: color-mix(in oklab, var(--warning) 55%, var(--border)); }
+.kds-tarjeta__detalle { display: flex; flex-direction: column; align-items: stretch; gap: 0.3rem; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; font: inherit; cursor: pointer; }
+.kds-tarjeta__detalle:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: 0.25rem; }
+.kds-tarjeta__cabecera { display: flex; align-items: center; justify-content: space-between; gap: 0.65rem; }
+.kds-tarjeta__cabecera strong { font-size: 1.05rem; }
+.kds-tarjeta .tabla-ordenes__mesa { font-size: 0.94rem; }
+.kds-tarjeta__productos { color: var(--muted-foreground); font-size: 0.94rem; line-height: 1.4; }
+.kds-columna__vacia { display: flex; min-height: 8rem; flex-direction: column; align-items: center; justify-content: center; gap: 0.4rem; color: var(--muted-foreground); }
+.kds-listas { display: grid; gap: 0.5rem; }
+.kds-listas button { display: grid; grid-template-columns: 1fr auto; gap: 0.2rem 0.8rem; width: 100%; min-height: 52px; padding: 0.7rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: inherit; text-align: left; }
+.kds-listas button > span:last-child { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.ordenes-cuenta-modal__bloqueo { margin: 0; padding: 0.75rem; border-radius: var(--radius); background: var(--secondary); color: var(--muted-foreground); line-height: 1.45; }
+.cocina-linea__acciones { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.55rem; }
+.cocina-linea__acciones button { min-height: 42px; }
+.cocina-orden-modal__ayuda { margin: 0; color: var(--muted-foreground); font-size: 0.82rem; }
+.constructor-orden__destino { display: flex; align-items: end; gap: 0.65rem; }
+.constructor-orden__destino > label,
+.constructor-orden__cliente { display: flex; flex-direction: column; align-items: stretch; gap: 0.35rem; }
+.constructor-orden__destino > label:first-child { min-width: 230px; }
+.constructor-orden__cliente { min-width: 150px; }
+.constructor-orden__cliente small { color: var(--muted-foreground); font-weight: 400; }
+.carta__item.is-agotado { opacity: 0.58; cursor: not-allowed; filter: grayscale(0.45); }
+.settings-inline-field { display: flex; align-items: center; gap: 0.45rem; }
+.settings-inline-field input { width: 6rem; }
+@media (max-width: 719px) {
+  .kds-tablero { grid-template-columns: 1fr; }
+  .constructor-orden__destino { width: 100%; flex-direction: column; align-items: stretch; }
+  .constructor-orden__destino > label:first-child,
+  .constructor-orden__cliente { width: 100%; min-width: 0; }
+}
 @media (max-width: 719px) {
   .tabla-ordenes__fila { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.4fr); }
   .tabla-ordenes__fila > :nth-child(2) { display: none; }
@@ -4183,10 +4312,14 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
 /* La pantalla Órdenes (mesero) usa la misma tabla con una columna más:
    el estado de la cuenta (En pedido / Precuenta emitida). */
 .pedidos-page .tabla-ordenes__fila {
-  grid-template-columns: max-content max-content auto auto minmax(0, 1fr);
+  grid-template-columns: max-content auto auto minmax(0, 1fr);
 }
 @media (max-width: 719px) {
-  .pedidos-page .tabla-ordenes__fila { grid-template-columns: minmax(0, 1fr) auto auto minmax(0, 1.2fr); }
+  .pedidos-page .tabla-ordenes__fila {
+    grid-template-columns: minmax(6.6rem, 0.9fr) auto minmax(0, 1.5fr);
+    gap: 0 0.65rem;
+  }
+  .pedidos-page button.tabla-ordenes__fila { padding-inline: 0.75rem; }
 }
 
 /* -- Marca del local en la pantalla de acceso (ui/public/marcas/olla-horizontal.svg) -- */
@@ -4221,6 +4354,7 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
   .plano-mapa--operativo {
     position: static;
     display: grid;
+    flex: none;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.7rem;
     min-height: 0;
@@ -4240,34 +4374,148 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
   }
 }
 
-/* Limpieza de interfaz 2026-09-06: encabezado del salón lineal y compacto,
-   resumen en una sola línea de chips con icono y toggle de vistas de Órdenes. */
+/* Selector de áreas: columna central independiente de los botones laterales. */
 .salon-odoo__cabecera {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  flex-wrap: wrap;
   gap: 0.75rem;
-  margin-bottom: 0.55rem;
+  padding-block: 0.35rem 0.85rem;
 }
-.salon-odoo__cabecera h1 {
-  margin: 0;
-  font-size: clamp(1.35rem, 2.4vw, 1.9rem);
-  letter-spacing: -0.03em;
+.salon-odoo__cabecera .salon-odoo__nueva {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
 }
 .salon-odoo__cabecera .salon-odoo__pisos-centro {
-  margin-left: auto;
-  justify-content: flex-end;
-}
-.salon-odoo__metricas {
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-bottom: 0.6rem;
+  justify-content: center;
+  justify-self: center;
+  margin: 0;
+  padding: 0.3rem;
+  gap: 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 0.95rem;
+  background: var(--card);
 }
-.salon-odoo__metricas button {
-  min-width: 44px;
+.salon-odoo__pisos-centro .salon-odoo__piso {
   min-height: 44px;
-  gap: 0.35rem;
+  padding-inline: 1.35rem;
+  border-radius: 0.65rem;
+  color: var(--muted-foreground);
+  transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+.salon-odoo__pisos-centro .salon-odoo__piso.is-on {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: var(--shadow-soft);
+}
+.salon-odoo__ejemplo {
+  position: absolute;
+  inset: auto 1rem 0.65rem;
+  margin: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.plano-mapa--operativo .mesa-odoo:disabled {
+  opacity: 1;
+}
+.plano-mapa--operativo {
+  opacity: 1;
+  translate: 0;
+  transition: opacity 200ms ease, translate 200ms ease;
+}
+@starting-style {
+  .plano-mapa--operativo {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+@media (min-width: 768px) {
+  .ui-v2 .pos-nav__identity {
+    width: min(100%, 38rem);
+    gap: 1.25rem;
+  }
+  .ui-v2 .pos-nav__identity::before,
+  .ui-v2 .pos-nav__identity::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: color-mix(in oklab, var(--brand-tinta) 30%, var(--border));
+  }
+  .ui-v2 .pos-nav {
+    row-gap: 0.6rem;
+  }
+}
+@media (max-width: 767px) {
+  .ui-v2 .pos-odoo__panel-duplicado-movil {
+    display: none;
+  }
+  .salon-odoo__cabecera {
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+  }
+  .salon-odoo__cabecera .salon-odoo__nueva {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: end;
+  }
+  .salon-odoo__cabecera .salon-odoo__pisos-centro {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .salon-odoo__pisos-centro .salon-odoo__piso {
+    padding-inline: 1rem;
+  }
+  .salon-odoo__ejemplo {
+    position: static;
+    grid-column: 1 / -1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plano-mapa--operativo,
+  .salon-odoo__pisos-centro .salon-odoo__piso,
+  .tabla-ordenes__abriendo svg {
+    transition: none;
+    translate: none;
+    animation: none;
+  }
+}
+
+/* La franja de inventario baja los filtros a una segunda fila cuando búsqueda,
+   cuatro filtros y recarga ya no caben completos en una sola línea. */
+@media (min-width: 768px) and (max-width: 1100px) {
+  .ui-v2 .inventario-herramientas {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .ui-v2 .inventario-busqueda {
+    grid-column: 1;
+    grid-row: 1;
+    max-width: 340px;
+    justify-self: start;
+  }
+  .ui-v2 .inventario-resumen {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+  }
+  .ui-v2 .inventario-resumen > button {
+    justify-content: center;
+    min-width: 0;
+  }
+  .ui-v2 .inventario-herramientas > [aria-label="Recargar inventario"] {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .ui-v2 .inventario-fila {
+    grid-template-columns: minmax(160px, 1.55fr) minmax(95px, 0.8fr) minmax(112px, 0.9fr) minmax(96px, 0.75fr) minmax(100px, 0.8fr);
+    column-gap: 0.75rem;
+  }
 }
 .ordenes-vistas__cabecera {
   display: flex;
@@ -4284,17 +4532,55 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
 }
 .ordenes-vistas__toggle {
   display: flex;
-  gap: 0.3rem;
-  padding: 0.25rem;
+  gap: 0.2rem;
+  padding: 0.2rem;
   border: 1px solid var(--border);
-  border-radius: 0.8rem;
-  background: var(--muted);
+  border-radius: 999px;
+  background: var(--card);
 }
 .ordenes-vistas__toggle button {
   min-height: 44px;
+  border-radius: 999px;
 }
 .ordenes-vistas__toggle button.is-on {
-  color: var(--primary);
+  background: var(--foreground);
+  color: var(--background);
+}
+.pos-odoo__sesion {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: -0.1rem -0.1rem 0.3rem;
+  padding: 0.7rem;
+  border-radius: 0.8rem;
+  background: var(--muted);
+}
+.pos-odoo__sesion-avatar {
+  display: grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--foreground);
+  color: var(--background);
+  font-weight: 750;
+}
+.pos-odoo__sesion-datos {
+  display: grid;
+  min-width: 0;
+  gap: 0.05rem;
+}
+.pos-odoo__sesion-datos small {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+.pos-odoo__sesion-datos strong {
+  overflow: hidden;
+  font-size: 0.92rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .pos-odoo__panel-sep {
   height: 1px;
@@ -4313,5 +4599,425 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
 @media (min-width: 768px) {
   .ui-v2 .plano-mapa {
     min-height: clamp(24rem, 56vh, 42rem);
+  }
+}
+
+/* Propuesta Mesas: la demora se lee como una señal en la mesa, no como un
+   segundo borde alrededor de toda la tarjeta. El chip conserva el dato exacto. */
+.ui-v2 .mesa-odoo--atrasada {
+  border: 1px solid color-mix(in oklab, var(--destructive) 34%, var(--border));
+  box-shadow: inset 4px 0 0 color-mix(in oklab, var(--destructive) 72%, transparent);
+}
+
+/* Propuesta Mesas V2: acción integrada al lenguaje blanco/negro de la vista. */
+.ui-v2 .salon-odoo__nueva--v2 {
+  width: auto;
+  min-width: 0;
+  height: 48px;
+  min-height: 48px;
+  gap: 0.55rem;
+  padding-inline: 0.85rem 1rem;
+  border-color: var(--primary);
+  border-radius: 0.75rem;
+  background: var(--card);
+  color: var(--primary);
+  box-shadow: none;
+}
+.ui-v2 .salon-odoo__nueva--v2 span {
+  display: inline;
+  text-box: trim-both cap alphabetic;
+}
+.ui-v2 .salon-odoo__nueva--v2:hover,
+.ui-v2 .salon-odoo__nueva--v2:focus-visible {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* Propuesta Mesas V3: una sola área no necesita selector. El nombre del salón
+   y la acción forman el encabezado funcional del plano. */
+.ui-v2 .salon-odoo--solo .salon-odoo__cabecera {
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding-block: 0.15rem 0.55rem;
+}
+.ui-v2 .salon-odoo--solo .salon-odoo__titulo-area {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  margin: 0;
+  font-size: clamp(1.35rem, 2.4vw, 1.65rem);
+}
+.ui-v2 .salon-odoo--solo .salon-odoo__nueva--v3 {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  width: auto;
+  min-width: 0;
+  height: 46px;
+  min-height: 46px;
+  padding-inline: 0.9rem;
+  border-radius: 0.72rem;
+  box-shadow: none;
+}
+.ui-v2 .salon-odoo--solo .salon-odoo__nueva--v3 span {
+  display: inline;
+}
+@media (max-width: 767px) {
+  .ui-v2 .salon-odoo__cabecera,
+  .ui-v2 .salon-odoo--solo .salon-odoo__cabecera {
+    grid-template-columns: 46px minmax(0, 1fr) 46px;
+    min-height: 0;
+    gap: 0.45rem;
+    padding-block: 0.15rem 0.55rem;
+  }
+  .ui-v2 .salon-odoo__cabecera .salon-odoo__pisos-centro {
+    grid-column: 2;
+    grid-row: 1;
+    max-width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+  .ui-v2 .salon-odoo--solo .salon-odoo__titulo-area {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    font-size: 1.25rem;
+  }
+  .ui-v2 .salon-odoo__cabecera .salon-odoo__nueva,
+  .ui-v2 .salon-odoo--solo .salon-odoo__nueva--v3 {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    width: 46px;
+    min-width: 46px;
+    height: 46px;
+    min-height: 46px;
+    padding: 0;
+  }
+  .ui-v2 .salon-odoo__nueva--v2 span,
+  .ui-v2 .salon-odoo--solo .salon-odoo__nueva--v3 span {
+    display: none;
+  }
+  .cocina-orden-modal__acciones-principales,
+  .cocina-orden-modal__acciones-incidencias {
+    grid-template-columns: 1fr;
+  }
+}
+@media (min-width: 768px) {
+  .ui-v2 .plano-mapa--auto {
+    flex: none;
+    height: var(--plano-altura-auto);
+    min-height: var(--plano-altura-auto);
+  }
+}
+@media (min-width: 768px) {
+  .ui-v2.propuesta-cabecera-v3 .pos-nav {
+    min-height: 0;
+    row-gap: 0.25rem;
+    padding-block: 0.5rem;
+    box-shadow: none;
+  }
+  .ui-v2.propuesta-cabecera-v3 .pos-nav__identity {
+    width: min(100%, 32rem);
+    gap: 0.9rem;
+  }
+  .ui-v2.propuesta-cabecera-v3 .pos-odoo__marca {
+    font-size: 1.55rem;
+  }
+}
+
+/* Iteración operativa: la marca respira como encabezado y no como un botón
+   más de la navegación. La variante V3 conserva deliberadamente su cabecera
+   compacta para poder comparar ambas propuestas. */
+@media (min-width: 768px) {
+  .ui-v2:not(.propuesta-cabecera-v3) .pos-nav {
+    row-gap: 1.7rem;
+    padding-block: 0.85rem 1.1rem;
+  }
+}
+
+/* Inventario ordenable: cada encabezado ocupa todo su carril y comunica la
+   dirección con texto accesible + icono, sin depender solo del color. */
+.inventario-orden-movil {
+  display: none;
+}
+.ui-v2 .inventario-fila--cabecera {
+  min-height: 44px;
+  padding: 0.15rem 0.45rem;
+  align-items: stretch;
+}
+.ui-v2 .inventario-fila--cabecera > span {
+  width: 100%;
+  min-width: 0;
+  justify-self: stretch;
+}
+.ui-v2 .inventario-cabecera__boton {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding-inline: 0.35rem;
+  justify-content: center;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ui-v2 .inventario-cabecera__boton--inicio {
+  justify-content: flex-start;
+}
+.ui-v2 .inventario-cabecera__boton--icono {
+  gap: 0.3rem;
+}
+.ui-v2 .inventario-cabecera__icono {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+/* Carta ancha: categorías en una cinta horizontal y una retícula estable de
+   tres columnas. El resumen deja de competir por ancho con los productos. */
+.ui-v2 .constructor-orden {
+  padding-bottom: 6.25rem;
+}
+.ui-v2 .constructor-orden__cuerpo {
+  display: block;
+}
+.ui-v2 .constructor-orden__catalogo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "header"
+    "tools"
+    "carta";
+  width: min(100%, 1080px);
+  margin-inline: auto;
+  gap: 0.65rem;
+}
+.ui-v2 .constructor-catalogo__herramientas {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: safe center;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
+}
+.ui-v2 .constructor-catalogo__herramientas > button {
+  align-self: center;
+  flex: 0 0 auto;
+}
+.ui-v2 .constructor-catalogo__herramientas > .inventario-busqueda {
+  flex: 0 1 300px;
+}
+.ui-v2 .constructor-categorias {
+  display: flex;
+  flex: 1 1 360px;
+  flex-direction: row;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.15rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
+}
+.ui-v2 .constructor-categorias button {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 44px;
+  justify-content: center;
+}
+.ui-v2 .constructor-orden__carta {
+  grid-area: carta;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+}
+.ui-v2 .carta__item {
+  min-height: 166px;
+}
+.ui-v2 .carta__foto,
+.ui-v2 .carta__icono {
+  height: 82px;
+}
+
+/* Cinta inferior + hoja emergente de Radix. La cinta es la única acción
+   persistente; el detalle aparece solo cuando la persona lo solicita. */
+button.constructor-orden__abrir-resumen {
+  position: fixed;
+  z-index: 25;
+  inset: auto auto 1rem 50%;
+  display: inline-flex;
+  width: min(660px, calc(100% - 2rem));
+  min-height: 54px;
+  padding-inline: 1rem;
+  justify-content: flex-start;
+  transform: translateX(-50%);
+  border: 1px solid color-mix(in oklab, var(--primary-foreground) 18%, var(--primary));
+  box-shadow: 0 12px 30px rgb(16 18 22 / 0.2);
+}
+.constructor-orden__abrir-resumen > strong {
+  font-weight: 650;
+}
+.constructor-orden__cinta-total {
+  margin-inline-start: auto;
+  font-size: 1rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+.constructor-orden__abrir-resumen svg:last-child {
+  margin-inline-start: 0.15rem;
+  transform: rotate(180deg);
+}
+.constructor-orden__resumen-emergente {
+  position: fixed;
+  inset: auto auto 0 50%;
+  width: min(720px, calc(100% - 2rem));
+  max-height: min(78svh, 720px);
+  padding: 1.15rem;
+  transform: translateX(-50%);
+  border-radius: 1.25rem 1.25rem 0 0;
+  background: var(--card);
+  box-shadow: 0 -18px 54px rgb(16 18 22 / 0.2);
+}
+.constructor-orden__resumen-emergente .constructor-orden__resumen-cabecera {
+  margin-bottom: 0.45rem;
+}
+.constructor-orden__resumen-emergente .constructor-orden__cerrar-movil {
+  display: inline-flex;
+}
+.constructor-orden__resumen-emergente .constructor-orden__acciones {
+  position: sticky;
+  bottom: -1.15rem;
+  margin: 0.65rem -1.15rem -1.15rem;
+  padding: 0.8rem 1.15rem calc(0.9rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--card);
+}
+
+@media (max-width: 767px) {
+  .ordenes-vistas__toggle button {
+    width: 44px;
+    padding-inline: 0;
+  }
+  .ordenes-vistas__toggle button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .ui-v2 .constructor-orden {
+    padding-bottom: calc(9rem + env(safe-area-inset-bottom));
+  }
+  .ui-v2 .constructor-orden__catalogo {
+    display: grid;
+  }
+  .ui-v2 .constructor-catalogo__herramientas {
+    margin-bottom: 0;
+  }
+  .ui-v2 .constructor-categorias {
+    flex-basis: 100%;
+  }
+  .ui-v2 .constructor-orden__carta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  button.constructor-orden__abrir-resumen {
+    inset: auto 0.75rem calc(74px + env(safe-area-inset-bottom));
+    width: calc(100% - 1.5rem);
+    transform: none;
+  }
+  .constructor-orden__resumen-emergente {
+    inset-inline: 0;
+    width: 100%;
+    max-height: 84svh;
+    transform: none;
+    border-radius: 1.25rem 1.25rem 0 0;
+  }
+  /* En telefono el inventario conserva su lectura tabular. En anchos muy
+     estrechos se desplaza solo la tabla y la columna Material queda visible. */
+  .inventario-orden-movil {
+    display: none;
+  }
+  .ui-v2 .inventario-tabla {
+    display: block;
+    gap: 0;
+    padding: 0;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-gutter: stable;
+    background: var(--card);
+  }
+  .ui-v2 .inventario-fila {
+    grid-template-columns: minmax(6.3rem, 1.25fr) minmax(3.2rem, 0.62fr) minmax(3.25rem, 0.63fr) minmax(2.8rem, 0.55fr) minmax(5.25rem, 0.9fr);
+    column-gap: 0.125rem;
+    width: 100%;
+    min-width: 22rem;
+    min-height: 52px;
+    padding: 0.35rem 0.75rem;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    background: var(--card);
+  }
+  .ui-v2 .inventario-fila.inventario-fila--cabecera {
+    display: grid;
+    min-height: 44px;
+    padding: 0.15rem 0.45rem;
+    background: var(--muted);
+  }
+  .ui-v2 .inventario-fila--cabecera .inventario-cabecera__boton {
+    position: relative;
+    gap: 0;
+    padding-inline: 0.1rem;
+    font-size: 0.62rem;
+  }
+  .ui-v2 .inventario-fila--cabecera .inventario-cabecera__orden {
+    display: none;
+  }
+  .ui-v2 .inventario-fila--cabecera > span:is([aria-sort="ascending"], [aria-sort="descending"]) .inventario-cabecera__orden {
+    position: absolute;
+    display: block;
+    width: 0.7rem;
+    height: 0.7rem;
+    inset-inline-end: 0;
+  }
+  .ui-v2 .inventario-fila > span,
+  .ui-v2 .inventario-fila > strong {
+    display: block;
+    align-self: center;
+    min-width: 0;
+  }
+  .ui-v2 .inventario-fila > [data-label]::before,
+  .ui-v2 .inventario-fila > span[role="cell"]::before,
+  .ui-v2 .inventario-fila > strong[role="cell"]::before {
+    display: none;
+  }
+  .ui-v2 .inventario-fila > :first-child {
+    position: sticky;
+    z-index: 1;
+    inset-inline-start: 0;
+    align-self: stretch;
+    justify-content: center;
+    border-inline-end: 1px solid var(--border);
+    background: var(--card);
+  }
+  .ui-v2 .inventario-fila > .inventario-material {
+    grid-column: auto;
+  }
+  .ui-v2 .inventario-fila--cabecera > :first-child {
+    z-index: 2;
+    background: var(--muted);
+  }
+  .ui-v2 .inventario-material__accion {
+    min-block-size: 44px;
+    justify-content: center;
+  }
+  .ui-v2 .inventario-fila > :nth-child(2),
+  .ui-v2 .inventario-fila > :nth-child(3),
+  .ui-v2 .inventario-fila > :nth-child(4),
+  .ui-v2 .inventario-fila > :last-child {
+    justify-self: center;
+    text-align: center;
   }
 }

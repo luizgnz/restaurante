@@ -23,9 +23,10 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import type { CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { Card } from "@/components/ui/card.tsx";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Select } from "@/components/ui/select.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
@@ -44,6 +45,7 @@ export type ProductoCarta = {
   codigo?: string | null;
   color?: string | null;
   foto_data?: string | null;
+  disponible?: boolean;
 };
 
 /* Iconografía por categoría: cuando un producto no tiene foto, la tarjeta
@@ -186,13 +188,15 @@ export function ConstructorOrden({
   const [enviando, setEnviando] = useState(false);
   const [lineasUi, setLineasUi] = useState(() => crearLineasConstructor(borrador.lineas));
   const [armado, setArmado] = useState<{ producto: ProductoCarta; slots: SlotArmadoUi[] } | null>(null);
-  const [resumenMovilAbierto, setResumenMovilAbierto] = useState(false);
+  const [resumenAbierto, setResumenAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [busquedaAbierta, setBusquedaAbierta] = useState(false);
   const [indicacionesAbiertas, setIndicacionesAbiertas] = useState(Boolean(borrador.indicaciones));
   const [categoria, setCategoria] = useState<string | "todas">("todas");
-  const titulo = mesaFija ? `Nueva orden · Mesa #${mesaFija.numero}` : "Nueva orden";
+  const esParaLlevar = !mesaFija && borrador.tipoServicio === "para_llevar";
+  const titulo = mesaFija ? `Nueva orden · Mesa #${mesaFija.numero}` : esParaLlevar ? "Nueva orden · Para llevar" : "Nueva orden";
   const mesaId = mesaFija?.id ?? borrador.mesaId;
+  const destinoElegido = Boolean(mesaId) || esParaLlevar;
   const cantidadProductos = lineasUi.reduce((total, linea) => total + Math.max(0, linea.cantidad), 0);
   const totalOrden = lineasUi.reduce((total, linea) => {
     if (linea.cantidad <= 0) return total;
@@ -235,6 +239,7 @@ export function ConstructorOrden({
   }
 
   async function tocarProducto(producto: ProductoCarta) {
+    if (producto.disponible === false) return;
     if (producto.configurable && contornos && onSlotsDeProducto) {
       const slots = await onSlotsDeProducto(producto.id);
       if (slots.length > 0) {
@@ -264,14 +269,32 @@ export function ConstructorOrden({
 
   async function enviar() {
     const lineas = lineasPersistibles(lineasUi);
-    if (enviando || !mesaId || lineas.length === 0) return;
+    if (enviando || !destinoElegido || lineas.length === 0) return;
     setEnviando(true);
     try {
-      await onEnviar({ ...borrador, mesaId, cuentaId, lineas });
+      await onEnviar({ ...borrador, ...(mesaId ? { mesaId } : {}), cuentaId, lineas });
     } finally {
       setEnviando(false);
     }
   }
+
+  const cintaResumen = (
+    <Button
+      type="button"
+      size="lg"
+      className="constructor-orden__abrir-resumen"
+      aria-expanded={resumenAbierto}
+      aria-controls="resumen-orden"
+      aria-label={`Ver resumen de la orden, ${cantidadProductos} ${cantidadProductos === 1 ? "producto" : "productos"}, total ${dinero(totalOrden)}`}
+      onClick={() => setResumenAbierto(true)}
+    >
+      <ShoppingBag size={20} aria-hidden="true" />
+      <span>Orden</span>
+      <strong>{cantidadProductos} {cantidadProductos === 1 ? "producto" : "productos"}</strong>
+      <span className="constructor-orden__cinta-total">{dinero(totalOrden)}</span>
+      <ChevronDown size={18} aria-hidden="true" />
+    </Button>
+  );
 
   return (
     <>
@@ -283,40 +306,178 @@ export function ConstructorOrden({
           <p>Selecciona productos y revisa la orden antes de enviarla.</p>
         </div>
         {!mesaFija ? (
-          <label>
-            Mesa
-            <Select
-              aria-label="Mesa para la nueva orden"
-              value={borrador.mesaId ?? ""}
-              onChange={(event) => cambiar({ mesaId: Number(event.target.value) || undefined })}
-            >
-              <option value="">Selecciona una mesa</option>
-              {mesasSeleccionables
-                .filter((mesa) => mesa.estado === "libre")
-                .map((mesa) => (
-                  <option key={mesa.id} value={mesa.id}>
-                    Mesa #{mesa.numero}
-                  </option>
-                ))}
-            </Select>
-          </label>
+          <div className="constructor-orden__destino">
+            <label>
+              <span>Destino del pedido</span>
+              <Select
+                aria-label="Destino de la nueva orden"
+                value={esParaLlevar ? "para_llevar" : borrador.mesaId ? `mesa:${borrador.mesaId}` : ""}
+                onChange={(event) => {
+                  if (event.target.value === "para_llevar") cambiar({ tipoServicio: "para_llevar", mesaId: undefined });
+                  else cambiar({ tipoServicio: "mesa", mesaId: Number(event.target.value.replace("mesa:", "")) || undefined, clienteNombre: "" });
+                }}
+              >
+                <option value="">Selecciona mesa o para llevar</option>
+                <option value="para_llevar">Para llevar</option>
+                {[...mesasSeleccionables]
+                  .sort((a, b) => a.numero - b.numero)
+                  .map((mesa) => (
+                    <option key={mesa.id} value={`mesa:${mesa.id}`}>
+                      Mesa #{mesa.numero} · {mesa.estado === "libre" ? "Libre" : "En servicio"}
+                    </option>
+                  ))}
+              </Select>
+            </label>
+            {esParaLlevar ? (
+              <label className="constructor-orden__cliente">
+                <span>Nombre del cliente <small>(opcional)</small></span>
+                <Input value={borrador.clienteNombre ?? ""} maxLength={80} onChange={(event) => cambiar({ clienteNombre: event.target.value })} placeholder="Ej.: Carla" />
+              </label>
+            ) : null}
+          </div>
         ) : null}
       </header>
 
       <div className="constructor-orden__cuerpo">
-        <Card className={`tarjeta constructor-orden__resumen${resumenMovilAbierto ? " is-mobile-open" : ""}`}>
+        <div className="constructor-orden__catalogo">
+          <div className="constructor-orden__catalogo-cabecera">
+            <div>
+              <span className="constructor-orden__eyebrow">Carta</span>
+              <h2>Productos</h2>
+            </div>
+            <Badge variant="secondary">
+              {productos.length} {productos.length === 1 ? "producto" : "productos"}
+            </Badge>
+          </div>
+          <div className="constructor-catalogo__herramientas">
+            {!busquedaAbierta ? (
+              <Button type="button" variant="outline" size="icon" aria-label="Buscar producto" title="Buscar producto" onClick={() => setBusquedaAbierta(true)}>
+                <Search size={18} aria-hidden="true" />
+              </Button>
+            ) : (
+              <label className="inventario-busqueda">
+                <Search size={18} aria-hidden="true" />
+                <span className="sr-only">Buscar producto</span>
+                <Input autoFocus type="search" value={busqueda} placeholder="Buscar producto" onChange={(event) => setBusqueda(event.target.value)} />
+                <Button type="button" variant="ghost" size="icon" aria-label="Cerrar búsqueda" onClick={() => { setBusqueda(""); setBusquedaAbierta(false); }}>
+                  <X size={17} aria-hidden="true" />
+                </Button>
+              </label>
+            )}
+            <div className="constructor-categorias" role="tablist" aria-label="Categorías de la carta">
+              <Button type="button" role="tab" aria-selected={categoria === "todas"} size="sm" variant={categoria === "todas" ? "secondary" : "ghost"} onClick={() => setCategoria("todas")}>Todas</Button>
+              {categorias.map((nombre) => (
+                <Button
+                  key={nombre}
+                  type="button"
+                  role="tab"
+                  aria-selected={categoria === nombre}
+                  size="sm"
+                  variant={categoria === nombre ? "secondary" : "ghost"}
+                  onClick={() => setCategoria(nombre)}
+                >
+                  {nombre}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <div className="carta constructor-orden__carta">
+          {productosVisibles.map((producto) => {
+            const linea = lineasUi.find((item) => item.productoId === producto.id);
+            const IconoCategoria = iconoCategoria(producto.categoria_nombre);
+            return (
+              <div
+                key={producto.id}
+                role="button"
+                tabIndex={producto.disponible === false ? -1 : 0}
+                aria-disabled={producto.disponible === false}
+                className={`carta__item${linea ? " is-on" : ""}${producto.disponible === false ? " is-agotado" : ""}`}
+                style={
+                  {
+                    "--product-color": producto.color?.trim() || colorCategoria(producto.categoria_nombre),
+                  } as CSSProperties
+                }
+                onClick={() => tocarProducto(producto)}
+                onKeyDown={(event) => {
+                  if (event.target !== event.currentTarget) return;
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    tocarProducto(producto);
+                  } else if (event.key === " ") {
+                    event.preventDefault();
+                  }
+                }}
+                onKeyUp={(event) => {
+                  if (event.target === event.currentTarget && event.key === " ") tocarProducto(producto);
+                }}
+              >
+                {producto.foto_data ? (
+                  <img src={producto.foto_data} alt="" className="carta__foto" />
+                ) : (
+                  <span className="carta__icono" aria-hidden="true">
+                    <IconoCategoria size={36} strokeWidth={1.75} />
+                  </span>
+                )}
+                <span className="carta__contenido">
+                  <strong>{producto.nombre}</strong>
+                  {producto.codigo ? <span>{producto.codigo}</span> : null}
+                  {producto.configurable ? <Badge>Personalizable</Badge> : null}
+                  {producto.disponible === false ? <Badge variant="secondary">Agotado</Badge> : null}
+                  <span className="carta__precio">{dinero(producto.precio_centavos)}</span>
+                </span>
+                {linea ? (
+                  <span className="carta__cantidad" onClick={(event) => event.stopPropagation()}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="size-9 rounded-full text-base"
+                      aria-label={`Quitar una unidad de ${producto.nombre}`}
+                      onClick={() => restarProducto(producto.id)}
+                    >
+                      −
+                    </Button>
+                    <strong>{linea.cantidad}</strong>
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="icon"
+                      className="size-9 rounded-full text-base"
+                      aria-label={`Agregar una unidad de ${producto.nombre}`}
+                      onClick={() => sumarProducto(producto.id)}
+                    >
+                      +
+                    </Button>
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+          </div>
+          {productosVisibles.length === 0 ? <div className="empty-state">No hay productos en esta categoría o búsqueda.</div> : null}
+        </div>
+      </div>
+    </section>
+    {typeof document === "undefined" ? cintaResumen : createPortal(cintaResumen, document.body)}
+    {resumenAbierto ? (
+      <Dialog aria-label="Resumen de la orden" onOverlayClick={() => setResumenAbierto(false)}>
+        <DialogContent
+          id="resumen-orden"
+          placement="bottom"
+          className="constructor-orden__resumen constructor-orden__resumen-emergente"
+        >
           <div className="constructor-orden__resumen-cabecera">
             <div>
               <span className="constructor-orden__eyebrow">Resumen</span>
-              <h2>Orden nueva</h2>
+              <DialogTitle>Orden nueva</DialogTitle>
             </div>
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="constructor-orden__cerrar-movil md:hidden"
-              aria-label="Cerrar orden"
-              onClick={() => setResumenMovilAbierto(false)}
+              className="constructor-orden__cerrar-movil"
+              aria-label="Cerrar resumen de la orden"
+              onClick={() => setResumenAbierto(false)}
             >
               <X size={20} aria-hidden="true" />
             </Button>
@@ -339,6 +500,7 @@ export function ConstructorOrden({
                       variant="ghost"
                       className="icono-secundario"
                       title="Quitar producto"
+                      aria-label={`Quitar ${producto?.nombre ?? `producto ${linea.productoId}`} de la orden`}
                       onClick={() => cambiarLineas(lineasUi.filter((item) => item.idUi !== linea.idUi))}
                     >
                       <Trash2 size={18} aria-hidden="true" />
@@ -380,133 +542,16 @@ export function ConstructorOrden({
             </Button>
             <Button
               type="button"
-              disabled={!mesaId || lineasPersistibles(lineasUi).length === 0 || enviando}
+              disabled={!destinoElegido || lineasPersistibles(lineasUi).length === 0 || enviando}
               onClick={enviar}
             >
               <Send size={18} aria-hidden="true" />{" "}
               {enviando ? "Enviando…" : totalOrden > 0 ? `Enviar · ${dinero(totalOrden)}` : "Enviar"}
             </Button>
           </div>
-        </Card>
-
-        <div className="constructor-orden__catalogo">
-          <div className="constructor-orden__catalogo-cabecera">
-            <div>
-              <span className="constructor-orden__eyebrow">Carta</span>
-              <h2>Productos</h2>
-            </div>
-            <Badge variant="secondary">
-              {productos.length} {productos.length === 1 ? "producto" : "productos"}
-            </Badge>
-          </div>
-          <div className="constructor-catalogo__herramientas">
-            {!busquedaAbierta ? (
-              <Button type="button" variant="outline" size="icon" aria-label="Buscar producto" title="Buscar producto" onClick={() => setBusquedaAbierta(true)}>
-                <Search size={18} aria-hidden="true" />
-              </Button>
-            ) : (
-              <label className="inventario-busqueda">
-                <Search size={18} aria-hidden="true" />
-                <span className="sr-only">Buscar producto</span>
-                <Input autoFocus type="search" value={busqueda} placeholder="Buscar producto" onChange={(event) => setBusqueda(event.target.value)} />
-                <Button type="button" variant="ghost" size="icon" aria-label="Cerrar búsqueda" onClick={() => { setBusqueda(""); setBusquedaAbierta(false); }}>
-                  <X size={17} aria-hidden="true" />
-                </Button>
-              </label>
-            )}
-            <div className="constructor-categorias" role="tablist" aria-label="Categorías de la carta">
-              <Button type="button" size="sm" variant={categoria === "todas" ? "secondary" : "ghost"} onClick={() => setCategoria("todas")}>Todas</Button>
-              {categorias.map((nombre) => <Button key={nombre} type="button" size="sm" variant={categoria === nombre ? "secondary" : "ghost"} onClick={() => setCategoria(nombre)}>{nombre}</Button>)}
-            </div>
-          </div>
-          <div className="carta constructor-orden__carta">
-          {productosVisibles.map((producto) => {
-            const linea = lineasUi.find((item) => item.productoId === producto.id);
-            const IconoCategoria = iconoCategoria(producto.categoria_nombre);
-            return (
-              <div
-                key={producto.id}
-                role="button"
-                tabIndex={0}
-                className={`carta__item${linea ? " is-on" : ""}`}
-                style={
-                  {
-                    "--product-color": producto.color?.trim() || colorCategoria(producto.categoria_nombre),
-                  } as CSSProperties
-                }
-                onClick={() => tocarProducto(producto)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    tocarProducto(producto);
-                  }
-                }}
-              >
-                {producto.foto_data ? (
-                  <img src={producto.foto_data} alt="" className="carta__foto" />
-                ) : (
-                  <span className="carta__icono" aria-hidden="true">
-                    <IconoCategoria size={36} strokeWidth={1.75} />
-                  </span>
-                )}
-                <span className="carta__contenido">
-                  <strong>{producto.nombre}</strong>
-                  {producto.codigo ? <span>{producto.codigo}</span> : null}
-                  {producto.configurable ? <Badge>Personalizable</Badge> : null}
-                  <span className="carta__precio">{dinero(producto.precio_centavos)}</span>
-                </span>
-                {linea ? (
-                  <span className="carta__cantidad" onClick={(event) => event.stopPropagation()}>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="size-9 rounded-full text-base"
-                      aria-label={`Quitar una unidad de ${producto.nombre}`}
-                      onClick={() => restarProducto(producto.id)}
-                    >
-                      −
-                    </Button>
-                    <strong>{linea.cantidad}</strong>
-                    <Button
-                      type="button"
-                      variant="default"
-                      size="icon"
-                      className="size-9 rounded-full text-base"
-                      aria-label={`Agregar una unidad de ${producto.nombre}`}
-                      onClick={() => sumarProducto(producto.id)}
-                    >
-                      +
-                    </Button>
-                  </span>
-                ) : null}
-              </div>
-            );
-          })}
-          </div>
-          {productosVisibles.length === 0 ? <div className="empty-state">No hay productos en esta categoría o búsqueda.</div> : null}
-        </div>
-      </div>
-      <Button
-        type="button"
-        size="lg"
-        className="constructor-orden__abrir-resumen md:hidden"
-        onClick={() => setResumenMovilAbierto(true)}
-      >
-        <ShoppingBag size={20} aria-hidden="true" />
-        Ver orden · {cantidadProductos} {cantidadProductos === 1 ? "producto" : "productos"}
-        <ChevronDown size={18} aria-hidden="true" />
-      </Button>
-      {resumenMovilAbierto ? (
-        <Button
-          type="button"
-          variant="ghost"
-          className="constructor-orden__velo"
-          aria-label="Cerrar resumen"
-          onClick={() => setResumenMovilAbierto(false)}
-        />
-      ) : null}
-    </section>
+        </DialogContent>
+      </Dialog>
+    ) : null}
     {armado && contornos ? (
       <ModalArmadoPlato
         productoNombre={armado.producto.nombre}

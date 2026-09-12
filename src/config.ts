@@ -36,6 +36,9 @@ export type AppConfig = {
    * el restaurante los reutiliza. `false`: se registran como merma.
    */
   devolver_insumos_preparados: boolean;
+  entrega_automatica_si_no_confirma: boolean;
+  entrega_automatica_minutos: number;
+  prioridad_para_llevar: "igual" | "prioritaria";
   pin_al_emitir_precuenta: boolean;
   pin_al_enviar_caja: boolean;
   tablet_cocina: boolean;
@@ -69,6 +72,9 @@ export function defaultConfig(): AppConfig {
     politica_inventario: "reserva_al_enviar_firme_al_enviar_caja",
     bloqueo_sin_stock: "avisar",
     devolver_insumos_preparados: true,
+    entrega_automatica_si_no_confirma: true,
+    entrega_automatica_minutos: 30,
+    prioridad_para_llevar: "igual",
     pin_al_emitir_precuenta: true,
     pin_al_enviar_caja: true,
     tablet_cocina: false,
@@ -118,6 +124,13 @@ export function normalizarConfig(cfg: AppConfig): AppConfig {
   const defaults = defaultConfig();
   return {
     ...cfg,
+    // La decisión de producto vigente siempre devuelve la receta completa.
+    devolver_insumos_preparados: true,
+    entrega_automatica_minutos:
+      Number.isInteger(cfg.entrega_automatica_minutos) && cfg.entrega_automatica_minutos >= 1 && cfg.entrega_automatica_minutos <= 240
+        ? cfg.entrega_automatica_minutos
+        : defaults.entrega_automatica_minutos,
+    prioridad_para_llevar: cfg.prioridad_para_llevar === "prioritaria" ? "prioritaria" : "igual",
     justificacion_anulacion: cfg.auditoria_anulaciones && cfg.justificacion_anulacion,
     impresora_comanda: { ...defaults.impresora_comanda, ...cfg.impresora_comanda },
     impresora_boleta: { ...defaults.impresora_boleta, ...cfg.impresora_boleta },

@@ -2,7 +2,7 @@ import type Database from "better-sqlite3";
 import { hashPin, verifyPin } from "./pin.ts";
 
 export type Derecho = "minimo" | "basico" | "avanzado";
-export type RolClave = "administrador" | "mesero" | "cocina" | "caja" | "inventario";
+export type RolClave = "administrador" | "encargado_turno" | "mesero" | "cocina" | "caja" | "inventario";
 export type AccionPin =
   | "enviar"
   | "precuenta"
@@ -11,7 +11,8 @@ export type AccionPin =
   | "crear_pedido"
   | "anular"
   | "inventario"
-  | "cancelar_cuenta";
+  | "cancelar_cuenta"
+  | "cancelar_producto_cocina";
 
 export type Empleado = {
   id: number;
@@ -32,6 +33,7 @@ export type UsuarioGestion = {
 
 export const ROLES: Array<{ clave: RolClave; nombre: string; descripcion: string }> = [
   { clave: "administrador", nombre: "Administrador", descripcion: "Configura el sistema, usuarios e inventario" },
+  { clave: "encargado_turno", nombre: "Encargado de turno", descripcion: "Autoriza excepciones operativas durante su turno" },
   { clave: "mesero", nombre: "Mesero", descripcion: "Crea órdenes y atiende mesas" },
   { clave: "cocina", nombre: "Cocina", descripcion: "Recibe y prepara comandas" },
   { clave: "caja", nombre: "Caja", descripcion: "Emite comprobantes y cierra cuentas" },
@@ -57,7 +59,7 @@ function rolesPorDerecho(derecho: Derecho): RolClave[] {
 
 function derechoPorRoles(roles: RolClave[]): Derecho {
   if (roles.includes("administrador")) return "avanzado";
-  if (roles.some((rol) => rol === "mesero" || rol === "caja" || rol === "inventario")) return "basico";
+  if (roles.some((rol) => rol === "encargado_turno" || rol === "mesero" || rol === "caja" || rol === "inventario")) return "basico";
   return "minimo";
 }
 
@@ -222,10 +224,15 @@ function puede(derecho: Derecho, accion: AccionPin, roles: RolClave[]): boolean 
   }
   if (roles.includes("administrador")) return true;
   if (accion === "inventario") return false;
+  if (accion === "cancelar_cuenta") return roles.includes("encargado_turno");
+  if (accion === "cancelar_producto_cocina") return roles.includes("cocina");
   if (accion === "caja") return roles.includes("caja");
   if (accion === "abrir_sesion") return false;
-  if (accion === "precuenta") return roles.includes("mesero") || roles.includes("caja");
-  if (accion === "enviar" || accion === "crear_pedido" || accion === "anular") return roles.includes("mesero");
+  if (accion === "precuenta") return roles.includes("mesero") || roles.includes("encargado_turno") || roles.includes("caja");
+  if (accion === "enviar" || accion === "crear_pedido") {
+    return roles.includes("mesero") || roles.includes("encargado_turno");
+  }
+  if (accion === "anular") return roles.includes("mesero") || roles.includes("encargado_turno");
   return false;
 }
 
@@ -236,6 +243,20 @@ export async function exigirPin(
 ): Promise<Empleado> {
   const empleado = await probarPin(db, pin);
   if (!empleado) throw new PinError("pin_invalido", "PIN incorrecto");
+  if (!puede(empleado.derecho, accion, rolesDeEmpleado(db, empleado.id))) {
+    throw new PinError("sin_derecho", "Sin derecho para esta acción");
+  }
+  return empleado;
+}
+
+/** Autoriza una acción con la identidad de la sesión, sin volver a pedir PIN. */
+export function exigirPermisoEmpleado(
+  db: Database.Database,
+  empleadoId: number,
+  accion: AccionPin,
+): Empleado {
+  const empleado = empleadoPorId(db, empleadoId);
+  if (!empleado) throw new PinError("credenciales_invalidas", "La sesión ya no es válida");
   if (!puede(empleado.derecho, accion, rolesDeEmpleado(db, empleado.id))) {
     throw new PinError("sin_derecho", "Sin derecho para esta acción");
   }

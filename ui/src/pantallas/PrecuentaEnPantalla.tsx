@@ -24,15 +24,13 @@ export function PrecuentaEnPantalla({ restaurante, precuenta, onCerrar }: Props)
         <h2 className="ticket-papel__tipo">PRECUENTA</h2>
         <p className="ticket-papel__referencia">
           {precuenta.mesaNumero != null ? `Mesa #${precuenta.mesaNumero}` : "Sin mesa"} · Precuenta #
-          {precuenta.numero} · {precuenta.mesero}
+          {precuenta.numero}
         </p>
         <ul className="ticket-papel__lineas">
           {precuenta.lineas.map((linea, indice) => (
             <li key={`${linea.nombre}-${indice}`}>
               <span>
-                <strong>
-                  {linea.cantidad} × {linea.nombre}
-                </strong>
+                {linea.cantidad} × {linea.nombre}
                 {linea.nota ? <span className="ticket-papel__nota"> ({linea.nota})</span> : null}
               </span>
               <span>{dinero(linea.cantidad * linea.precioCentavos)}</span>

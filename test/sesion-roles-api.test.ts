@@ -34,7 +34,9 @@ describe("sesiones y vistas por rol", () => {
   it("todos los roles pueden iniciar sesión y el servidor limita sus vistas", { timeout: 20000 }, async () => {
     const db = openTestDb();
     seedCartaDemo(db);
-    for (const rol of ["administrador", "mesero", "cocina", "caja", "inventario"] as RolClave[]) await crearUsuario(db, rol);
+    for (const rol of ["administrador", "encargado_turno", "mesero", "cocina", "caja", "inventario"] as RolClave[]) {
+      await crearUsuario(db, rol);
+    }
     const app = createApp({ db, config: defaultConfig(), printer: new MemoryPrinter(), exigirAutenticacion: true });
 
     const cookieCocina = await entrar(app, "cocina");
@@ -45,8 +47,19 @@ describe("sesiones y vistas por rol", () => {
     expect((await app.request("/api/mesas", { headers: { cookie: cookieMesero } })).status).toBe(200);
     expect((await app.request("/api/kds", { headers: { cookie: cookieMesero } })).status).toBe(403);
 
-    for (const rol of ["administrador", "mesero", "cocina", "caja", "inventario"] as RolClave[]) {
-      const cookie = rol === "cocina" ? cookieCocina : rol === "mesero" ? cookieMesero : await entrar(app, rol);
+    const cookieEncargado = await entrar(app, "encargado_turno");
+    expect((await app.request("/api/mesas", { headers: { cookie: cookieEncargado } })).status).toBe(200);
+    expect((await app.request("/api/cuentas", { headers: { cookie: cookieEncargado } })).status).toBe(200);
+    expect((await app.request("/api/kds", { headers: { cookie: cookieEncargado } })).status).toBe(403);
+
+    for (const rol of ["administrador", "encargado_turno", "mesero", "cocina", "caja", "inventario"] as RolClave[]) {
+      const cookie = rol === "cocina"
+        ? cookieCocina
+        : rol === "mesero"
+          ? cookieMesero
+          : rol === "encargado_turno"
+            ? cookieEncargado
+            : await entrar(app, rol);
       expect((await app.request("/api/inventario", { headers: { cookie } })).status).toBe(200);
     }
 

@@ -1,0 +1,26 @@
+{
+  "fecha": "2026-09-10",
+  "rama": "codex/propuesta-mesas",
+  "commit_base": "9e1dd1b",
+  "cambios_sin_commit": true,
+  "servidor_revision": "http://127.0.0.1:8080/",
+  "herramienta": "CUA sobre build de produccion",
+  "viewports": ["390x844", "768x1024", "1280x900"],
+  "pantallas": [
+    "Mesas",
+    "Ordenes del mesero",
+    "Cocina",
+    "Inventario",
+    "Opciones",
+    "Precuenta",
+    "Pedido para llevar"
+  ],
+  "flujos_interactivos": [
+    "cancelacion de producto iniciado y devolucion de stock",
+    "actualizacion al mesero y reconocimiento",
+    "filtro de incidencias",
+    "detalle operativo de cocina",
+    "pedido para llevar con empaque"
+  ],
+  "resultado": "aprobado"
+}

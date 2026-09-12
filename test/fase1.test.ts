@@ -87,7 +87,7 @@ describe("fase 1 · resumen con precios", () => {
     onCancelar: () => undefined,
   };
 
-  it("muestra el precio de cada línea y el total estimado", () => {
+  it("muestra cantidad y total en la cinta con el detalle plegado", () => {
     const html = renderToStaticMarkup(
       createElement(ConstructorOrden, {
         ...props,
@@ -100,10 +100,10 @@ describe("fase 1 · resumen con precios", () => {
         },
       }),
     );
-    expect(html).toContain("$18.800");
-    expect(html).toContain("$1.800");
-    expect(html).toContain("Total estimado");
-    expect(html).toContain("Enviar · $20.600");
+    expect(html).toContain('aria-label="Ver resumen de la orden, 3 productos, total $20.600"');
+    expect(html).not.toContain("$18.800");
+    expect(html).not.toContain("Total estimado");
+    expect(html).not.toContain("Enviar · $20.600");
   });
 
   it("sin líneas no muestra total", () => {
@@ -113,6 +113,7 @@ describe("fase 1 · resumen con precios", () => {
         borrador: { version: 1, claveIdempotencia: "f1", lineas: [], indicaciones: "", actualizadoEn: new Date(0).toISOString() },
       }),
     );
+    expect(html).toContain('aria-label="Ver resumen de la orden, 0 productos, total $0"');
     expect(html).not.toContain("Total estimado");
   });
 });

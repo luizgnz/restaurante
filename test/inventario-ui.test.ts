@@ -1,7 +1,13 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { Inventario, type MaterialInventarioUi } from "../ui/src/pantallas/Inventario.tsx";
+import {
+  Inventario,
+  estadoInventario,
+  ordenarMateriales,
+  presentarUnidadMaterial,
+  type MaterialInventarioUi,
+} from "../ui/src/pantallas/Inventario.tsx";
 
 const material: MaterialInventarioUi = {
   id: 1,
@@ -39,8 +45,21 @@ describe("pantalla de inventario", () => {
     );
 
     expect(html).not.toContain(">Ingresar<");
-    expect(html).toContain('aria-label="Ajustar inventario de Harina"');
+    expect(html).toContain('aria-label="Ajustar inventario de Harina (Uds.)"');
     expect(html).toContain("Los ingresos y las pérdidas exigen autorización");
+  });
+
+  it("presenta la unidad entre paréntesis sin conservarla como parte del nombre", () => {
+    expect(presentarUnidadMaterial("Carne g")).toEqual({ nombre: "Carne", unidad: "Grs." });
+    expect(presentarUnidadMaterial("Arroz kg")).toEqual({ nombre: "Arroz", unidad: "kg" });
+    expect(presentarUnidadMaterial("Pan")).toEqual({ nombre: "Pan", unidad: "Uds." });
+
+    const html = renderToStaticMarkup(
+      createElement(Inventario, { materiales: [{ ...material, nombre: "Carne g" }], puedeIngresar: true, ...acciones }),
+    );
+    expect(html).toContain("Carne</strong><span");
+    expect(html).toContain("(Grs.)");
+    expect(html).not.toContain(">Carne g<");
   });
 
   it("coloca búsqueda, totales y recarga en una sola franja", () => {
@@ -50,13 +69,36 @@ describe("pantalla de inventario", () => {
 
     const herramientas = html.slice(html.indexOf('class="inventario-herramientas"'), html.indexOf('class="inventario-tabla"'));
     expect(herramientas).toContain("Buscar material o código");
-    expect(herramientas).toContain('aria-label="Recargar inventario"');
+    expect(herramientas).not.toContain('aria-label="Recargar inventario"');
     expect(herramientas).not.toContain('class="inventario-filtros"');
-    expect(herramientas).toContain("Filtrar por estado del inventario");
-    expect(herramientas).toContain("Reservado");
+    expect(herramientas).toContain("Filtrar inventario");
+    expect(herramientas).toContain("Con reservas");
     expect(html).not.toContain(">Actualizar<");
     expect(html).not.toContain(">Ingresar<");
     expect(html).not.toContain("Acción");
-    expect(html).toContain('aria-label="Ajustar inventario de Harina"');
+    expect(html).toContain('aria-label="Ajustar inventario de Harina (Uds.)"');
+
+    const tabla = html.slice(html.indexOf('class="inventario-tabla"'));
+    expect(tabla).toContain("Existencia física");
+    expect(tabla).toContain("Comprometido");
+    expect(tabla).toContain(">Disponible<");
+    expect(tabla).not.toContain(">Reservado<");
+    expect(tabla).toContain('aria-sort="ascending"');
+    expect(tabla).toContain('aria-label="Ordenar por Estado, ascendente"');
+  });
+
+  it("distingue poco stock y prioriza los estados críticos", () => {
+    const sinStock = { ...material, id: 2, nombre: "Agotado", disponible: 0 };
+    const pocoStock = { ...material, id: 3, nombre: "Escaso", enMano: 10, disponible: 2 };
+    const disponible = { ...material, id: 4, nombre: "Normal", enMano: 10, disponible: 7 };
+
+    expect(estadoInventario(sinStock).texto).toBe("Sin stock");
+    expect(estadoInventario(pocoStock).texto).toBe("Poco stock");
+    expect(estadoInventario(disponible).texto).toBe("Disponible");
+    expect(ordenarMateriales([disponible, pocoStock, sinStock], { columna: "estado", direccion: "asc" }).map((item) => item.nombre)).toEqual([
+      "Agotado",
+      "Escaso",
+      "Normal",
+    ]);
   });
 });

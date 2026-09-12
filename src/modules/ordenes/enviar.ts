@@ -34,6 +34,33 @@ type OrdenExistente = { id: number; cuenta_id: number };
 type ProductoPrecio = { nombre: string; precio_centavos: number };
 type MesaNumero = { numero: number };
 
+function nombreCliente(valor: string | null | undefined): string | null {
+  const limpio = valor?.trim() ?? "";
+  if (limpio.length > 80) throw new OrdenError("cliente_nombre_largo", "El nombre del cliente supera 80 caracteres");
+  return limpio || null;
+}
+
+function crearMesaInternaParaLlevar(db: Database.Database, numeroServicio: number): number {
+  let piso = db
+    .prepare("SELECT id FROM pisos WHERE nombre = '__sistema_para_llevar__' AND activo = 0 ORDER BY id LIMIT 1")
+    .get() as { id: number } | undefined;
+  if (!piso) {
+    const info = db
+      .prepare("INSERT INTO pisos (nombre, activo) VALUES ('__sistema_para_llevar__', 0)")
+      .run();
+    piso = { id: Number(info.lastInsertRowid) };
+  }
+  return Number(
+    db
+      .prepare(
+        `INSERT INTO mesas
+          (piso_id, numero, asientos, activa, pos_x, pos_y, forma, ancho, alto)
+         VALUES (?, ?, 1, 0, 0, 0, 'square', 88, 88)`,
+      )
+      .run(piso.id, -numeroServicio).lastInsertRowid,
+  );
+}
+
 function resultadoIdempotente(db: Database.Database, orden: OrdenExistente): ResultadoEnvio {
   const comanda = db
     .prepare(
@@ -75,16 +102,44 @@ export async function enviarOrden(
       if (!(linea.cantidad > 0)) throw new OrdenError("cantidad_invalida", "Cantidad inválida");
     }
 
-    let cuenta = cuentaActivaPorMesa(db, input.mesaId);
+    const tipoServicio = input.tipoServicio ?? "mesa";
+    if (tipoServicio !== "mesa" && tipoServicio !== "para_llevar") {
+      throw new OrdenError("tipo_servicio_invalido", "Tipo de servicio inválido");
+    }
+    if (tipoServicio === "mesa" && (!Number.isInteger(input.mesaId) || Number(input.mesaId) <= 0)) {
+      throw new OrdenError("mesa_inexistente", "Hace falta una mesa válida");
+    }
+
+    let cuenta = tipoServicio === "mesa" ? cuentaActivaPorMesa(db, Number(input.mesaId)) : null;
     const ahora = new Date().toISOString();
     if (!cuenta) {
-      const mesa = db.prepare("SELECT id FROM mesas WHERE id = ?").get(input.mesaId) as { id: number } | undefined;
-      if (!mesa) throw new OrdenError("mesa_inexistente", "Mesa inexistente");
+      let mesaId = Number(input.mesaId);
+      let numeroServicio: number | null = null;
+      if (tipoServicio === "mesa") {
+        const mesa = db.prepare("SELECT id FROM mesas WHERE id = ? AND activa = 1").get(mesaId) as { id: number } | undefined;
+        if (!mesa) throw new OrdenError("mesa_inexistente", "Mesa inexistente");
+      } else {
+        const maximo = db
+          .prepare("SELECT max(numero_servicio) AS numero FROM cuentas WHERE jornada_id = ? AND tipo_servicio = 'para_llevar'")
+          .get(jornada.id) as { numero: number | null };
+        numeroServicio = (maximo.numero ?? 0) + 1;
+        mesaId = crearMesaInternaParaLlevar(db, numeroServicio);
+      }
       const info = db
         .prepare(
-          "INSERT INTO cuentas (mesa_id, estado, abierta_por_empleado_id, abierta_en, jornada_id) VALUES (?, 'abierta', ?, ?, ?)",
+          `INSERT INTO cuentas
+            (mesa_id, estado, abierta_por_empleado_id, abierta_en, jornada_id, tipo_servicio, numero_servicio, cliente_nombre)
+           VALUES (?, 'abierta', ?, ?, ?, ?, ?, ?)`,
         )
-        .run(input.mesaId, empleado.id, ahora, jornada.id);
+        .run(
+          mesaId,
+          empleado.id,
+          ahora,
+          jornada.id,
+          tipoServicio,
+          numeroServicio,
+          tipoServicio === "para_llevar" ? nombreCliente(input.clienteNombre) : null,
+        );
       cuenta = { id: Number(info.lastInsertRowid), estado: "abierta" };
     }
 
@@ -160,11 +215,13 @@ export async function enviarOrden(
 
     // Antes de mover un gramo: la política `bloqueo_sin_stock` decide si esta
     // orden puede comprometer lo que hay en bodega.
-    const avisos = controlarStock(db, cfg, consumo);
+    const avisos = controlarStock(db, { ...cfg, bloqueo_sin_stock: "bloquear" }, consumo);
 
     registrarConsumoDeOrden(db, ordenId, consumo, cfg.politica_inventario);
 
-    const mesa = db.prepare("SELECT numero FROM mesas WHERE id = ?").get(input.mesaId) as MesaNumero;
+    const servicio = db
+      .prepare("SELECT c.tipo_servicio, c.numero_servicio, c.cliente_nombre, m.numero FROM cuentas c JOIN mesas m ON m.id = c.mesa_id WHERE c.id = ?")
+      .get(cuenta.id) as MesaNumero & { tipo_servicio: "mesa" | "para_llevar"; numero_servicio: number | null; cliente_nombre: string | null };
     const comandaId = crearComanda(db, {
       envioN: numero,
       meseroId: empleado.id,
@@ -173,10 +230,15 @@ export async function enviarOrden(
       tipo: "orden",
     });
     encolarJob(db, "comanda", {
-      mesaNumero: mesa.numero,
+      mesaNumero: servicio.tipo_servicio === "mesa" ? servicio.numero : null,
       ordenNumero: numero,
       mesero: empleado.nombre,
-      indicaciones: input.indicaciones ?? null,
+      indicaciones:
+        servicio.tipo_servicio === "para_llevar"
+          ? [`PARA LLEVAR #${servicio.numero_servicio}`, servicio.cliente_nombre, input.indicaciones]
+              .filter(Boolean)
+              .join(" · ")
+          : input.indicaciones ?? null,
       lineas: ticketLineas,
     });
     return { cuentaId: cuenta.id, ordenId, comandaId, repetida: false, avisos, mesero: empleado.nombre };

@@ -18,6 +18,7 @@ describe("diálogo de cancelar cuenta", () => {
     expect(html).toContain("$8.900");
     expect(html).not.toContain("$8900");
     expect(html).toContain("Motivo de la cancelación");
+    expect(html).toContain("Solo un administrador");
     expect(html).toContain("Cancelar cuenta");
   });
 });

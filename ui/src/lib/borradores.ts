@@ -2,6 +2,8 @@ export type BorradorOrden = {
   version: 1;
   mesaId?: number;
   cuentaId?: number;
+  tipoServicio?: "mesa" | "para_llevar";
+  clienteNombre?: string;
   claveIdempotencia: string;
   lineas: Array<{
     productoId: number;
@@ -59,6 +61,8 @@ function parsearBorrador(raw: unknown): BorradorOrden | null {
 
   if (d.mesaId !== undefined && !esEnteroPositivo(d.mesaId)) return null;
   if (d.cuentaId !== undefined && !esEnteroPositivo(d.cuentaId)) return null;
+  if (d.tipoServicio !== undefined && d.tipoServicio !== "mesa" && d.tipoServicio !== "para_llevar") return null;
+  if (d.clienteNombre !== undefined && typeof d.clienteNombre !== "string") return null;
 
   if (!Array.isArray(d.lineas)) return null;
   const lineas: BorradorOrden["lineas"] = [];
@@ -102,6 +106,8 @@ function parsearBorrador(raw: unknown): BorradorOrden | null {
   };
   if (d.mesaId !== undefined) borrador.mesaId = d.mesaId;
   if (d.cuentaId !== undefined) borrador.cuentaId = d.cuentaId;
+  if (d.tipoServicio !== undefined) borrador.tipoServicio = d.tipoServicio;
+  if (d.clienteNombre !== undefined) borrador.clienteNombre = d.clienteNombre;
   return borrador;
 }
 

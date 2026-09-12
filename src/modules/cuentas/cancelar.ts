@@ -1,9 +1,6 @@
 import type Database from "better-sqlite3";
 import {
   devolverConsumoDeLineas,
-  firmarReservasDeLineas,
-  registrarMermaDeAnulacion,
-  type MermaAnulacion,
 } from "../inventario/asientos.ts";
 import { exigirPin } from "../empleados/empleados.ts";
 import { cancelarLineasDeOrden, lineaPreparada } from "../kds/kds.ts";
@@ -35,15 +32,12 @@ export type ResultadoCancelacion = {
  * Es la salida que tenía el negocio bloqueada: clientes que se van sin pedir,
  * pedidos anulados completos, errores de apertura. El estado pasa a
  * `cancelada` —que el salón ya no cuenta como ocupada— y el inventario se
- * reparte según lo que cocina realmente hizo y la política del negocio
- * (`devolverInsumosPreparados`, default `true`):
+ * devuelve al stock la receta completa de cada producto cancelado:
  *
  * - líneas **sin empezar**: sus reservas (y firmados, si los hubiera) vuelven al
  *   stock; nunca hubo consumo real;
- * - líneas **preparadas** (`en_proceso`/`listo`/`servido`): por defecto sus
- *   insumos también vuelven, porque el restaurante los reutiliza; con la
- *   política de merma quedan consumidos y se documenta la salida en el kardex
- *   con motivo `anulacion_preparacion`.
+ * - líneas **preparadas** (`en_proceso`/`listo`/`servido`): sus insumos también
+ *   vuelven, de acuerdo con la regla operativa aprobada por el restaurante.
  *
  * El motivo es obligatorio y queda en `cancelaciones_cuentas` con el monto que
  * tenía la cuenta: es la pista que explica por qué una mesa cerró sin cobro.
@@ -79,30 +73,13 @@ export async function cancelarCuenta(
     const correccionLineaIds: number[] = [];
     for (const orden of ordenes) {
       const vigentes = versionVigenteOrden(db, orden.id) as LineaVigente[];
-      const mermaDeOrden: MermaAnulacion[] = [];
       const clavesDevueltas: string[] = [];
       for (const linea of vigentes) {
         if (linea.cantidad <= 0) continue;
         const preparada = lineaPreparada(db, linea.lineaClave, linea.ordenLineaId);
         if (preparada) lineasPreparadas += linea.cantidad;
-        if (preparada && !input.devolverInsumosPreparados) {
-          mermaDeOrden.push({
-            lineaClave: linea.lineaClave,
-            productoId: linea.productoId,
-            unidades: linea.cantidad,
-          });
-        } else {
-          clavesDevueltas.push(linea.lineaClave);
-          lineasLiberadas += linea.cantidad;
-        }
-      }
-      if (mermaDeOrden.length > 0) {
-        firmarReservasDeLineas(
-          db,
-          orden.id,
-          mermaDeOrden.map((m) => m.lineaClave),
-        );
-        registrarMermaDeAnulacion(db, orden.id, mermaDeOrden, empleado.id);
+        clavesDevueltas.push(linea.lineaClave);
+        lineasLiberadas += linea.cantidad;
       }
       devolverConsumoDeLineas(db, orden.id, clavesDevueltas);
       // Las tareas pendientes de cocina quedan canceladas; lo terminal es historia.

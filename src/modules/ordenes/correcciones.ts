@@ -2,15 +2,13 @@ import type Database from "better-sqlite3";
 import type { AppConfig } from "../../config.ts";
 import { despacharJobs, encolarJob } from "../../print/queue.ts";
 import type { PrinterPort, TicketDiferencia } from "../../print/types.ts";
-import { exigirPin } from "../empleados/empleados.ts";
+import { exigirPermisoEmpleado, exigirPin } from "../empleados/empleados.ts";
+import { ordenIniciadaEnCocina } from "../cuentas/etapas.ts";
 import {
   ajustarConsumoDeCorreccion,
   controlarStock,
-  firmarReservasDeLineas,
   lineasSinTrazabilidad,
-  registrarMermaDeAnulacion,
   type CambioOrdenConsumo,
-  type MermaAnulacion,
 } from "../inventario/asientos.ts";
 import { cancelarLineasDeOrden, crearComanda, ETAPA_AVISO, lineaPreparada, type LineaComanda } from "../kds/kds.ts";
 import { indicacionesVigentesOrden, versionVigenteOrden, type LineaVigente } from "./ordenes.ts";
@@ -60,7 +58,10 @@ export type EntradaCorreccion = {
   motivo?: string | null;
   /** Clave del cliente: repetirla devuelve la misma corrección (diseño §10). */
   claveIdempotencia: string;
-  pin: string;
+  pin?: string;
+  /** Identidad ya autenticada. Solo Cocina usa esta vía para cancelar un producto iniciado. */
+  empleadoIdAutorizado?: number;
+  origen?: "mesero" | "cocina" | "incidencia";
 };
 
 export type ResultadoCorreccion = {
@@ -79,6 +80,7 @@ type OrdenRow = {
   cuenta_id: number;
   cuenta_estado: string;
   mesa_numero: number;
+  tipo_servicio: "mesa" | "para_llevar";
 };
 
 type ProductoRow = { nombre: string; precio_centavos: number };
@@ -133,7 +135,8 @@ export function calcularDiferencias(actuales: LineaVigente[], nuevas: CambioOrde
 function ordenParaCorregir(db: Database.Database, ordenId: number): OrdenRow {
   const orden = db
     .prepare(
-      `SELECT o.id, o.numero, o.estado, o.cuenta_id, c.estado AS cuenta_estado, m.numero AS mesa_numero
+      `SELECT o.id, o.numero, o.estado, o.cuenta_id, c.estado AS cuenta_estado,
+              c.tipo_servicio, m.numero AS mesa_numero
        FROM ordenes o
        JOIN cuentas c ON c.id = o.cuenta_id
        JOIN mesas m ON m.id = c.mesa_id
@@ -242,7 +245,10 @@ export async function corregirOrden(
   if (!clave) {
     throw new CorreccionError("clave_idempotencia_requerida", "Hace falta una clave de idempotencia");
   }
-  const empleado = await exigirPin(db, input.pin, "anular");
+  const origen = input.origen ?? "mesero";
+  const empleado = input.empleadoIdAutorizado != null
+    ? exigirPermisoEmpleado(db, input.empleadoIdAutorizado, "cancelar_producto_cocina")
+    : await exigirPin(db, input.pin ?? "", "anular");
   const lineas = normalizarCambios(input.lineas);
 
   const result = db.transaction((): ResultadoCorreccion => {
@@ -283,16 +289,37 @@ export async function corregirOrden(
     for (const d of diferencias) finales.set(d.lineaClave, d.cantidadNueva);
     const ordenEnCero = finales.size > 0 && [...finales.values()].every((c) => c === 0);
 
+    if (origen === "mesero" && ordenEnCero && orden.tipo_servicio === "para_llevar") {
+      exigirPermisoEmpleado(db, empleado.id, "cancelar_cuenta");
+    }
+
     const motivo = textoOpcional(input.motivo);
+    const iniciadaEnCocina = ordenIniciadaEnCocina(db, input.ordenId);
+
+    if (origen === "cocina") {
+      const cambioNoPermitido = diferencias.some(
+        (d) => d.delta >= 0 || d.cantidadNueva !== 0 || d.notaAnterior !== d.notaNueva,
+      );
+      if (cambioNoPermitido || cambiaIndicaciones) {
+        throw new CorreccionError(
+          "cambio_cocina_invalido",
+          "Cocina solo puede cancelar por completo un producto que ya empezó",
+        );
+      }
+    }
 
     // Guarda de etapa (lo que cocina ya empezó no se toca a escondidas): bajar
-    // una línea en preparación está bloqueado; anularla es la única salida y
-    // exige motivo, porque sus insumos ya se consumieron y van a merma.
-    const preparadas = new Map<string, boolean>();
+    // una línea en preparación está bloqueado; Cocina puede anularla por
+    // completo con un motivo y la receta vuelve al stock.
     for (const d of diferencias) {
       if (d.delta >= 0) continue;
       const preparada = lineaPreparada(db, d.lineaClave, d.ordenLineaId);
-      preparadas.set(d.lineaClave, preparada);
+      if (origen === "cocina" && !preparada) {
+        throw new CorreccionError(
+          "producto_no_iniciado",
+          `${d.nombre} todavía no empezó: debe cancelarlo el mesero`,
+        );
+      }
       if (!preparada) continue;
       if (d.cantidadNueva > 0) {
         throw new CorreccionError(
@@ -303,12 +330,21 @@ export async function corregirOrden(
       if (!motivo) {
         throw new CorreccionError(
           "justificacion_requerida",
-          `Para anular ${d.nombre} ya preparado hay que registrar el motivo (sus insumos van a merma)`,
+          `Para cancelar ${d.nombre} hay que elegir un motivo`,
         );
       }
     }
     if (cfg.auditoria_anulaciones && cfg.justificacion_anulacion && anulaLineas && !motivo) {
-      throw new CorreccionError("justificacion_requerida", "Hay que escribir por qué se anula");
+      throw new CorreccionError("justificacion_requerida", "Hay que seleccionar por qué se anula");
+    }
+    if (ordenEnCero && !motivo) {
+      throw new CorreccionError("justificacion_requerida", "Para anular la orden hay que registrar el motivo");
+    }
+    if (origen === "mesero" && iniciadaEnCocina) {
+      throw new CorreccionError(
+        "orden_en_preparacion",
+        "Cocina ya inició esta orden: solo Cocina puede cancelar sus productos",
+      );
     }
 
     // `esNueva` distingue la línea que nace en esta corrección (la única que
@@ -393,36 +429,17 @@ export async function corregirOrden(
       input.ordenId,
     );
 
-    // Lo que cocina no empezó: el stock reservado/firmado vuelve. Lo que ya se
-    // cocinó: no se devuelve nada (sería stock fantasma); queda consumido y se
-    // documenta como merma en el kardex.
     // Antes de mover un gramo: las líneas nuevas de esta corrección también
     // comprometen bodega, con la misma política que un envío.
     const avisos = controlarStock(
       db,
-      cfg,
+      { ...cfg, bloqueo_sin_stock: "bloquear" },
       consumo.filter((c) => c.delta > 0).map((c) => ({ productoId: c.productoId, cantidad: c.delta })),
     );
 
-    // Lo que cocina no empezó: el stock reservado/firmado vuelve. Lo que ya se
-    // cocinó depende de la política del negocio (`devolver_insumos_preparados`):
-    // con reutilización los insumos vuelven por el camino normal de devolución;
-    // si no, quedan consumidos y se documenta merma en el kardex.
-    const usarMerma = !cfg.devolver_insumos_preparados;
-    const consumoLibre = usarMerma ? consumo.filter((c) => !preparadas.get(c.lineaClave)) : consumo;
-    const mermas: MermaAnulacion[] = usarMerma
-      ? consumo
-          .filter((c) => c.delta < 0 && preparadas.get(c.lineaClave))
-          .map((c) => ({ lineaClave: c.lineaClave, productoId: c.productoId, unidades: Math.abs(c.delta) }))
-      : [];
-
-    ajustarConsumoDeCorreccion(db, input.ordenId, consumoLibre, cfg.politica_inventario);
-    if (mermas.length > 0) {
-      // El stock de lo ya cocinado sale una sola vez (reserva → firmado) y el
-      // kardex documenta la merma.
-      firmarReservasDeLineas(db, input.ordenId, mermas.map((m) => m.lineaClave));
-      registrarMermaDeAnulacion(db, input.ordenId, mermas, empleado.id);
-    }
+    // Decisión operativa aprobada: cancelar revierte la receta completa incluso
+    // si Cocina ya había iniciado o terminado el producto.
+    ajustarConsumoDeCorreccion(db, input.ordenId, consumo, cfg.politica_inventario);
 
     db.prepare("UPDATE precuentas SET vigente = 0 WHERE cuenta_id = ?").run(orden.cuenta_id);
     if (orden.cuenta_estado === "precuenta_emitida") {
@@ -437,7 +454,7 @@ export async function corregirOrden(
       correccionId,
       tipo: ordenEnCero ? "anulacion" : "correccion",
     });
-    cancelarLineasDeOrden(db, { ordenLineaIds, correccionLineaIds });
+    cancelarLineasDeOrden(db, { ordenLineaIds, correccionLineaIds, incluirTerminadas: origen === "cocina" });
 
     if (cfg.auditoria_anulaciones && anulaLineas) {
       db.prepare(

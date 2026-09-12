@@ -1,0 +1,26 @@
+{
+  "fecha": "2026-09-07",
+  "rama": "codex/propuesta-mesas",
+  "commit_base": "9e1dd1b",
+  "cambios_sin_commit": true,
+  "servidor": "http://127.0.0.1:8082/",
+  "pantalla": "Navegacion principal y menu de cuenta",
+  "objetivo": "Eliminar del menu movil los destinos ya disponibles en la barra inferior sin afectar el menu de escritorio",
+  "capturas": [
+    {
+      "archivo": "menu-390.png",
+      "viewport": "390x844",
+      "resultado": "solo Administracion, Opciones y Cerrar sesion; la navegacion primaria permanece abajo"
+    },
+    {
+      "archivo": "menu-768.png",
+      "viewport": "768x900",
+      "resultado": "el menu de escritorio conserva Mesas, Ordenes e Inventario desde el punto de corte"
+    },
+    {
+      "archivo": "menu-1280.png",
+      "viewport": "1280x900",
+      "resultado": "menu completo de escritorio sin cortes ni solapes"
+    }
+  ]
+}

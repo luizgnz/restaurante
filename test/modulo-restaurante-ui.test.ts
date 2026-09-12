@@ -58,7 +58,9 @@ describe("pantallas módulo restaurante", () => {
     expect(html).toContain("Opciones de mesa");
     expect(html).toContain('title="Nueva mesa"');
     expect(html).toContain('title="Nuevo piso"');
-    expect(html).toContain('title="Ordenar mesas en cuadrícula"');
+    expect(html).toContain('title="Ordenar y dimensionar mesas automáticamente"');
+    expect(html).toContain('aria-pressed="false"');
+    expect(html).toContain("<span>Auto</span>");
     expect(html).toContain('title="Duplicar piso"');
     expect(html).toContain('title="Eliminar piso"');
     expect(html).toContain('title="Duplicar mesa"');

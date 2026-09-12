@@ -3,6 +3,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";
 
 export type ComandaUi = {
   mesaNumero: number | null;
+  referenciaServicio?: string;
   ordenNumero: number;
   mesero: string;
   indicaciones: string | null;
@@ -22,7 +23,7 @@ export function ComandaEnPantalla({ restaurante, comanda, onCerrar }: Props) {
         <p className="ticket-papel__local">{restaurante}</p>
         <h2 className="ticket-papel__tipo">COMANDA</h2>
         <p className="ticket-papel__referencia">
-          {comanda.mesaNumero != null ? `Mesa #${comanda.mesaNumero}` : "Sin mesa"} · Orden #{comanda.ordenNumero} ·{" "}
+          {comanda.referenciaServicio ?? (comanda.mesaNumero != null ? `Mesa #${comanda.mesaNumero}` : "Sin mesa")} · Orden #{comanda.ordenNumero} ·{" "}
           {comanda.mesero}
         </p>
         <ul className="ticket-papel__lineas">

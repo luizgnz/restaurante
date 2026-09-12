@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { Boxes, ClipboardList, LayoutGrid, LogOut, Menu, Settings, SlidersHorizontal } from "lucide-react";
+import {
+  Boxes,
+  ClipboardList,
+  LayoutGrid,
+  LogOut,
+  Menu,
+  Settings,
+  SlidersHorizontal,
+} from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 
 export type Destino =
@@ -131,20 +139,26 @@ export function Barra({
             </Button>
             {menuAbierto ? (
               <div className="pos-odoo__panel" role="menu">
-                <p className="pos-odoo__panel-nombre">{nombre}</p>
+                <div className="pos-odoo__sesion">
+                  <span className="pos-odoo__sesion-avatar" aria-hidden="true">{nombre.trim().charAt(0).toLocaleUpperCase("es")}</span>
+                  <span className="pos-odoo__sesion-datos">
+                    <small>Sesión actual</small>
+                    <strong>{nombre}</strong>
+                  </span>
+                </div>
                 {puedeMesas ? (
-                  <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("plano")}>
+                  <Button type="button" variant="ghost" className="pos-odoo__panel-duplicado-movil" role="menuitem" onClick={() => ir("plano")}>
                     <LayoutGrid size={18} aria-hidden="true" />
                     <span>Mesas</span>
                   </Button>
                 ) : null}
                 {puedeOrdenes || puedeCocina ? (
-                  <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("pedidos")}>
+                  <Button type="button" variant="ghost" className="pos-odoo__panel-duplicado-movil" role="menuitem" onClick={() => ir("pedidos")}>
                     <ClipboardList size={18} aria-hidden="true" />
                     <span>Órdenes</span>
                   </Button>
                 ) : null}
-                <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("inventario")}>
+                <Button type="button" variant="ghost" className="pos-odoo__panel-duplicado-movil" role="menuitem" onClick={() => ir("inventario")}>
                   <Boxes size={18} aria-hidden="true" />
                   <span>Inventario</span>
                 </Button>
