@@ -26,7 +26,7 @@ describe("usuarios y roles API", () => {
 
     const listado = await e.app.request("/api/usuarios");
     expect(((await listado.json()) as { roles: Array<{ clave: string }> }).roles.map((rol) => rol.clave)).toEqual([
-      "administrador", "mesero", "cocina", "caja", "inventario",
+      "administrador", "encargado_turno", "mesero", "cocina", "caja", "inventario",
     ]);
     e.db.close();
   });

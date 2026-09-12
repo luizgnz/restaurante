@@ -15,6 +15,7 @@ const cuenta: CuentaDetalleUi = {
       id: 11,
       numero: 1,
       estado: "enviada",
+      etapa: "enviado",
       indicaciones: null,
       indicacionesOriginales: null,
       creadaEn: "2026-08-23T12:00:00.000Z",
@@ -57,12 +58,12 @@ describe("ventana de órdenes de la cuenta", () => {
     expect(html).toContain('role="dialog"');
     expect(html).toContain('aria-modal="true"');
     expect(html).toContain("Cuenta de mesa #7");
-    expect(html).toContain("Orden #1");
+    expect(html).toContain("Orden #11");
     // Productos en una sola línea, separados por coma.
     expect(html).toContain("2 × Hamburguesa (sin cebolla), 1 × Jugo");
     expect(html).toContain('title="Editar orden"');
-    expect(html).toContain('title="Anular orden"');
-    expect(html).toContain("Cerrar");
+    expect(html).toContain('title="Anular orden · requiere motivo y PIN"');
+    expect(html).toContain('aria-label="Cerrar detalle de la orden"');
   });
 
   it("omite las líneas en cero", () => {
@@ -107,10 +108,26 @@ describe("ventana de órdenes de la cuenta", () => {
         onCerrar: () => undefined,
       }),
     );
-    expect(html).toContain('aria-label="Acciones para Orden #1"');
-    expect(html).toContain("Orden #1 · Mesa 7");
-    expect(html).toContain("Editar pedido");
-    expect(html).toContain("Eliminar pedido");
-    expect(html).not.toContain('title="Editar orden"');
+    expect(html).toContain('aria-label="Acciones para Orden #11"');
+    expect(html).toContain("Orden #11 · Mesa 7");
+    expect(html).toContain("Editar orden");
+    expect(html).toContain("Anular orden");
+  });
+
+  it("explica y bloquea la edición de una orden iniciada en cocina", () => {
+    const html = renderToStaticMarkup(
+      createElement(ModalOrdenesCuenta, {
+        cuenta: { ...cuenta, ordenes: [{ ...cuenta.ordenes[0], etapa: "en_preparacion" }] },
+        ordenId: 11,
+        onEditarOrden: () => undefined,
+        onAnularOrden: () => undefined,
+        onCerrar: () => undefined,
+      }),
+    );
+
+    expect(html).toContain("Cocina ya inició esta orden");
+    expect(html).toContain("resuélvelo desde Cocina");
+    expect(html).not.toContain(">Editar orden<");
+    expect(html).not.toContain(">Anular orden<");
   });
 });

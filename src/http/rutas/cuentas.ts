@@ -9,6 +9,7 @@ import { listarCuentasActivas } from "../../modules/cuentas/listar.ts";
 import { PinError } from "../../modules/empleados/empleados.ts";
 import { sesionAbierta } from "../../modules/empleados/sesion.ts";
 import { totalVigenteCuenta } from "../../modules/cuentas/totales.ts";
+import { aplicarEntregasAutomaticas } from "../../modules/cuentas/entregas.ts";
 import { OrdenError } from "../../modules/ordenes/enviar.ts";
 import {
   emitirPrecuentaCuenta,
@@ -39,7 +40,10 @@ export function rutasCuentas(deps: RutasDeps): Hono {
   const { db, config, printer } = deps;
   const rutas = new Hono();
 
-  rutas.get("/", (c) => c.json({ cuentas: listarCuentasActivas(db) }));
+  rutas.get("/", (c) => {
+    aplicarEntregasAutomaticas(db, config);
+    return c.json({ cuentas: listarCuentasActivas(db) });
+  });
 
   rutas.get("/:id", (c) => {
     const cuentaId = idDeRuta(c);

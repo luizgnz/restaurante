@@ -28,8 +28,9 @@ describe("precuenta en pantalla", () => {
     expect(html).toContain("La Prueba");
     expect(html).toContain("PRECUENTA");
     expect(html).toContain("Mesa #7 · Precuenta #1");
-    expect(html).toContain("Ana");
+    expect(html).not.toContain("Ana");
     expect(html).toContain("2 × Hamburguesa");
+    expect(html).not.toContain("<strong>2 × Hamburguesa</strong>");
     expect(html).toContain("(sin cebolla)");
     expect(html).toContain("$17.800");
     expect(html).toContain("1 × Jugo");

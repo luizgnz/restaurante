@@ -4,6 +4,7 @@ import { cuentaActivaPorMesa } from "../src/modules/cuentas/cuentas.ts";
 import { totalVigenteCuenta } from "../src/modules/cuentas/totales.ts";
 import { crearEmpleado } from "../src/modules/empleados/empleados.ts";
 import { avanzarEtapa } from "../src/modules/kds/kds.ts";
+import { cancelarProductoDesdeCocina } from "../src/modules/kds/cancelar-producto.ts";
 import { corregirOrden, type EntradaCorreccion } from "../src/modules/ordenes/correcciones.ts";
 import { enviarOrden } from "../src/modules/ordenes/enviar.ts";
 import { seedCartaDemo } from "../src/modules/productos/seed.ts";
@@ -29,6 +30,8 @@ async function ordenConHamburguesaEnPreparacion(cfg: AppConfig = defaultConfig()
   const db = openTestDb();
   const ids = seedEn(db);
   await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });
+  await crearEmpleado(db, { nombre: "Jefa", pin: "2222", derecho: "avanzado" });
+  const cocina = await crearEmpleado(db, { nombre: "Cocina", pin: "4444", roles: ["cocina"] });
   const envio = await enviarOrden(
     db,
     {
@@ -47,7 +50,7 @@ async function ordenConHamburguesaEnPreparacion(cfg: AppConfig = defaultConfig()
     .prepare("SELECT id FROM comanda_lineas WHERE comanda_id = ? ORDER BY id LIMIT 1")
     .get(comanda.id) as { id: number };
   avanzarEtapa(db, lineaComanda.id, "en_proceso");
-  return { db, ids, envio, linea: versionVigenteOrden(db, envio.ordenId)[0] };
+  return { db, ids, envio, linea: versionVigenteOrden(db, envio.ordenId)[0], cocinaId: cocina.id, lineaComandaId: lineaComanda.id };
 }
 
 function seedEn(db: Db) {
@@ -78,6 +81,8 @@ describe("fase 0 · anular un plato ya preparado", () => {
     const db = openTestDb();
     const ids = seedEn(db);
     await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });
+    await crearEmpleado(db, { nombre: "Jefa", pin: "2222", derecho: "avanzado" });
+    const cocina = await crearEmpleado(db, { nombre: "Cocina", pin: "4444", roles: ["cocina"] });
     const ingredientes = ingredientesDe(db, ids.hamburguesa);
     expect(ingredientes.length).toBeGreaterThan(0);
     const antes = ingredientes.map((i) => ({ ...i, ...stockDe(db, i.ingrediente_id) }));
@@ -99,12 +104,12 @@ describe("fase 0 · anular un plato ya preparado", () => {
       .prepare("SELECT id FROM comanda_lineas WHERE comanda_id = ? ORDER BY id LIMIT 1")
       .get(comanda.id) as { id: number };
     avanzarEtapa(db, lineaComanda.id, "en_proceso");
-    const linea = versionVigenteOrden(db, envio.ordenId)[0];
-
-    await anular(db, {
-      ordenId: envio.ordenId,
-      lineas: [{ lineaClave: linea.lineaClave, productoId: linea.productoId, cantidad: 0, nota: null }],
+    await cancelarProductoDesdeCocina(db, {
+      comandaLineaId: lineaComanda.id,
+      empleadoId: cocina.id,
       motivo: "el cliente se retiró",
+      printer: new MemoryPrinter(),
+      config: defaultConfig(),
     });
 
     for (const i of ingredientes) {
@@ -120,11 +125,13 @@ describe("fase 0 · anular un plato ya preparado", () => {
     db.close();
   });
 
-  it("con la política de merma los insumos quedan consumidos y salen al kardex", async () => {
+  it("ignora la política antigua de merma y siempre devuelve la receta", async () => {
     const cfg: AppConfig = { ...defaultConfig(), devolver_insumos_preparados: false };
     const db = openTestDb();
     const ids = seedEn(db);
     await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });
+    await crearEmpleado(db, { nombre: "Jefa", pin: "2222", derecho: "avanzado" });
+    const cocina = await crearEmpleado(db, { nombre: "Cocina", pin: "4444", roles: ["cocina"] });
     const ingredientes = ingredientesDe(db, ids.hamburguesa);
     const antes = ingredientes.map((i) => ({ ...i, ...stockDe(db, i.ingrediente_id) }));
     const envio = await enviarOrden(
@@ -145,29 +152,24 @@ describe("fase 0 · anular un plato ya preparado", () => {
       .prepare("SELECT id FROM comanda_lineas WHERE comanda_id = ? ORDER BY id LIMIT 1")
       .get(comanda.id) as { id: number };
     avanzarEtapa(db, lineaComanda.id, "en_proceso");
-    const linea = versionVigenteOrden(db, envio.ordenId)[0];
-
-    await anular(
-      db,
-      {
-        ordenId: envio.ordenId,
-        lineas: [{ lineaClave: linea.lineaClave, productoId: linea.productoId, cantidad: 0, nota: null }],
-        motivo: "el cliente se retiró",
-      },
-      cfg,
-    );
+    await cancelarProductoDesdeCocina(db, {
+      comandaLineaId: lineaComanda.id,
+      empleadoId: cocina.id,
+      motivo: "el cliente se retiró",
+      printer: new MemoryPrinter(),
+      config: cfg,
+    });
 
     for (const i of ingredientes) {
       const ahora = stockDe(db, i.ingrediente_id);
       const deAntes = antes.find((a) => a.ingrediente_id === i.ingrediente_id)!;
-      const consumido = i.cantidad_real * 2;
       expect(ahora.reserved).toBeCloseTo(deAntes.reserved, 5);
-      expect(ahora.on_hand).toBeCloseTo(deAntes.on_hand - consumido, 5);
+      expect(ahora.on_hand).toBeCloseTo(deAntes.on_hand, 5);
     }
     const mermas = db
       .prepare("SELECT count(*) AS c FROM inventario_movimientos WHERE motivo = 'anulacion_preparacion' AND tipo = 'perdida'")
       .get() as { c: number };
-    expect(mermas.c).toBe(ingredientes.length);
+    expect(mermas.c).toBe(0);
     db.close();
   });
 
@@ -189,6 +191,31 @@ describe("fase 0 · anular un plato ya preparado", () => {
       lineas: [{ lineaClave: linea.lineaClave, productoId: linea.productoId, cantidad: 0, nota: null }],
     }).catch((e: unknown) => e);
     expect(codigoDeError(error)).toBe("justificacion_requerida");
+    db.close();
+  });
+
+  it("impide a mesero y administración anular la orden iniciada desde la pantalla del mesero", async () => {
+    const { db, envio, linea } = await ordenConHamburguesaEnPreparacion();
+    const cambio = {
+      ordenId: envio.ordenId,
+      lineas: [{ lineaClave: linea.lineaClave, productoId: linea.productoId, cantidad: 0, nota: null }],
+      motivo: "el cliente canceló la orden",
+    };
+
+    await expect(anular(db, cambio)).rejects.toMatchObject({ codigo: "orden_en_preparacion" });
+    await expect(anular(db, { ...cambio, pin: "2222" })).rejects.toMatchObject({ codigo: "orden_en_preparacion" });
+    db.close();
+  });
+
+  it("bloquea la edición cuando cocina ya inició la orden", async () => {
+    const { db, envio, linea } = await ordenConHamburguesaEnPreparacion();
+    await expect(
+      anular(db, {
+        ordenId: envio.ordenId,
+        lineas: [{ lineaClave: linea.lineaClave, productoId: linea.productoId, cantidad: 3, nota: null }],
+        pin: "2222",
+      }),
+    ).rejects.toMatchObject({ codigo: "orden_en_preparacion" });
     db.close();
   });
 
@@ -338,7 +365,7 @@ describe("fase 0 · stock al vender", () => {
     e.db.close();
   });
 
-  it("con la política de avisar la orden entra y la respuesta trae avisos", async () => {
+  it("la validación final bloquea el envío aun si una configuración antigua decía avisar", async () => {
     const e = await entornoApi({ ...defaultConfig(), bloqueo_sin_stock: "avisar" });
     const res = await post(e.app, "/api/ordenes", {
       mesaId: e.ids.mesa7,
@@ -346,10 +373,8 @@ describe("fase 0 · stock al vender", () => {
       pin: "1234",
       lineas: [{ productoId: e.ids.hamburguesa, cantidad: 9999 }],
     });
-    expect(res.status).toBe(201);
-    const cuerpo = (await res.json()) as { avisos: string[] };
-    expect(cuerpo.avisos.length).toBeGreaterThan(0);
-    expect(cuerpo.avisos[0]).toContain("Stock bajo");
+    expect(res.status).toBe(409);
+    expect(await codigoDe(res)).toBe("stock_insuficiente");
     e.db.close();
   });
 });

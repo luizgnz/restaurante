@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  Save,
+  Trash2,
+} from "lucide-react";
 import { api } from "../api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";

@@ -1,5 +1,20 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, CircleUserRound, EthernetPort, FilePenLine, LoaderCircle, Network, Plus, Printer, RefreshCw, ShieldCheck, SlidersHorizontal, Users, Wifi, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  CircleUserRound,
+  EthernetPort,
+  FilePenLine,
+  LoaderCircle,
+  Network,
+  Plus,
+  Printer,
+  RefreshCw,
+  ShieldCheck,
+  SlidersHorizontal,
+  Users,
+  Wifi,
+  XCircle,
+} from "lucide-react";
 import { api } from "../api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
@@ -19,6 +34,9 @@ export type OpcionesValores = {
   auditoria_anulaciones: boolean;
   justificacion_anulacion: boolean;
   devolver_insumos_preparados: boolean;
+  entrega_automatica_si_no_confirma?: boolean;
+  entrega_automatica_minutos?: number;
+  prioridad_para_llevar?: "igual" | "prioritaria";
   precuenta_obligatoria_antes_de_caja: boolean;
   enviar_a_caja_requiere_avanzado: boolean;
   impresora_comanda: ImpresoraConfigUi;
@@ -29,7 +47,7 @@ export type OpcionesValores = {
   nombre_servidor: string;
 };
 
-type RolClave = "administrador" | "mesero" | "cocina" | "caja" | "inventario";
+type RolClave = "administrador" | "encargado_turno" | "mesero" | "cocina" | "caja" | "inventario";
 type RolUi = { clave: RolClave; nombre: string; descripcion: string };
 type UsuarioUi = { id: number; nombre: string; usuario: string | null; activo: boolean; roles: RolClave[] };
 type EstadoRed = { habilitado: boolean; nombre: string; puerto: number; urls: string[]; salud: string };
@@ -249,12 +267,21 @@ export function Opciones({ valores, onCambiar }: Props) {
         <label className="settings-switch"><Switch checked={valores.auditoria_anulaciones} onChange={(event) => onCambiar({ auditoria_anulaciones: event.target.checked, ...(event.target.checked ? {} : { justificacion_anulacion: false }) })}  />Guardar registro de órdenes anuladas</label>
         {valores.auditoria_anulaciones ? <label className="settings-switch"><Switch checked={valores.justificacion_anulacion} onChange={(event) => onCambiar({ justificacion_anulacion: event.target.checked })}  />Pedir justificación al anular</label> : null}
         <label className="settings-switch">
-          <Switch checked={valores.devolver_insumos_preparados} onChange={(event) => onCambiar({ devolver_insumos_preparados: event.target.checked })} />
-          Devolver ingredientes de platos anulados o cancelados ya preparados (para reutilizarlos)
+          <Switch checked={valores.entrega_automatica_si_no_confirma ?? true} onChange={(event) => onCambiar({ entrega_automatica_si_no_confirma: event.target.checked })} />
+          Marcar automáticamente si el mesero no confirma (Recomendado)
         </label>
-        {valores.devolver_insumos_preparados ? null : (
-          <p>Los insumos de lo ya cocinado no vuelven al stock: se registran como merma en el inventario.</p>
-        )}
+        {valores.entrega_automatica_si_no_confirma ?? true ? (
+          <label>Después de
+            <span className="settings-inline-field"><input type="number" min={1} max={240} value={valores.entrega_automatica_minutos ?? 30} onChange={(event) => onCambiar({ entrega_automatica_minutos: Number(event.target.value) })} /> minutos</span>
+          </label>
+        ) : null}
+        <label>Prioridad de pedidos para llevar
+          <select value={valores.prioridad_para_llevar ?? "igual"} onChange={(event) => onCambiar({ prioridad_para_llevar: event.target.value as NonNullable<OpcionesValores["prioridad_para_llevar"]> })}>
+            <option value="igual">La misma que las mesas</option>
+            <option value="prioritaria">Antes que las mesas</option>
+          </select>
+        </label>
+        <p className="login-odoo__ayuda">Al cancelar un producto, el sistema devuelve siempre su receta completa al inventario.</p>
       </div>
     </fieldset>
     <fieldset className="form-odoo__tarjeta settings-card settings-card--wide printing-settings" id="impresion">

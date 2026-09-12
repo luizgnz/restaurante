@@ -6,9 +6,9 @@ import { incidenciasDeComanda, type IncidenciaCocina } from "./incidencias.ts";
 export type TipoComanda = "legacy" | "orden" | "correccion" | "anulacion";
 
 export class KdsError extends Error {
-  codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable" | "incidencia_pendiente" | "nada_que_avanzar";
+  codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable" | "incidencia_pendiente" | "nada_que_avanzar" | "motivo_requerido";
   constructor(
-    codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable" | "incidencia_pendiente" | "nada_que_avanzar",
+    codigo: "etapa_invalida" | "linea_inexistente" | "etapa_no_avanzable" | "incidencia_pendiente" | "nada_que_avanzar" | "motivo_requerido",
     message: string,
   ) {
     super(message);
@@ -93,7 +93,7 @@ export function crearComanda(
     );
   const comandaId = Number(info.lastInsertRowid);
   const insertLinea = db.prepare(
-    "INSERT INTO comanda_lineas (comanda_id, pedido_linea_id, orden_linea_id, orden_correccion_linea_id, etapa) VALUES (?, ?, ?, ?, ?)",
+    "INSERT INTO comanda_lineas (comanda_id, pedido_linea_id, orden_linea_id, orden_correccion_linea_id, etapa, etapa_actualizada_en) VALUES (?, ?, ?, ?, ?, ?)",
   );
   const porCorreccion = tipo === "correccion" || tipo === "anulacion";
   const porOrden = tipo === "orden";
@@ -105,6 +105,7 @@ export function crearComanda(
       porOrden ? id : null,
       porCorreccion ? id : null,
       etapa,
+      new Date().toISOString(),
     );
   }
   return comandaId;
@@ -115,8 +116,8 @@ export function crearComanda(
  *
  * Solo se avanza desde una tarea. Un `aviso` es historia —el registro de que
  * una corrección bajó, anuló o renombró algo— y lo terminal (`listo`,
- * `servido`, `cancelado`) es el dato que dice si hubo merma o si se le cobra al
- * cliente: pisarlos con un toque en la pantalla borraría esa información sin
+ * `servido`, `cancelado`) conserva el resultado operativo; pisarlo con un toque
+ * en la pantalla borraría esa información sin
  * dejar rastro.
  */
 export function avanzarEtapa(db: Database.Database, comandaLineaId: number, etapa: string): void {
@@ -146,7 +147,8 @@ export function avanzarEtapa(db: Database.Database, comandaLineaId: number, etap
   if (incidencia) {
     throw new KdsError("incidencia_pendiente", "El mesero debe responder la solicitud antes de preparar");
   }
-  db.prepare("UPDATE comanda_lineas SET etapa = ? WHERE id = ?").run(etapa, comandaLineaId);
+  db.prepare("UPDATE comanda_lineas SET etapa = ?, etapa_actualizada_en = ? WHERE id = ?")
+    .run(etapa, new Date().toISOString(), comandaLineaId);
 }
 
 /**
@@ -213,17 +215,18 @@ export function lineaPreparada(db: Database.Database, lineaClave: string, ordenL
  */
 export function cancelarLineasDeOrden(
   db: Database.Database,
-  input: { ordenLineaIds?: number[]; correccionLineaIds?: number[] },
+  input: { ordenLineaIds?: number[]; correccionLineaIds?: number[]; incluirTerminadas?: boolean },
 ): void {
-  const cancelables = ETAPAS_CANCELABLES.map(() => "?").join(", ");
+  const etapas = input.incluirTerminadas ? [...ETAPAS_CANCELABLES, "listo", "servido"] : [...ETAPAS_CANCELABLES];
+  const cancelables = etapas.map(() => "?").join(", ");
   const porOrden = db.prepare(
     `UPDATE comanda_lineas SET etapa = 'cancelado' WHERE orden_linea_id = ? AND etapa IN (${cancelables})`,
   );
-  for (const id of input.ordenLineaIds ?? []) porOrden.run(id, ...ETAPAS_CANCELABLES);
+  for (const id of input.ordenLineaIds ?? []) porOrden.run(id, ...etapas);
   const porCorreccion = db.prepare(
     `UPDATE comanda_lineas SET etapa = 'cancelado' WHERE orden_correccion_linea_id = ? AND etapa IN (${cancelables})`,
   );
-  for (const id of input.correccionLineaIds ?? []) porCorreccion.run(id, ...ETAPAS_CANCELABLES);
+  for (const id of input.correccionLineaIds ?? []) porCorreccion.run(id, ...etapas);
 }
 
 // ---------------------------------------------------------------------------
@@ -254,6 +257,9 @@ export type TarjetaKds = {
   /** `Mesa #7 · Orden #2 · Corrección #1` (diseño §9). */
   referencia: string;
   mesa: number | null;
+  tipoServicio: "mesa" | "para_llevar";
+  numeroServicio: number | null;
+  clienteNombre: string | null;
   mesero: string;
   envioN: number;
   creadaEn: string;
@@ -279,6 +285,9 @@ type ComandaRow = {
   correccion_id: number | null;
   mesero: string;
   mesa: number | null;
+  tipo_servicio: "mesa" | "para_llevar" | null;
+  numero_servicio: number | null;
+  cliente_nombre: string | null;
   orden_numero: number | null;
   numero_version: number | null;
   es_anulacion: number | null;
@@ -303,7 +312,9 @@ type LineaCorreccionRow = {
 };
 
 function referenciaDe(row: ComandaRow): string {
-  const mesa = row.mesa == null ? "Sin mesa" : `Mesa #${row.mesa}`;
+  const mesa = row.tipo_servicio === "para_llevar"
+    ? `Para llevar #${row.numero_servicio}`
+    : row.mesa == null ? "Sin mesa" : `Mesa #${row.mesa}`;
   // Una comanda legacy no tiene orden: su `envio_n` es el número que cocina
   // llamó «orden», y es el mismo que usa la migración para reconstruirlas.
   const orden = `Orden #${row.orden_numero ?? row.envio_n}`;
@@ -340,12 +351,13 @@ function textoContorno(row: ContornoLineaRow): string {
  * vigente de la orden (diseño §9). La corrección muestra además su delta: es la
  * diferencia lo que cocina tiene que atender, no el total.
  */
-export function tarjetasKds(db: Database.Database): TarjetaKds[] {
+export function tarjetasKds(db: Database.Database, prioridadParaLlevar: "igual" | "prioritaria" = "igual"): TarjetaKds[] {
   const comandas = db
     .prepare(
       `SELECT c.id, c.tipo, c.envio_n, c.creada_en, c.pedido_id, c.orden_id, c.correccion_id,
               e.nombre AS mesero,
               COALESCE(mp.numero, mc.numero) AS mesa,
+              cu.tipo_servicio, cu.numero_servicio, cu.cliente_nombre,
               o.numero AS orden_numero,
               oc.numero_version, oc.es_anulacion, oc.indicaciones AS correccion_indicaciones,
               p.indicaciones AS pedido_indicaciones
@@ -390,7 +402,7 @@ export function tarjetasKds(db: Database.Database): TarjetaKds[] {
      ORDER BY cl.id`,
   );
 
-  return comandas.map((row) => {
+  const tarjetas = comandas.map((row) => {
     const esCorreccion = row.correccion_id != null;
     const lineas: LineaTarjetaKds[] = esCorreccion
       ? (lineasCorreccion.all(row.id) as LineaCorreccionRow[]).map((l) => ({
@@ -423,6 +435,9 @@ export function tarjetasKds(db: Database.Database): TarjetaKds[] {
       tipo: row.tipo,
       referencia: referenciaDe(row),
       mesa: row.mesa,
+      tipoServicio: row.tipo_servicio ?? "mesa",
+      numeroServicio: row.numero_servicio,
+      clienteNombre: row.cliente_nombre,
       mesero: row.mesero,
       envioN: row.envio_n,
       creadaEn: row.creada_en,
@@ -437,6 +452,10 @@ export function tarjetasKds(db: Database.Database): TarjetaKds[] {
       incidencias: incidenciasDeComanda(db, row.id),
     };
   });
+  if (prioridadParaLlevar === "prioritaria") {
+    tarjetas.sort((a, b) => Number(b.tipoServicio === "para_llevar") - Number(a.tipoServicio === "para_llevar") || b.id - a.id);
+  }
+  return tarjetas;
 }
 
 export type LineaEventoCorreccion = {

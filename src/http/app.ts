@@ -8,6 +8,7 @@ import { listarPlugins, mensajesVacios } from "../modules/complementos/complemen
 import { ContornoError, configurarSlots, slotsDeProducto } from "../modules/contornos/contornos.ts";
 import { CancelarCuentaError } from "../modules/cuentas/cancelar.ts";
 import { CuentaError } from "../modules/cuentas/cuentas.ts";
+import { aplicarEntregasAutomaticas, EntregaError, marcarOrdenEntregada } from "../modules/cuentas/entregas.ts";
 import {
   actualizarUsuario,
   crearEmpleado,
@@ -29,6 +30,11 @@ import {
 } from "../modules/empleados/sesion.ts";
 import { avanzarEtapa, avanzarEtapaDeComanda, KdsError, tarjetasKds } from "../modules/kds/kds.ts";
 import {
+  cancelarProductoDesdeCocina,
+  listarActualizacionesCocina,
+  reconocerActualizacionCocina,
+} from "../modules/kds/cancelar-producto.ts";
+import {
   aceptarSugerencia,
   crearIncidenciaCocina,
   IncidenciaCocinaError,
@@ -43,7 +49,7 @@ import {
   listarInventario,
   type MotivoPerdidaInventario,
 } from "../modules/inventario/gestion.ts";
-import { InventarioError } from "../modules/inventario/asientos.ts";
+import { faltantesDeStock, InventarioError } from "../modules/inventario/asientos.ts";
 import { reiniciarDiaDemo } from "../modules/jornadas/demo.ts";
 import { abrirJornada, cerrarJornada, estadoJornada, JornadaError } from "../modules/jornadas/jornadas.ts";
 import { corregirOrden, CorreccionError } from "../modules/ordenes/correcciones.ts";
@@ -107,23 +113,26 @@ function rolesDeRuta(pathname: string, method: string): RolClave[] | null {
   if (pathname === "/api/productos" && method === "GET") return ["administrador"];
   if (pathname === "/api/productos" && method !== "GET") return ["administrador"];
   if (/^\/api\/productos\/\d+\/receta$/.test(pathname)) return ["administrador"];
-  if (/^\/api\/productos\/\d+\/slots$/.test(pathname)) return method === "GET" ? ["mesero", "administrador"] : ["administrador"];
-  if (pathname.startsWith("/api/categorias")) return method === "GET" ? ["mesero", "administrador"] : ["administrador"];
-  if (pathname.startsWith("/api/contornos")) return method === "GET" ? ["mesero", "administrador"] : ["administrador"];
-  if (pathname === "/api/plano" || pathname.startsWith("/api/pisos/")) return method === "GET" ? ["mesero", "administrador"] : ["administrador"];
+  if (/^\/api\/productos\/\d+\/slots$/.test(pathname)) return method === "GET" ? ["mesero", "encargado_turno", "administrador"] : ["administrador"];
+  if (pathname.startsWith("/api/categorias")) return method === "GET" ? ["mesero", "encargado_turno", "administrador"] : ["administrador"];
+  if (pathname.startsWith("/api/contornos")) return method === "GET" ? ["mesero", "encargado_turno", "administrador"] : ["administrador"];
+  if (pathname === "/api/plano" || pathname.startsWith("/api/pisos/")) return method === "GET" ? ["mesero", "encargado_turno", "administrador"] : ["administrador"];
   if (pathname === "/api/kds" || pathname.startsWith("/api/kds/")) return ["cocina", "administrador"];
-  if (pathname === "/api/cocina/incidencias") return method === "GET" ? ["mesero", "administrador"] : ["cocina", "administrador"];
-  if (pathname.startsWith("/api/cocina/incidencias/")) return ["mesero", "administrador"];
+  if (pathname === "/api/cocina/incidencias") return method === "GET" ? ["mesero", "encargado_turno", "administrador"] : ["cocina", "administrador"];
+  if (pathname.startsWith("/api/cocina/incidencias/")) return ["mesero", "encargado_turno", "administrador"];
+  if (pathname === "/api/cocina/actualizaciones" || pathname.startsWith("/api/cocina/actualizaciones/")) {
+    return ["mesero", "encargado_turno", "administrador"];
+  }
   if (pathname.startsWith("/api/inventario")) return method === "GET" ? [] : ["administrador"];
-  if (pathname === "/api/carta") return ["mesero", "cocina", "administrador"];
+  if (pathname === "/api/carta") return ["mesero", "encargado_turno", "cocina", "administrador"];
   if (pathname.startsWith("/api/cuentas")) {
-    if (pathname.endsWith("/ordenes") || pathname.endsWith("/nota-privada")) return ["mesero", "administrador"];
-    return ["mesero", "caja", "administrador"];
+    if (pathname.endsWith("/ordenes") || pathname.endsWith("/nota-privada")) return ["mesero", "encargado_turno", "administrador"];
+    return ["mesero", "encargado_turno", "caja", "administrador"];
   }
   if (pathname.startsWith("/api/ordenes") || pathname.startsWith("/api/pedidos") || pathname.startsWith("/api/lineas") || pathname.startsWith("/api/mesas")) {
-    return ["mesero", "administrador"];
+    return ["mesero", "encargado_turno", "administrador"];
   }
-  if (pathname.startsWith("/api/precuentas")) return ["mesero", "caja", "administrador"];
+  if (pathname.startsWith("/api/precuentas")) return ["mesero", "encargado_turno", "caja", "administrador"];
   return [];
 }
 
@@ -180,6 +189,7 @@ function codigoStatus(err: unknown): StatusError {
   if (err instanceof PinError) return 403;
   if (
     err instanceof CuentaError ||
+    err instanceof EntregaError ||
     err instanceof CancelarCuentaError ||
     err instanceof OrdenError ||
     err instanceof CorreccionError ||
@@ -259,6 +269,9 @@ function configPublica(config: AppConfig) {
     auditoria_anulaciones: config.auditoria_anulaciones,
     justificacion_anulacion: config.justificacion_anulacion,
     devolver_insumos_preparados: config.devolver_insumos_preparados,
+    entrega_automatica_si_no_confirma: config.entrega_automatica_si_no_confirma,
+    entrega_automatica_minutos: config.entrega_automatica_minutos,
+    prioridad_para_llevar: config.prioridad_para_llevar,
     pin_al_emitir_precuenta: config.pin_al_emitir_precuenta,
     pin_al_enviar_caja: config.pin_al_enviar_caja,
     precuenta_obligatoria_antes_de_caja: config.precuenta_obligatoria_antes_de_caja,
@@ -544,6 +557,7 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
     return c.json({
       productos: rows.map((p) => ({
         ...p,
+        disponible: faltantesDeStock(db, [{ productoId: p.id, cantidad: 1 }]).length === 0,
         armable: armableDeProducto(db, p.id),
         configurable:
           Number(
@@ -650,6 +664,9 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
       auditoria_anulaciones?: boolean;
       justificacion_anulacion?: boolean;
       devolver_insumos_preparados?: boolean;
+      entrega_automatica_si_no_confirma?: boolean;
+      entrega_automatica_minutos?: number;
+      prioridad_para_llevar?: AppConfig["prioridad_para_llevar"];
       pin_al_emitir_precuenta?: boolean;
       pin_al_enviar_caja?: boolean;
       precuenta_obligatoria_antes_de_caja?: boolean;
@@ -678,7 +695,18 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
     if (typeof body.confirmar_comanda === "boolean") config.confirmar_comanda = body.confirmar_comanda;
     if (typeof body.auditoria_anulaciones === "boolean") config.auditoria_anulaciones = body.auditoria_anulaciones;
     if (typeof body.justificacion_anulacion === "boolean") config.justificacion_anulacion = body.justificacion_anulacion;
-    if (typeof body.devolver_insumos_preparados === "boolean") config.devolver_insumos_preparados = body.devolver_insumos_preparados;
+    if (typeof body.entrega_automatica_si_no_confirma === "boolean") {
+      config.entrega_automatica_si_no_confirma = body.entrega_automatica_si_no_confirma;
+    }
+    if (body.entrega_automatica_minutos !== undefined) {
+      if (!Number.isInteger(body.entrega_automatica_minutos) || body.entrega_automatica_minutos < 1 || body.entrega_automatica_minutos > 240) {
+        throw new SolicitudError("tiempo_entrega_invalido", "El tiempo automático debe estar entre 1 y 240 minutos");
+      }
+      config.entrega_automatica_minutos = body.entrega_automatica_minutos;
+    }
+    if (body.prioridad_para_llevar === "igual" || body.prioridad_para_llevar === "prioritaria") {
+      config.prioridad_para_llevar = body.prioridad_para_llevar;
+    }
     if (typeof body.pin_al_emitir_precuenta === "boolean") config.pin_al_emitir_precuenta = body.pin_al_emitir_precuenta;
     if (typeof body.pin_al_enviar_caja === "boolean") config.pin_al_enviar_caja = body.pin_al_enviar_caja;
     if (typeof body.precuenta_obligatoria_antes_de_caja === "boolean") {
@@ -779,7 +807,27 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
     return c.json({ ok: true });
   });
 
-  app.get("/api/kds", (c) => c.json({ tarjetas: tarjetasKds(db) }));
+  app.get("/api/kds", (c) => {
+    aplicarEntregasAutomaticas(db, config);
+    return c.json({ tarjetas: tarjetasKds(db, config.prioridad_para_llevar) });
+  });
+
+  app.post("/api/ordenes/:id/entregar", (c) => {
+    const usuario = c.get("usuario");
+    const empleadoId = empleadoActual(usuario);
+    if (empleadoId == null) throw new PinError("credenciales_invalidas", "Hace falta iniciar sesión");
+    const ordenId = idDeRuta(c);
+    const servicio = db.prepare(
+      `SELECT cu.tipo_servicio FROM ordenes o JOIN cuentas cu ON cu.id = o.cuenta_id WHERE o.id = ?`,
+    ).get(ordenId) as { tipo_servicio: "mesa" | "para_llevar" } | undefined;
+    if (!servicio) throw new EntregaError("orden_inexistente", "La orden no existe");
+    return c.json(marcarOrdenEntregada(
+      db,
+      ordenId,
+      empleadoId,
+      servicio.tipo_servicio === "para_llevar" ? "retiro" : "manual",
+    ));
+  });
 
   app.post("/api/kds/lineas/:id/etapa", async (c) => {
     const comandaLineaId = idDeRuta(c);
@@ -797,9 +845,34 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
     return c.json({ ok: true, etapa, afectadas });
   });
 
+  app.post("/api/kds/lineas/:id/cancelar", async (c) => {
+    const usuario = c.get("usuario");
+    if (!usuario) throw new PinError("credenciales_invalidas", "Hace falta iniciar sesión en Cocina");
+    const body = await leerJson<{ motivo: unknown }>(c);
+    const correccion = await cancelarProductoDesdeCocina(db, {
+      comandaLineaId: idDeRuta(c),
+      empleadoId: usuario.id,
+      motivo: textoRequerido(body.motivo, "motivo_requerido", "Selecciona el motivo"),
+      printer,
+      config,
+    });
+    return c.json({ correccion });
+  });
+
   app.get("/api/cocina/incidencias", (c) => {
     if (!sesionAbierta(db)) throw new PinError("credenciales_invalidas", "Hace falta sesión");
     return c.json({ incidencias: listarIncidenciasMesero(db) });
+  });
+
+  app.get("/api/cocina/actualizaciones", (c) => {
+    if (!sesionAbierta(db)) throw new PinError("credenciales_invalidas", "Hace falta sesión");
+    return c.json({ actualizaciones: listarActualizacionesCocina(db) });
+  });
+
+  app.post("/api/cocina/actualizaciones/:id/reconocer", (c) => {
+    const empleadoId = empleadoActual(c.get("usuario"));
+    if (empleadoId == null) throw new PinError("credenciales_invalidas", "Hace falta iniciar sesión");
+    return c.json({ actualizacion: reconocerActualizacionCocina(db, idDeRuta(c), empleadoId) });
   });
 
   app.post("/api/cocina/incidencias", async (c) => {
@@ -851,6 +924,7 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
         motivo: `Sugerencia aceptada: ${incidencia.propuesta ?? incidencia.motivo}`,
         claveIdempotencia: `incidencia-${id}-aceptar`,
         pin: body.pin,
+        origen: "incidencia",
       }, printer, config);
     } catch (error) {
       if (!(error instanceof IncidenciaCocinaError) || error.codigo !== "sustitucion_no_estructurada") throw error;
@@ -863,26 +937,9 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
     const id = idDeRuta(c);
     const body = await leerJson<{ pin: unknown }>(c);
     if (typeof body.pin !== "string") throw new SolicitudError("pin_invalido", "Hace falta el PIN del mesero");
-    const { incidencia, lineas } = prepararEliminacion(db, id);
-    const correccion = await corregirOrden(
-      db,
-      {
-        ordenId: incidencia.ordenId,
-        lineas: lineas.map((linea) => ({
-          lineaClave: linea.lineaClave,
-          productoId: linea.productoId,
-          ordenLineaId: linea.ordenLineaId,
-          cantidad: 0,
-          nota: linea.nota,
-        })),
-        motivo: `Solicitud de cocina: ${incidencia.motivo}`,
-        claveIdempotencia: `incidencia-${id}-eliminar`,
-        pin: body.pin,
-      },
-      printer,
-      config,
-    );
-    return c.json({ incidencia: marcarIncidenciaEliminada(db, id), correccion });
+    await exigirPin(db, body.pin, "anular");
+    prepararEliminacion(db, id);
+    return c.json({ incidencia: marcarIncidenciaEliminada(db, id), correccion: null });
   });
 
   // Legacy: lectura del modelo de pedidos. La UI del modelo de cuentas usa

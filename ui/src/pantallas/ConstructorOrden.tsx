@@ -45,6 +45,7 @@ export type ProductoCarta = {
   codigo?: string | null;
   color?: string | null;
   foto_data?: string | null;
+  disponible?: boolean;
 };
 
 /* Iconografía por categoría: cuando un producto no tiene foto, la tarjeta
@@ -192,8 +193,10 @@ export function ConstructorOrden({
   const [busquedaAbierta, setBusquedaAbierta] = useState(false);
   const [indicacionesAbiertas, setIndicacionesAbiertas] = useState(Boolean(borrador.indicaciones));
   const [categoria, setCategoria] = useState<string | "todas">("todas");
-  const titulo = mesaFija ? `Nueva orden · Mesa #${mesaFija.numero}` : "Nueva orden";
+  const esParaLlevar = !mesaFija && borrador.tipoServicio === "para_llevar";
+  const titulo = mesaFija ? `Nueva orden · Mesa #${mesaFija.numero}` : esParaLlevar ? "Nueva orden · Para llevar" : "Nueva orden";
   const mesaId = mesaFija?.id ?? borrador.mesaId;
+  const destinoElegido = Boolean(mesaId) || esParaLlevar;
   const cantidadProductos = lineasUi.reduce((total, linea) => total + Math.max(0, linea.cantidad), 0);
   const totalOrden = lineasUi.reduce((total, linea) => {
     if (linea.cantidad <= 0) return total;
@@ -236,6 +239,7 @@ export function ConstructorOrden({
   }
 
   async function tocarProducto(producto: ProductoCarta) {
+    if (producto.disponible === false) return;
     if (producto.configurable && contornos && onSlotsDeProducto) {
       const slots = await onSlotsDeProducto(producto.id);
       if (slots.length > 0) {
@@ -265,10 +269,10 @@ export function ConstructorOrden({
 
   async function enviar() {
     const lineas = lineasPersistibles(lineasUi);
-    if (enviando || !mesaId || lineas.length === 0) return;
+    if (enviando || !destinoElegido || lineas.length === 0) return;
     setEnviando(true);
     try {
-      await onEnviar({ ...borrador, mesaId, cuentaId, lineas });
+      await onEnviar({ ...borrador, ...(mesaId ? { mesaId } : {}), cuentaId, lineas });
     } finally {
       setEnviando(false);
     }
@@ -302,23 +306,35 @@ export function ConstructorOrden({
           <p>Selecciona productos y revisa la orden antes de enviarla.</p>
         </div>
         {!mesaFija ? (
-          <label>
-            Mesa
-            <Select
-              aria-label="Mesa para la nueva orden"
-              value={borrador.mesaId ?? ""}
-              onChange={(event) => cambiar({ mesaId: Number(event.target.value) || undefined })}
-            >
-              <option value="">Selecciona una mesa</option>
-              {[...mesasSeleccionables]
-                .sort((a, b) => a.numero - b.numero)
-                .map((mesa) => (
-                  <option key={mesa.id} value={mesa.id}>
-                    Mesa #{mesa.numero} · {mesa.estado === "libre" ? "Libre" : "En servicio"}
-                  </option>
-                ))}
-            </Select>
-          </label>
+          <div className="constructor-orden__destino">
+            <label>
+              <span>Destino del pedido</span>
+              <Select
+                aria-label="Destino de la nueva orden"
+                value={esParaLlevar ? "para_llevar" : borrador.mesaId ? `mesa:${borrador.mesaId}` : ""}
+                onChange={(event) => {
+                  if (event.target.value === "para_llevar") cambiar({ tipoServicio: "para_llevar", mesaId: undefined });
+                  else cambiar({ tipoServicio: "mesa", mesaId: Number(event.target.value.replace("mesa:", "")) || undefined, clienteNombre: "" });
+                }}
+              >
+                <option value="">Selecciona mesa o para llevar</option>
+                <option value="para_llevar">Para llevar</option>
+                {[...mesasSeleccionables]
+                  .sort((a, b) => a.numero - b.numero)
+                  .map((mesa) => (
+                    <option key={mesa.id} value={`mesa:${mesa.id}`}>
+                      Mesa #{mesa.numero} · {mesa.estado === "libre" ? "Libre" : "En servicio"}
+                    </option>
+                  ))}
+              </Select>
+            </label>
+            {esParaLlevar ? (
+              <label className="constructor-orden__cliente">
+                <span>Nombre del cliente <small>(opcional)</small></span>
+                <Input value={borrador.clienteNombre ?? ""} maxLength={80} onChange={(event) => cambiar({ clienteNombre: event.target.value })} placeholder="Ej.: Carla" />
+              </label>
+            ) : null}
+          </div>
         ) : null}
       </header>
 
@@ -373,8 +389,9 @@ export function ConstructorOrden({
               <div
                 key={producto.id}
                 role="button"
-                tabIndex={0}
-                className={`carta__item${linea ? " is-on" : ""}`}
+                tabIndex={producto.disponible === false ? -1 : 0}
+                aria-disabled={producto.disponible === false}
+                className={`carta__item${linea ? " is-on" : ""}${producto.disponible === false ? " is-agotado" : ""}`}
                 style={
                   {
                     "--product-color": producto.color?.trim() || colorCategoria(producto.categoria_nombre),
@@ -405,6 +422,7 @@ export function ConstructorOrden({
                   <strong>{producto.nombre}</strong>
                   {producto.codigo ? <span>{producto.codigo}</span> : null}
                   {producto.configurable ? <Badge>Personalizable</Badge> : null}
+                  {producto.disponible === false ? <Badge variant="secondary">Agotado</Badge> : null}
                   <span className="carta__precio">{dinero(producto.precio_centavos)}</span>
                 </span>
                 {linea ? (
@@ -524,7 +542,7 @@ export function ConstructorOrden({
             </Button>
             <Button
               type="button"
-              disabled={!mesaId || lineasPersistibles(lineasUi).length === 0 || enviando}
+              disabled={!destinoElegido || lineasPersistibles(lineasUi).length === 0 || enviando}
               onClick={enviar}
             >
               <Send size={18} aria-hidden="true" />{" "}

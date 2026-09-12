@@ -809,16 +809,6 @@ main {
   margin-right: auto;
   font-size: 1.15rem;
 }
-.cuenta-mesa__nota {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.cuenta-mesa__nota textarea {
-  width: 100%;
-  min-height: 70px;
-  font-size: 1rem;
-}
 .correccion-modal {
   width: min(720px, 94vw);
   max-height: 90vh;
@@ -1040,8 +1030,7 @@ main > [role="alert"] {
 }
 
 .tarjeta,
-.cuenta-orden,
-.cuenta-mesa__nota {
+.cuenta-orden {
   padding: 1rem;
   border-radius: 1rem;
 }
@@ -1564,11 +1553,9 @@ button.icono {
   padding-left: 0.7rem;
   border-left: 2px solid var(--accent);
 }
-.cuenta-mesa__nota {
-  border-color: var(--border);
-  background: var(--card);
-  color: var(--foreground);
-  box-shadow: 0 8px 26px rgb(67 48 29 / 0.05);
+.cuenta-mesa__nueva {
+  min-block-size: 44px;
+  padding-inline: 0.9rem;
 }
 .cuenta-mesa__pie {
   position: fixed;
@@ -1593,6 +1580,9 @@ button.icono {
 .cuenta-mesa__pie > div strong {
   margin: 0;
   font-size: 1.3rem;
+}
+.cuenta-mesa__accion-corta {
+  display: none;
 }
 
 @media (max-width: 767px) {
@@ -1738,8 +1728,12 @@ button.icono {
     align-items: stretch;
   }
   .cuenta-mesa__cabecera > div,
-  .cuenta-mesa__cabecera > button {
+  .cuenta-mesa__cabecera > button:not(.cuenta-mesa__nueva) {
     width: 100%;
+  }
+  .cuenta-mesa__cabecera > .cuenta-mesa__nueva {
+    width: auto;
+    align-self: flex-end;
   }
   .cuenta-mesa__ordenes {
     grid-template-columns: 1fr;
@@ -1747,15 +1741,35 @@ button.icono {
   .cuenta-mesa__pie {
     inset: auto 0.6rem calc(72px + env(safe-area-inset-bottom));
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.35rem;
   }
   .cuenta-mesa__pie > div {
     grid-column: 1 / -1;
   }
   .cuenta-mesa__pie button {
+    min-width: 0;
     width: 100%;
+    padding-inline: 0.4rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
   }
+  .cuenta-mesa__accion-pie {
+    gap: 0.25rem;
+    overflow: hidden;
+  }
+  .cuenta-mesa__accion-larga {
+    display: none;
+  }
+  .cuenta-mesa__accion-corta {
+    display: inline;
+  }
+}
+
+.cuenta-orden__acciones [aria-disabled="true"],
+.ordenes-cuenta-modal [aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.38;
 }
 
 /* --------------------------------------------------------------------------
@@ -2138,6 +2152,19 @@ button.icono {
   color: var(--muted-foreground);
   font-size: 0.75rem;
 }
+.inventario-material__nombre {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+.inventario-material__unidad {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
 .inventario-material__accion {
   display: flex;
   min-width: 0;
@@ -2288,11 +2315,30 @@ button.icono {
 }
 .ordenes-cuenta-modal__acciones-principales {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.6rem;
+  gap: 0.35rem;
 }
 .ordenes-cuenta-modal__acciones-principales button {
   justify-content: center;
+  min-height: 46px;
+}
+.ordenes-cuenta-modal__titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.ordenes-cuenta-modal__titulo > button {
+  min-width: 44px;
+  min-height: 44px;
+  flex: 0 0 auto;
+}
+.ordenes-cuenta-modal__eliminar {
+  color: var(--destructive);
+}
+.ordenes-cuenta-modal__eliminar:hover,
+.ordenes-cuenta-modal__eliminar:focus-visible {
+  background: var(--destructive-soft);
+  color: var(--destructive);
 }
 
 /* Órdenes: tarjetas breves que no se estiran para llenar toda la fila. */
@@ -3940,10 +3986,8 @@ button.icono:focus-visible {
   text-align: center;
 }
 .ui-v2 .inventario-material__accion strong {
-  color: var(--primary);
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--primary) 30%, transparent);
-  text-underline-offset: 0.18em;
+  color: var(--foreground);
+  text-decoration: none;
 }
 .ui-v2 .inventario-ajuste__tipo {
   display: grid;
@@ -3962,7 +4006,6 @@ button.icono:focus-visible {
   gap: 0.35rem;
   font-size: 0.76rem;
 }
-
 @media (max-width: 767px) {
   .ui-v2 .constructor-orden__catalogo {
     display: block;
@@ -4136,6 +4179,17 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.tabla-ordenes__abriendo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--foreground);
+  font-weight: 600;
+}
+.tabla-ordenes__abriendo svg {
+  animation: orden-cargando 700ms linear infinite;
+}
+@keyframes orden-cargando { to { rotate: 1turn; } }
 .tabla-ordenes__fila.is-nueva { animation: llegada-orden 6s ease-out; }
 @keyframes llegada-orden {
   0%, 65% {
@@ -4150,8 +4204,18 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
 .cocina-orden-modal__meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.6rem;
   color: var(--muted-foreground);
+}
+.cocina-orden-modal__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.cocina-orden-modal__cabecera h2 {
+  margin: 0.2rem 0 0;
 }
 .cocina-orden-modal__lineas {
   display: flex;
@@ -4164,6 +4228,82 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
   border-radius: var(--radius);
   padding: 0.6rem 0.75rem;
 }
+.cocina-orden-modal__acciones {
+  display: grid;
+  gap: 0.65rem;
+  padding-top: 0.15rem;
+  border-top: 1px solid var(--border);
+}
+.cocina-orden-modal__acciones-principales,
+.cocina-orden-modal__acciones-incidencias {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+.cocina-orden-modal__acciones button {
+  width: 100%;
+}
+.cocina-orden-modal__no-disponible {
+  color: var(--destructive);
+}
+
+/* Tablero de cocina: dos carriles sobrios. Lo listo vive en el contador del
+   encabezado y no reserva una tercera columna vacía. */
+.kds-tablero {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+.kds-columna {
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklab, var(--muted) 56%, var(--background));
+}
+.kds-columna > header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.15rem 0.1rem 0.75rem;
+}
+.kds-columna > header h2 { margin: 0; font-size: 0.86rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.kds-columna > header .badge { margin-left: auto; }
+.kds-columna__punto { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--muted-foreground); }
+.kds-columna.is-en_proceso .kds-columna__punto { background: var(--warning); }
+.kds-columna__lista { display: grid; gap: 0.65rem; }
+.kds-tarjeta { display: grid; gap: 0.55rem; padding: 0.75rem; box-shadow: none; }
+.kds-tarjeta.is-bloqueada { border-color: color-mix(in oklab, var(--warning) 55%, var(--border)); }
+.kds-tarjeta__detalle { display: flex; flex-direction: column; align-items: stretch; gap: 0.3rem; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; font: inherit; cursor: pointer; }
+.kds-tarjeta__detalle:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: 0.25rem; }
+.kds-tarjeta__cabecera { display: flex; align-items: center; justify-content: space-between; gap: 0.65rem; }
+.kds-tarjeta__cabecera strong { font-size: 1.05rem; }
+.kds-tarjeta .tabla-ordenes__mesa { font-size: 0.94rem; }
+.kds-tarjeta__productos { color: var(--muted-foreground); font-size: 0.94rem; line-height: 1.4; }
+.kds-columna__vacia { display: flex; min-height: 8rem; flex-direction: column; align-items: center; justify-content: center; gap: 0.4rem; color: var(--muted-foreground); }
+.kds-listas { display: grid; gap: 0.5rem; }
+.kds-listas button { display: grid; grid-template-columns: 1fr auto; gap: 0.2rem 0.8rem; width: 100%; min-height: 52px; padding: 0.7rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: inherit; text-align: left; }
+.kds-listas button > span:last-child { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.ordenes-cuenta-modal__bloqueo { margin: 0; padding: 0.75rem; border-radius: var(--radius); background: var(--secondary); color: var(--muted-foreground); line-height: 1.45; }
+.cocina-linea__acciones { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.55rem; }
+.cocina-linea__acciones button { min-height: 42px; }
+.cocina-orden-modal__ayuda { margin: 0; color: var(--muted-foreground); font-size: 0.82rem; }
+.constructor-orden__destino { display: flex; align-items: end; gap: 0.65rem; }
+.constructor-orden__destino > label,
+.constructor-orden__cliente { display: flex; flex-direction: column; align-items: stretch; gap: 0.35rem; }
+.constructor-orden__destino > label:first-child { min-width: 230px; }
+.constructor-orden__cliente { min-width: 150px; }
+.constructor-orden__cliente small { color: var(--muted-foreground); font-weight: 400; }
+.carta__item.is-agotado { opacity: 0.58; cursor: not-allowed; filter: grayscale(0.45); }
+.settings-inline-field { display: flex; align-items: center; gap: 0.45rem; }
+.settings-inline-field input { width: 6rem; }
+@media (max-width: 719px) {
+  .kds-tablero { grid-template-columns: 1fr; }
+  .constructor-orden__destino { width: 100%; flex-direction: column; align-items: stretch; }
+  .constructor-orden__destino > label:first-child,
+  .constructor-orden__cliente { width: 100%; min-width: 0; }
+}
 @media (max-width: 719px) {
   .tabla-ordenes__fila { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.4fr); }
   .tabla-ordenes__fila > :nth-child(2) { display: none; }
@@ -4172,10 +4312,14 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
 /* La pantalla Órdenes (mesero) usa la misma tabla con una columna más:
    el estado de la cuenta (En pedido / Precuenta emitida). */
 .pedidos-page .tabla-ordenes__fila {
-  grid-template-columns: max-content max-content auto auto minmax(0, 1fr);
+  grid-template-columns: max-content auto auto minmax(0, 1fr);
 }
 @media (max-width: 719px) {
-  .pedidos-page .tabla-ordenes__fila { grid-template-columns: minmax(0, 1fr) auto auto minmax(0, 1.2fr); }
+  .pedidos-page .tabla-ordenes__fila {
+    grid-template-columns: minmax(6.6rem, 0.9fr) auto minmax(0, 1.5fr);
+    gap: 0 0.65rem;
+  }
+  .pedidos-page button.tabla-ordenes__fila { padding-inline: 0.75rem; }
 }
 
 /* -- Marca del local en la pantalla de acceso (ui/public/marcas/olla-horizontal.svg) -- */
@@ -4308,6 +4452,9 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
   }
 }
 @media (max-width: 767px) {
+  .ui-v2 .pos-odoo__panel-duplicado-movil {
+    display: none;
+  }
   .salon-odoo__cabecera {
     grid-template-columns: 1fr;
     gap: 0.7rem;
@@ -4331,9 +4478,11 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
 }
 @media (prefers-reduced-motion: reduce) {
   .plano-mapa--operativo,
-  .salon-odoo__pisos-centro .salon-odoo__piso {
+  .salon-odoo__pisos-centro .salon-odoo__piso,
+  .tabla-ordenes__abriendo svg {
     transition: none;
     translate: none;
+    animation: none;
   }
 }
 
@@ -4383,17 +4532,55 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
 }
 .ordenes-vistas__toggle {
   display: flex;
-  gap: 0.3rem;
-  padding: 0.25rem;
+  gap: 0.2rem;
+  padding: 0.2rem;
   border: 1px solid var(--border);
-  border-radius: 0.8rem;
-  background: var(--muted);
+  border-radius: 999px;
+  background: var(--card);
 }
 .ordenes-vistas__toggle button {
   min-height: 44px;
+  border-radius: 999px;
 }
 .ordenes-vistas__toggle button.is-on {
-  color: var(--primary);
+  background: var(--foreground);
+  color: var(--background);
+}
+.pos-odoo__sesion {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: -0.1rem -0.1rem 0.3rem;
+  padding: 0.7rem;
+  border-radius: 0.8rem;
+  background: var(--muted);
+}
+.pos-odoo__sesion-avatar {
+  display: grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--foreground);
+  color: var(--background);
+  font-weight: 750;
+}
+.pos-odoo__sesion-datos {
+  display: grid;
+  min-width: 0;
+  gap: 0.05rem;
+}
+.pos-odoo__sesion-datos small {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+.pos-odoo__sesion-datos strong {
+  overflow: hidden;
+  font-size: 0.92rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .pos-odoo__panel-sep {
   height: 1px;
@@ -4474,6 +4661,47 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
 .ui-v2 .salon-odoo--solo .salon-odoo__nueva--v3 span {
   display: inline;
 }
+@media (max-width: 767px) {
+  .ui-v2 .salon-odoo__cabecera,
+  .ui-v2 .salon-odoo--solo .salon-odoo__cabecera {
+    grid-template-columns: 46px minmax(0, 1fr) 46px;
+    min-height: 0;
+    gap: 0.45rem;
+    padding-block: 0.15rem 0.55rem;
+  }
+  .ui-v2 .salon-odoo__cabecera .salon-odoo__pisos-centro {
+    grid-column: 2;
+    grid-row: 1;
+    max-width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+  .ui-v2 .salon-odoo--solo .salon-odoo__titulo-area {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    font-size: 1.25rem;
+  }
+  .ui-v2 .salon-odoo__cabecera .salon-odoo__nueva,
+  .ui-v2 .salon-odoo--solo .salon-odoo__nueva--v3 {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    width: 46px;
+    min-width: 46px;
+    height: 46px;
+    min-height: 46px;
+    padding: 0;
+  }
+  .ui-v2 .salon-odoo__nueva--v2 span,
+  .ui-v2 .salon-odoo--solo .salon-odoo__nueva--v3 span {
+    display: none;
+  }
+  .cocina-orden-modal__acciones-principales,
+  .cocina-orden-modal__acciones-incidencias {
+    grid-template-columns: 1fr;
+  }
+}
 @media (min-width: 768px) {
   .ui-v2 .plano-mapa--auto {
     flex: none;
@@ -4536,6 +4764,13 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
 }
 .ui-v2 .inventario-cabecera__boton--inicio {
   justify-content: flex-start;
+}
+.ui-v2 .inventario-cabecera__boton--icono {
+  gap: 0.3rem;
+}
+.ui-v2 .inventario-cabecera__icono {
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 /* Carta ancha: categorías en una cinta horizontal y una retícula estable de
@@ -4660,6 +4895,18 @@ button.constructor-orden__abrir-resumen {
 }
 
 @media (max-width: 767px) {
+  .ordenes-vistas__toggle button {
+    width: 44px;
+    padding-inline: 0;
+  }
+  .ordenes-vistas__toggle button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
   .ui-v2 .constructor-orden {
     padding-bottom: calc(9rem + env(safe-area-inset-bottom));
   }
@@ -4687,21 +4934,90 @@ button.constructor-orden__abrir-resumen {
     transform: none;
     border-radius: 1.25rem 1.25rem 0 0;
   }
+  /* En telefono el inventario conserva su lectura tabular. En anchos muy
+     estrechos se desplaza solo la tabla y la columna Material queda visible. */
   .inventario-orden-movil {
-    display: flex;
-    align-items: end;
-    gap: 0.5rem;
-    padding: 0 0.75rem 0.75rem;
+    display: none;
   }
-  .inventario-orden-movil label {
-    display: grid;
-    flex: 1;
-    gap: 0.25rem;
-    color: var(--muted-foreground);
-    font-size: 0.75rem;
-    font-weight: 650;
+  .ui-v2 .inventario-tabla {
+    display: block;
+    gap: 0;
+    padding: 0;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-gutter: stable;
+    background: var(--card);
   }
-  .inventario-orden-movil select {
+  .ui-v2 .inventario-fila {
+    grid-template-columns: minmax(6.3rem, 1.25fr) minmax(3.2rem, 0.62fr) minmax(3.25rem, 0.63fr) minmax(2.8rem, 0.55fr) minmax(5.25rem, 0.9fr);
+    column-gap: 0.125rem;
     width: 100%;
+    min-width: 22rem;
+    min-height: 52px;
+    padding: 0.35rem 0.75rem;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    background: var(--card);
+  }
+  .ui-v2 .inventario-fila.inventario-fila--cabecera {
+    display: grid;
+    min-height: 44px;
+    padding: 0.15rem 0.45rem;
+    background: var(--muted);
+  }
+  .ui-v2 .inventario-fila--cabecera .inventario-cabecera__boton {
+    position: relative;
+    gap: 0;
+    padding-inline: 0.1rem;
+    font-size: 0.62rem;
+  }
+  .ui-v2 .inventario-fila--cabecera .inventario-cabecera__orden {
+    display: none;
+  }
+  .ui-v2 .inventario-fila--cabecera > span:is([aria-sort="ascending"], [aria-sort="descending"]) .inventario-cabecera__orden {
+    position: absolute;
+    display: block;
+    width: 0.7rem;
+    height: 0.7rem;
+    inset-inline-end: 0;
+  }
+  .ui-v2 .inventario-fila > span,
+  .ui-v2 .inventario-fila > strong {
+    display: block;
+    align-self: center;
+    min-width: 0;
+  }
+  .ui-v2 .inventario-fila > [data-label]::before,
+  .ui-v2 .inventario-fila > span[role="cell"]::before,
+  .ui-v2 .inventario-fila > strong[role="cell"]::before {
+    display: none;
+  }
+  .ui-v2 .inventario-fila > :first-child {
+    position: sticky;
+    z-index: 1;
+    inset-inline-start: 0;
+    align-self: stretch;
+    justify-content: center;
+    border-inline-end: 1px solid var(--border);
+    background: var(--card);
+  }
+  .ui-v2 .inventario-fila > .inventario-material {
+    grid-column: auto;
+  }
+  .ui-v2 .inventario-fila--cabecera > :first-child {
+    z-index: 2;
+    background: var(--muted);
+  }
+  .ui-v2 .inventario-material__accion {
+    min-block-size: 44px;
+    justify-content: center;
+  }
+  .ui-v2 .inventario-fila > :nth-child(2),
+  .ui-v2 .inventario-fila > :nth-child(3),
+  .ui-v2 .inventario-fila > :nth-child(4),
+  .ui-v2 .inventario-fila > :last-child {
+    justify-self: center;
+    text-align: center;
   }
 }

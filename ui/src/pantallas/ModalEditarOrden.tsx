@@ -1,8 +1,11 @@
-import { Plus, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { ejecutarAccionModal } from "../lib/flujo-cuentas.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog.tsx";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "@/components/ui/dialog.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Select } from "@/components/ui/select.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
@@ -36,6 +39,7 @@ type Props = {
   productos: ProductoCarta[];
   modo?: "editar" | "anular";
   pedirJustificacionAlAnular: boolean;
+  requiereResponsableAlAnular?: boolean;
   onGuardar: (
     cambio: { claveIdempotencia: string; lineas: CambioOrdenUi[]; indicaciones: string; motivo?: string },
     pin: string,
@@ -105,13 +109,15 @@ export function ModalEditarOrden({
   productos,
   modo = "editar",
   pedirJustificacionAlAnular,
+  requiereResponsableAlAnular = false,
   onGuardar,
   onCancelar,
 }: Props) {
   const [lineas, setLineas] = useState<LineaEditable[]>(() => crearLineasEditables(orden, modo));
   const [claveIdempotencia] = useState(uuid);
   const [indicaciones, setIndicaciones] = useState(orden.indicaciones ?? "");
-  const [motivo, setMotivo] = useState("");
+  const [motivo, setMotivo] = useState("Agregado y no entregado");
+  const [detalleMotivo, setDetalleMotivo] = useState("");
   const [pidiendoPin, setPidiendoPin] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [errorPin, setErrorPin] = useState("");
@@ -147,7 +153,7 @@ export function ModalEditarOrden({
       (linea.cantidad === 0 ||
         (linea.productoIdOriginal !== null && linea.productoId !== linea.productoIdOriginal)),
   );
-  const requiereMotivo = pedirJustificacionAlAnular && llegaACero;
+  const requiereMotivo = modo === "anular" || (pedirJustificacionAlAnular && llegaACero);
 
   async function guardar(pin: string) {
     if (guardandoRef.current) return;
@@ -161,7 +167,7 @@ export function ModalEditarOrden({
               claveIdempotencia,
               lineas: prepararLineasCorreccion(lineas),
               indicaciones,
-              ...(motivo.trim() ? { motivo: motivo.trim() } : {}),
+              ...(requiereMotivo ? { motivo: [motivo, detalleMotivo.trim()].filter(Boolean).join(": ") } : {}),
             },
             pin,
           ),
@@ -177,7 +183,14 @@ export function ModalEditarOrden({
     <>
       <Dialog aria-label={`${modo === "anular" ? "Anular" : "Editar"} orden`}>
         <DialogContent className="correccion-modal">
-          <DialogTitle>{modo === "anular" ? "Anular" : "Editar"} orden #{orden.numero}</DialogTitle>
+          <DialogTitle>{modo === "anular" ? "Anular" : "Editar"} orden #{orden.id}</DialogTitle>
+          {modo === "anular" ? (
+            <DialogDescription>
+              {requiereResponsableAlAnular
+                ? "Este pedido para llevar ya fue confirmado. Se exigirá el PIN de Administración o del encargado de turno y el motivo quedará registrado."
+                : "Se exigirá el PIN de un usuario autorizado y el motivo quedará registrado."}
+            </DialogDescription>
+          ) : null}
           <div className="correccion-modal__lineas">
             {lineas.map((linea) => {
               const nombreProducto =
@@ -311,10 +324,20 @@ export function ModalEditarOrden({
             />
           </label>
           {requiereMotivo ? (
-            <label>
-              Justificación
-              <Textarea value={motivo} onChange={(event) => setMotivo(event.target.value)} />
-            </label>
+            <div className="correccion-modal__motivo">
+              <label>Motivo
+                <Select value={motivo} onChange={(event) => setMotivo(event.target.value)}>
+                  <option>Agregado y no entregado</option>
+                  <option>Cantidad registrada de más</option>
+                  <option>Producto duplicado</option>
+                  <option>Devuelto por el cliente</option>
+                  <option>Otro</option>
+                </Select>
+              </label>
+              <label><span>Detalle <small>(opcional)</small></span>
+                <Textarea rows={2} value={detalleMotivo} onChange={(event) => setDetalleMotivo(event.target.value)} />
+              </label>
+            </div>
           ) : null}
           <div className="correccion-diff">
             <h3>Vista previa de cambios</h3>
@@ -335,7 +358,7 @@ export function ModalEditarOrden({
             <Button
               type="button"
               variant={modo === "anular" ? "destructive" : "default"}
-              disabled={diff.length === 0 || (requiereMotivo && !motivo.trim()) || guardando}
+              disabled={diff.length === 0 || guardando}
               onClick={() => setPidiendoPin(true)}
             >
               Continuar y pedir PIN

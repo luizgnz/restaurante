@@ -21,7 +21,8 @@ export function ConfirmarCancelarCuenta({ mesaNumero, totalCentavos, onConfirmar
         <DialogTitle>¿Cancelar la cuenta de la Mesa #{mesaNumero}?</DialogTitle>
         <DialogDescription>
           La mesa queda libre y no se cobra nada ({dinero(totalCentavos)}). Según la configuración del sistema, los
-          ingredientes de lo ya preparado vuelven al inventario o se registran como merma.
+          ingredientes de lo ya preparado vuelven al inventario o se registran como merma. Solo un administrador
+          puede confirmar esta acción con su PIN.
         </DialogDescription>
         <label>
           Motivo de la cancelación

@@ -8,7 +8,10 @@ export type NuevaLineaOrden = {
 };
 
 export type NuevaOrden = {
+  /** Para llevar usa 0 como marcador interno; el servicio crea una mesa técnica inactiva. */
   mesaId: number;
+  tipoServicio?: "mesa" | "para_llevar";
+  clienteNombre?: string | null;
   lineas: NuevaLineaOrden[];
   indicaciones?: string | null;
   claveIdempotencia: string;

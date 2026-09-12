@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { ChefHat, Utensils } from "lucide-react";
-import { api } from "./api.ts";
+import {
+  ChefHat,
+  Utensils,
+} from "lucide-react";
+import { api, mensajeError } from "./api.ts";
 import { Button } from "./components/ui/button.tsx";
 import { esperaMinutos, nivelEspera } from "../../src/modules/tiempo.ts";
 import { Barra, type Destino } from "./pantallas/Barra.tsx";
@@ -13,7 +16,11 @@ import { ConfirmarCierreCuenta } from "./pantallas/ConfirmarCierreCuenta.tsx";
 import { ConstructorOrden, type ConfigContornosUi, type ProductoCarta } from "./pantallas/ConstructorOrden.tsx";
 import { Contornos, type GrupoContornoUi, type SlotEditorUi } from "./pantallas/Contornos.tsx";
 import { type Categoria } from "./pantallas/CrearProducto.tsx";
-import { CuentaMesa, type CuentaDetalleUi, type OrdenCuentaUi } from "./pantallas/CuentaMesa.tsx";
+import {
+  CuentaMesa,
+  type CuentaDetalleUi,
+  type OrdenCuentaUi,
+} from "./pantallas/CuentaMesa.tsx";
 import { EditarMapa } from "./pantallas/EditarMapa.tsx";
 import { Inventario, type MaterialInventarioUi } from "./pantallas/Inventario.tsx";
 import { Kds, type IncidenciaCocinaUi, type TarjetaKdsUi } from "./pantallas/Kds.tsx";
@@ -23,7 +30,7 @@ import { ModalEditarOrden } from "./pantallas/ModalEditarOrden.tsx";
 import { ModalOrdenesCuenta } from "./pantallas/ModalOrdenesCuenta.tsx";
 import type { SlotArmadoUi } from "./pantallas/ModalArmadoPlato.tsx";
 import { Opciones, type ImpresoraConfigUi, type OpcionesValores, type PlantillaImpresionUi } from "./pantallas/Opciones.tsx";
-import { Pedidos, type CuentaEnCursoUi } from "./pantallas/Pedidos.tsx";
+import { Pedidos, type ActualizacionCocinaUi, type CuentaEnCursoUi } from "./pantallas/Pedidos.tsx";
 import { Recetas, type ProductoAdministrable } from "./pantallas/Recetas.tsx";
 import { PinPad } from "./pantallas/PinPad.tsx";
 import { PrecuentaEnPantalla, type PrecuentaUi } from "./pantallas/PrecuentaEnPantalla.tsx";
@@ -53,12 +60,14 @@ type PinPendiente =
 type EdicionOrden = { orden: OrdenCuentaUi; modo: "editar" | "anular" };
 
 type Vista = Destino;
-type RolClave = "administrador" | "mesero" | "cocina" | "caja" | "inventario";
+type RolClave = "administrador" | "encargado_turno" | "mesero" | "cocina" | "caja" | "inventario";
 type UsuarioSesion = { id: number; nombre: string; derecho: string; roles: RolClave[] };
 type Sesion = { abierta: boolean; usuario: UsuarioSesion | null; administrador?: UsuarioSesion | null };
 
 function vistaInicial(roles: RolClave[]): { vista: Vista; ordenTab: "mesero" | "cocina" } {
-  if (roles.includes("administrador") || roles.includes("mesero")) return { vista: "plano", ordenTab: "mesero" };
+  if (roles.includes("administrador") || roles.includes("mesero") || roles.includes("encargado_turno")) {
+    return { vista: "plano", ordenTab: "mesero" };
+  }
   if (roles.includes("cocina")) return { vista: "pedidos", ordenTab: "cocina" };
   if (roles.includes("caja")) return { vista: "pedidos", ordenTab: "mesero" };
   return { vista: "inventario", ordenTab: "mesero" };
@@ -80,6 +89,7 @@ export function App() {
   const [materialesInventario, setMaterialesInventario] = useState<MaterialInventarioUi[]>([]);
   const [tarjetasKds, setTarjetasKds] = useState<TarjetaKdsUi[]>([]);
   const [incidenciasCocina, setIncidenciasCocina] = useState<IncidenciaCocinaUi[]>([]);
+  const [actualizacionesCocina, setActualizacionesCocina] = useState<ActualizacionCocinaUi[]>([]);
   const [cuentasEnCurso, setCuentasEnCurso] = useState<CuentaEnCursoUi[]>([]);
   const [cuentaActual, setCuentaActual] = useState<CuentaDetalleUi | null>(null);
   const [contextoOrden, setContextoOrden] = useState<ContextoOrden | null>(null);
@@ -100,6 +110,9 @@ export function App() {
   const [confirmarComanda, setConfirmarComanda] = useState(false);
   const [auditoriaAnulaciones, setAuditoriaAnulaciones] = useState(false);
   const [devolverInsumosPreparados, setDevolverInsumosPreparados] = useState(true);
+  const [entregaAutomatica, setEntregaAutomatica] = useState(true);
+  const [entregaAutomaticaMinutos, setEntregaAutomaticaMinutos] = useState(30);
+  const [prioridadParaLlevar, setPrioridadParaLlevar] = useState<NonNullable<OpcionesValores["prioridad_para_llevar"]>>("igual");
   const [pinPrecuenta, setPinPrecuenta] = useState(true);
   const [pinCaja, setPinCaja] = useState(true);
   const [precuentaReimpresa, setPrecuentaReimpresa] = useState<PrecuentaUi | null>(null);
@@ -177,6 +190,10 @@ export function App() {
     const data = await api<{ incidencias: IncidenciaCocinaUi[] }>("/api/cocina/incidencias");
     setIncidenciasCocina(data.incidencias);
   }
+  async function cargarActualizacionesCocina() {
+    const data = await api<{ actualizaciones: ActualizacionCocinaUi[] }>("/api/cocina/actualizaciones");
+    setActualizacionesCocina(data.actualizaciones);
+  }
   async function cargarCuenta(id: number) {
     const data = await api<CuentaDetalleUi>(`/api/cuentas/${id}`);
     setCuentaActual(data);
@@ -205,6 +222,9 @@ export function App() {
     if (typeof data.confirmar_comanda === "boolean") setConfirmarComanda(data.confirmar_comanda);
     if (typeof data.auditoria_anulaciones === "boolean") setAuditoriaAnulaciones(data.auditoria_anulaciones);
     if (typeof data.devolver_insumos_preparados === "boolean") setDevolverInsumosPreparados(data.devolver_insumos_preparados);
+    if (typeof data.entrega_automatica_si_no_confirma === "boolean") setEntregaAutomatica(data.entrega_automatica_si_no_confirma);
+    if (typeof data.entrega_automatica_minutos === "number") setEntregaAutomaticaMinutos(data.entrega_automatica_minutos);
+    if (data.prioridad_para_llevar) setPrioridadParaLlevar(data.prioridad_para_llevar);
     if (typeof data.pin_al_emitir_precuenta === "boolean") setPinPrecuenta(data.pin_al_emitir_precuenta);
     if (typeof data.pin_al_enviar_caja === "boolean") setPinCaja(data.pin_al_enviar_caja);
     if (typeof data.justificacion_anulacion === "boolean") setJustificacionAnulacion(data.justificacion_anulacion);
@@ -236,7 +256,7 @@ export function App() {
   }, [vista, contextoOrden?.tipo, cuentaActual?.id]);
 
   useEffect(() => {
-    cargarSesion().catch((e) => setError(String(e)));
+    cargarSesion().catch((e) => setError(mensajeError(e)));
   }, []);
 
   useEffect(() => {
@@ -252,21 +272,22 @@ export function App() {
     if (!sesion?.abierta || !usuarioActual) return;
     const roles = usuarioActual.roles ?? (["administrador"] as RolClave[]);
     const admin = roles.includes("administrador");
-    if (admin || roles.includes("mesero")) {
-      cargarPlano().catch((e) => setError(String(e)));
-      cargarCarta().catch((e) => setError(String(e)));
-      cargarCuentasEnCurso().catch((e) => setError(String(e)));
-      cargarContornos().catch((e) => setError(String(e)));
-      cargarIncidenciasCocina().catch((e) => setError(String(e)));
+    if (admin || roles.includes("mesero") || roles.includes("encargado_turno")) {
+      cargarPlano().catch((e) => setError(mensajeError(e)));
+      cargarCarta().catch((e) => setError(mensajeError(e)));
+      cargarCuentasEnCurso().catch((e) => setError(mensajeError(e)));
+      cargarContornos().catch((e) => setError(mensajeError(e)));
+      cargarIncidenciasCocina().catch((e) => setError(mensajeError(e)));
+      cargarActualizacionesCocina().catch((e) => setError(mensajeError(e)));
     } else if (roles.includes("cocina")) {
-      cargarCarta().catch((e) => setError(String(e)));
-      cargarKds().catch((e) => setError(String(e)));
+      cargarCarta().catch((e) => setError(mensajeError(e)));
+      cargarKds().catch((e) => setError(mensajeError(e)));
     } else if (roles.includes("caja")) {
-      cargarCuentasEnCurso().catch((e) => setError(String(e)));
+      cargarCuentasEnCurso().catch((e) => setError(mensajeError(e)));
     } else {
-      cargarInventario().catch((e) => setError(String(e)));
+      cargarInventario().catch((e) => setError(mensajeError(e)));
     }
-    cargarConfig().catch((e) => setError(String(e)));
+    cargarConfig().catch((e) => setError(mensajeError(e)));
   }, [sesion?.abierta, sesion?.usuario?.id, sesion?.administrador?.id]);
 
   useEffect(() => {
@@ -275,9 +296,11 @@ export function App() {
     const roles = usuarioActual.roles ?? (["administrador"] as RolClave[]);
     const intervalo = window.setInterval(() => {
       if (document.hidden) return;
-      if (roles.some((rol) => rol === "mesero" || rol === "administrador")) {
+      if (roles.some((rol) => rol === "mesero" || rol === "encargado_turno" || rol === "administrador")) {
         cargarIncidenciasCocina().catch(() => undefined);
+        cargarActualizacionesCocina().catch(() => undefined);
       }
+      if (vista === "pedidos" && ordenTab === "mesero") cargarCuentasEnCurso().catch(() => undefined);
       if (vista === "pedidos" && ordenTab === "cocina") cargarKds().catch(() => undefined);
     }, 4_000);
     return () => window.clearInterval(intervalo);
@@ -288,7 +311,7 @@ export function App() {
       setError("");
       await fn();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(mensajeError(e));
     }
   }
 
@@ -312,17 +335,17 @@ export function App() {
 
   async function ir(v: Destino) {
     if (v === "pedidos") {
-      cargarCuentasEnCurso().catch((e) => setError(String(e)));
-      if (ordenTab === "cocina") cargarKds().catch((e) => setError(String(e)));
+      cargarCuentasEnCurso().catch((e) => setError(mensajeError(e)));
+      if (ordenTab === "cocina") cargarKds().catch((e) => setError(mensajeError(e)));
     }
-    if (v === "inventario") cargarInventario().catch((e) => setError(String(e)));
-    if (v === "plano" || v === "editar-mapa") cargarPlano().catch((e) => setError(String(e)));
-    if (v === "categorias") cargarCategorias().catch((e) => setError(String(e)));
+    if (v === "inventario") cargarInventario().catch((e) => setError(mensajeError(e)));
+    if (v === "plano" || v === "editar-mapa") cargarPlano().catch((e) => setError(mensajeError(e)));
+    if (v === "categorias") cargarCategorias().catch((e) => setError(mensajeError(e)));
     if (v === "contornos") {
-      cargarContornos().catch((e) => setError(String(e)));
-      cargarCarta().catch((e) => setError(String(e)));
+      cargarContornos().catch((e) => setError(mensajeError(e)));
+      cargarCarta().catch((e) => setError(mensajeError(e)));
     }
-    if (v === "recetas") cargarProductosAdmin().catch((e) => setError(String(e)));
+    if (v === "recetas") cargarProductosAdmin().catch((e) => setError(mensajeError(e)));
     setVista(v);
   }
 
@@ -378,10 +401,12 @@ export function App() {
         contextoOrden.tipo === "cuenta"
           ? `/api/cuentas/${contextoOrden.cuentaId}/ordenes`
           : "/api/ordenes";
-      const respuesta = await api<{ cuentaId: number; ordenNumero: number; mesero?: string }>(ruta, {
+      const respuesta = await api<{ cuentaId: number; ordenNumero: number; mesero?: string; tipoServicio: "mesa" | "para_llevar"; numeroServicio: number | null; clienteNombre: string | null }>(ruta, {
         method: "POST",
         body: JSON.stringify({
           mesaId: borrador.mesaId,
+          tipoServicio: borrador.tipoServicio ?? "mesa",
+          clienteNombre: borrador.clienteNombre,
           claveIdempotencia: borrador.claveIdempotencia,
           pin,
           lineas: borrador.lineas.filter((linea) => linea.cantidad > 0),
@@ -389,13 +414,22 @@ export function App() {
         }),
       });
       const clave = claveBorrador(contextoBorrador(contextoOrden));
-      await completarEnvioBorrador({
-        cuentaId: respuesta.cuentaId,
-        cargarCuenta,
-        eliminarBorrador: () => eliminarBorrador(window.localStorage, clave),
-      });
+      if (respuesta.tipoServicio === "para_llevar") {
+        eliminarBorrador(window.localStorage, clave);
+        setCuentaActual(null);
+        setVista("plano");
+      } else {
+        await completarEnvioBorrador({
+          cuentaId: respuesta.cuentaId,
+          cargarCuenta,
+          eliminarBorrador: () => eliminarBorrador(window.localStorage, clave),
+        });
+      }
       setComandaReciente({
         mesaNumero: mesas.find((mesa) => mesa.id === borrador.mesaId)?.numero ?? null,
+        referenciaServicio: respuesta.tipoServicio === "para_llevar"
+          ? `Para llevar #${respuesta.numeroServicio}${respuesta.clienteNombre ? ` · ${respuesta.clienteNombre}` : ""}`
+          : undefined,
         ordenNumero: respuesta.ordenNumero,
         mesero: respuesta.mesero ?? sesion?.usuario?.nombre ?? sesion?.administrador?.nombre ?? "",
         indicaciones: borrador.indicaciones.trim() ? borrador.indicaciones : null,
@@ -438,7 +472,10 @@ export function App() {
       const nombre = productos.find((producto) => producto.id === linea.productoId)?.nombre ?? `Producto ${linea.productoId}`;
       return `${linea.cantidad} × ${nombre}${linea.contornosTexto ? ` (${linea.contornosTexto})` : ""}${linea.nota ? ` (${linea.nota})` : ""}`;
     });
-    return [`Mesa #${mesaNumero ?? borrador.mesaId ?? "?"}`, ...lineas, borrador.indicaciones ? `Indicaciones: ${borrador.indicaciones}` : ""]
+    const destino = borrador.tipoServicio === "para_llevar"
+      ? `Para llevar${borrador.clienteNombre?.trim() ? ` · ${borrador.clienteNombre.trim()}` : ""}`
+      : `Mesa #${mesaNumero ?? borrador.mesaId ?? "?"}`;
+    return [destino, ...lineas, borrador.indicaciones ? `Indicaciones: ${borrador.indicaciones}` : ""]
       .filter(Boolean)
       .join("\n");
   }
@@ -578,7 +615,7 @@ export function App() {
   };
   const roles = usuario.roles ?? (["administrador"] as RolClave[]);
   const puedeAdministrar = roles.includes("administrador");
-  const puedeMesas = puedeAdministrar || roles.includes("mesero");
+  const puedeMesas = puedeAdministrar || roles.includes("mesero") || roles.includes("encargado_turno");
   const puedeCocina = puedeAdministrar || roles.includes("cocina");
   const puedeOrdenes = puedeMesas || roles.includes("caja");
   const esperaPorMesa: Record<number, { espera: number; nivel: ReturnType<typeof nivelEspera> }> = {};
@@ -601,7 +638,7 @@ export function App() {
         onMesas={() => ir("plano")}
         onOrdenes={() => ir("pedidos")}
         onInventario={() => ir("inventario")}
-        notificacionesCocina={incidenciasCocina.length}
+        notificacionesCocina={incidenciasCocina.length + actualizacionesCocina.length}
         onCerrarSesion={() =>
           conError(async () => {
             await api("/api/sesion/cerrar", { method: "POST" });
@@ -711,6 +748,7 @@ export function App() {
             productos={productos}
             modo={edicionOrden.modo}
             pedirJustificacionAlAnular={auditoriaAnulaciones && justificacionAnulacion}
+            requiereResponsableAlAnular={edicionOrden.modo === "anular" && cuentaActual.tipoServicio === "para_llevar"}
             onCancelar={() => setEdicionOrden(null)}
             onGuardar={async (cambio, pin) => {
               const ruta =
@@ -751,7 +789,7 @@ export function App() {
             }}
             onOrdenes={() => {
               setVista("pedidos");
-              cargarCuentasEnCurso().catch((e) => setError(String(e)));
+              cargarCuentasEnCurso().catch((e) => setError(mensajeError(e)));
             }}
             onNuevoPedido={() => abrirConstructor({ tipo: "general" })}
             onMesa={(m) => {
@@ -809,13 +847,6 @@ export function App() {
             onCerrarCuenta={() => setConfirmarCierre(true)}
             onCancelarCuenta={() => setConfirmarCancelar(true)}
             onReimprimir={() => conError(() => reimprimirPrecuentaActual())}
-            onNotaPrivada={async (notaPrivada) => {
-              await api(`/api/cuentas/${cuentaActual.id}/nota-privada`, {
-                method: "POST",
-                body: JSON.stringify({ notaPrivada }),
-              });
-              await cargarCuenta(cuentaActual.id);
-            }}
           />
         ) : null}
         {vista === "pedidos" ? (
@@ -829,10 +860,12 @@ export function App() {
                     size="sm"
                     variant={ordenTab === "mesero" ? "secondary" : "ghost"}
                     aria-pressed={ordenTab === "mesero"}
+                    aria-label="Vista del mesero"
+                    title="Vista del mesero"
                     className={`tactil ${ordenTab === "mesero" ? "is-on" : ""}`}
                     onClick={() => {
                       setOrdenTab("mesero");
-                      cargarCuentasEnCurso().catch((e) => setError(String(e)));
+                      cargarCuentasEnCurso().catch((e) => setError(mensajeError(e)));
                     }}
                   >
                     <Utensils size={16} aria-hidden="true" />
@@ -845,10 +878,12 @@ export function App() {
                     size="sm"
                     variant={ordenTab === "cocina" ? "secondary" : "ghost"}
                     aria-pressed={ordenTab === "cocina"}
+                    aria-label="Vista de cocina"
+                    title="Vista de cocina"
                     className={`tactil ${ordenTab === "cocina" ? "is-on" : ""}`}
                     onClick={() => {
                       setOrdenTab("cocina");
-                      cargarKds().catch((e) => setError(String(e)));
+                      cargarKds().catch((e) => setError(mensajeError(e)));
                     }}
                   >
                     <ChefHat size={16} aria-hidden="true" />
@@ -876,23 +911,45 @@ export function App() {
                   });
                   await Promise.all([cargarKds(), cargarIncidenciasCocina()]);
                 }}
+                onCancelarProducto={async (comandaLineaId, motivo) => {
+                  await api(`/api/kds/lineas/${comandaLineaId}/cancelar`, {
+                    method: "POST",
+                    body: JSON.stringify({ motivo }),
+                  });
+                  await Promise.all([
+                    cargarKds(),
+                    cargarIncidenciasCocina(),
+                    cargarActualizacionesCocina(),
+                    cargarCuentasEnCurso(),
+                    cargarInventario(),
+                  ]);
+                }}
               />
             ) : (
               <Pedidos
-            cargando={carga.cuentas}
-            cuentas={cuentasEnCurso}
-            incidencias={incidenciasCocina}
-            onAceptarSugerencia={async (incidenciaId, pin) => {
-              await api(`/api/cocina/incidencias/${incidenciaId}/aceptar`, { method: "POST", body: JSON.stringify({ pin }) });
-              await Promise.all([cargarIncidenciasCocina(), cargarCuentasEnCurso(), cargarPlano()]);
-            }}
-            onEliminarIncidencia={async (incidenciaId, pin) => {
-              await api(`/api/cocina/incidencias/${incidenciaId}/eliminar`, {
-                method: "POST",
-                body: JSON.stringify({ pin }),
-              });
-              await Promise.all([cargarIncidenciasCocina(), cargarKds(), cargarCuentasEnCurso(), cargarPlano()]);
-            }}
+                cargando={carga.cuentas}
+                cuentas={cuentasEnCurso}
+                incidencias={incidenciasCocina}
+                actualizaciones={actualizacionesCocina}
+                onAceptarSugerencia={async (incidenciaId, pin) => {
+                  await api(`/api/cocina/incidencias/${incidenciaId}/aceptar`, { method: "POST", body: JSON.stringify({ pin }) });
+                  await Promise.all([cargarIncidenciasCocina(), cargarCuentasEnCurso(), cargarPlano()]);
+                }}
+                onEliminarIncidencia={async (incidenciaId, pin) => {
+                  await api(`/api/cocina/incidencias/${incidenciaId}/eliminar`, {
+                    method: "POST",
+                    body: JSON.stringify({ pin }),
+                  });
+                  await Promise.all([cargarIncidenciasCocina(), cargarKds(), cargarCuentasEnCurso(), cargarPlano()]);
+                }}
+                onReconocerActualizacion={async (actualizacionId) => {
+                  await api(`/api/cocina/actualizaciones/${actualizacionId}/reconocer`, { method: "POST" });
+                  await cargarActualizacionesCocina();
+                }}
+                onEntregar={async (ordenId) => {
+                  await api(`/api/ordenes/${ordenId}/entregar`, { method: "POST" });
+                  await Promise.all([cargarCuentasEnCurso(), cargarKds()]);
+                }}
                 onAbrir={(cuentaId, ordenId) =>
                   conError(async () => {
                     await cargarCuenta(cuentaId);
@@ -1052,6 +1109,9 @@ export function App() {
               confirmar_comanda: confirmarComanda,
               auditoria_anulaciones: auditoriaAnulaciones,
               devolver_insumos_preparados: devolverInsumosPreparados,
+              entrega_automatica_si_no_confirma: entregaAutomatica,
+              entrega_automatica_minutos: entregaAutomaticaMinutos,
+              prioridad_para_llevar: prioridadParaLlevar,
               justificacion_anulacion: justificacionAnulacion,
               precuenta_obligatoria_antes_de_caja: precuentaObligatoria,
               enviar_a_caja_requiere_avanzado: cierreRequiereAvanzado,

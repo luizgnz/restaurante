@@ -8,11 +8,17 @@
   },
   "scripts": {
     "test": "vitest run",
+    "test:go": "go test ./go/...",
     "test:watch": "vitest",
-    "dev": "tsx src/index.ts",
+    "dev": "go run ./go/cmd/restaurante",
+    "dev:node": "tsx src/index.ts",
+    "dev:go": "go run ./go/cmd/restaurante",
     "dev:ui": "vite --config ui/vite.config.ts",
     "build": "tsc -p tsconfig.json --noEmit && vite build --config ui/vite.config.ts",
-    "start": "node --import tsx src/index.ts",
+    "build:ui": "vite build --config ui/vite.config.ts",
+    "build:go": "mkdir -p dist && go build -o dist/restaurante-go ./go/cmd/restaurante",
+    "start:node": "node --import tsx src/index.ts",
+    "start": "npm run build:ui && npm run build:go && ./dist/restaurante-go",
     "licenses": "node scripts/check-licenses.mjs"
   },
   "devDependencies": {
@@ -42,5 +48,11 @@
     "hono": "^4.13.3",
     "lucide-react": "^1.33.0",
     "tailwind-merge": "^3.6.0"
+  },
+  "allowScripts": {
+    "argon2@0.45.1": true,
+    "better-sqlite3@13.0.3": true,
+    "esbuild@0.28.2": true,
+    "fsevents@2.3.3": true
   }
 }

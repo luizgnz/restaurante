@@ -170,6 +170,7 @@ export function Plano({
   const areas = vistaPrevia && !soloSalon
     ? [...listaPisos, { id: -1, nombre: "Terraza" }, { id: -2, nombre: "Barra" }]
     : listaPisos;
+  const areaUnica = soloSalon || areas.length === 1;
   const areaActual = areaDemo ?? listaPisos.find((p) => p.id === pisoId) ?? listaPisos[0];
   const mesasEjemplo: Mesa[] = areaDemo ? Array.from({ length: areaDemo.id === -1 ? 4 : 3 }, (_, i) => ({
     id: -10 - i, numero: (areaDemo.id === -1 ? 11 : 15) + i,
@@ -186,14 +187,14 @@ export function Plano({
   const alturaMapa = alturaAutomaticaPlano(mesasVisibles, escalaMesas, Boolean(areaDemo));
 
   return (
-    <section className={`salon-odoo${soloSalon ? " salon-odoo--solo" : ""}`}>
+    <section className={`salon-odoo${areaUnica ? " salon-odoo--solo" : ""}`}>
       <header className="salon-odoo__cabecera">
-        <h1 className={soloSalon ? "salon-odoo__titulo-area" : "sr-only"}>{soloSalon ? areaActual.nombre : "Mesas"}</h1>
+        <h1 className={areaUnica ? "salon-odoo__titulo-area" : "sr-only"}>{areaUnica ? areaActual.nombre : "Mesas"}</h1>
         {onNuevoPedido && !areaDemo ? (
           <Button
             type="button"
             variant={nuevaOrdenV2 ? "outline" : "default"}
-            className={`tactil salon-odoo__nueva${nuevaOrdenV2 ? " salon-odoo__nueva--v2" : ""}${soloSalon ? " salon-odoo__nueva--v3" : ""}`}
+            className={`tactil salon-odoo__nueva${nuevaOrdenV2 ? " salon-odoo__nueva--v2" : ""}${areaUnica ? " salon-odoo__nueva--v3" : ""}`}
             aria-label="Nueva orden"
             title="Nueva orden (N)"
             onClick={onNuevoPedido}
@@ -201,7 +202,7 @@ export function Plano({
             <Plus size={18} aria-hidden="true" /><span>Nueva orden</span>
           </Button>
         ) : null}
-        {!soloSalon ? <div className="salon-odoo__pisos-centro" role="tablist" aria-label="Áreas del restaurante"
+        {!areaUnica ? <div className="salon-odoo__pisos-centro" role="tablist" aria-label="Áreas del restaurante"
           onKeyDown={(event) => {
             const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
             const index = tabs.indexOf(document.activeElement as HTMLButtonElement);
@@ -277,8 +278,8 @@ export function Plano({
         key={areaActual.id}
         id="mesas-del-area"
         role="tabpanel"
-        aria-label={soloSalon ? areaActual.nombre : undefined}
-        aria-labelledby={soloSalon ? undefined : `area-${areaActual.id}`}
+        aria-label={areaUnica ? areaActual.nombre : undefined}
+        aria-labelledby={areaUnica ? undefined : `area-${areaActual.id}`}
         tabIndex={0}
         ref={mapaRef}
         className={`plano-mapa plano-mapa--operativo${vistaPrevia ? " plano-mapa--auto" : ""}`}

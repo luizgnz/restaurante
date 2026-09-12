@@ -3,16 +3,19 @@ import {
   ArrowUp,
   ArrowUpDown,
   Boxes,
+  Gauge,
+  LockKeyhole,
   Clock3,
   Minus,
   PackageCheck,
   Plus,
-  RefreshCw,
   Search,
   ShieldCheck,
   TriangleAlert,
+  Warehouse,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Alerta } from "@/components/ui/alerta.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";
@@ -49,6 +52,19 @@ export type MotivoPerdidaInventario = "producto_danado" | "consumo_interno";
 
 function cantidad(valor: number): string {
   return new Intl.NumberFormat("es-CL", { maximumFractionDigits: 2 }).format(valor);
+}
+
+export function presentarUnidadMaterial(nombre: string): { nombre: string; unidad: "Grs." | "kg" | "Uds." } {
+  const coincidencia = nombre.trim().match(/^(.*?)\s+(g|gr|grs\.?|kg|ud|uds\.?)$/i);
+  if (!coincidencia) return { nombre: nombre.trim(), unidad: "Uds." };
+
+  const [, nombreBase, sufijo] = coincidencia;
+  const unidad = sufijo.toLocaleLowerCase("es").startsWith("k")
+    ? "kg"
+    : sufijo.toLocaleLowerCase("es").startsWith("g")
+      ? "Grs."
+      : "Uds.";
+  return { nombre: nombreBase.trim(), unidad };
 }
 
 export function estadoInventario(material: MaterialInventarioUi): {
@@ -92,7 +108,37 @@ export function Inventario({
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
-  const [recargando, setRecargando] = useState(false);
+  const recargaEnCurso = useRef(false);
+  const onRecargarActual = useRef(onRecargar);
+
+  useEffect(() => {
+    onRecargarActual.current = onRecargar;
+  }, [onRecargar]);
+
+  useEffect(() => {
+    async function actualizarSiCorresponde() {
+      if (document.hidden || recargaEnCurso.current) return;
+      recargaEnCurso.current = true;
+      try {
+        await onRecargarActual.current();
+      } catch {
+        // La actualización periódica es silenciosa; la carga inicial de la
+        // pantalla conserva el manejo global de errores.
+      } finally {
+        recargaEnCurso.current = false;
+      }
+    }
+
+    const intervalo = window.setInterval(() => void actualizarSiCorresponde(), 15_000);
+    function alCambiarVisibilidad() {
+      if (!document.hidden) void actualizarSiCorresponde();
+    }
+    document.addEventListener("visibilitychange", alCambiarVisibilidad);
+    return () => {
+      window.clearInterval(intervalo);
+      document.removeEventListener("visibilitychange", alCambiarVisibilidad);
+    };
+  }, []);
 
   const visibles = useMemo(() => {
     const termino = busqueda.trim().toLocaleLowerCase("es");
@@ -115,7 +161,11 @@ export function Inventario({
     }));
   }
 
-  function cabeceraOrdenable(columna: ColumnaOrdenInventario, etiqueta: string) {
+  function cabeceraOrdenable(
+    columna: ColumnaOrdenInventario,
+    etiqueta: string,
+    IconoCabecera?: LucideIcon,
+  ) {
     const activa = orden.columna === columna;
     const direccion = activa ? orden.direccion : null;
     const IconoOrden = direccion === "asc" ? ArrowUp : direccion === "desc" ? ArrowDown : ArrowUpDown;
@@ -125,24 +175,16 @@ export function Inventario({
           type="button"
           variant="ghost"
           size="sm"
-          className={`inventario-cabecera__boton${columna === "nombre" ? " inventario-cabecera__boton--inicio" : ""}`}
+          className={`inventario-cabecera__boton${columna === "nombre" ? " inventario-cabecera__boton--inicio" : " inventario-cabecera__boton--icono"}`}
           aria-label={`Ordenar por ${etiqueta}${activa ? `, ${direccion === "asc" ? "ascendente" : "descendente"}` : ""}`}
+          title={`Ordenar por ${etiqueta}`}
           onClick={() => alternarOrden(columna)}
         >
-          <span>{etiqueta}</span>
-          <IconoOrden size={14} aria-hidden="true" />
+          {IconoCabecera ? <IconoCabecera className="inventario-cabecera__icono" size={18} aria-hidden="true" /> : <span>{etiqueta}</span>}
+          <IconoOrden className="inventario-cabecera__orden" size={14} aria-hidden="true" />
         </Button>
       </span>
     );
-  }
-
-  async function recargar() {
-    setRecargando(true);
-    try {
-      await onRecargar();
-    } finally {
-      setRecargando(false);
-    }
   }
 
   const resumen = (
@@ -164,20 +206,6 @@ export function Inventario({
         <Clock3 size={17} aria-hidden="true" /><div><strong>{conReservas}</strong><span>Con reservas</span></div>
       </Button>
     </div>
-  );
-
-  const botonRecargar = (
-    <Button
-      type="button"
-      variant="outline"
-      size="icon"
-      title="Volver a consultar el inventario"
-      aria-label="Recargar inventario"
-      disabled={recargando}
-      onClick={recargar}
-    >
-      <RefreshCw size={18} className={recargando ? "is-spinning" : ""} aria-hidden="true" />
-    </Button>
   );
 
   function abrirAjuste(material: MaterialInventarioUi) {
@@ -239,7 +267,6 @@ export function Inventario({
             />
           </label>
           {resumen}
-          {botonRecargar}
         </div>
 
         <div className="inventario-tabla" role="table" aria-label="Materiales disponibles">
@@ -270,10 +297,10 @@ export function Inventario({
           </div>
           <div className="inventario-fila inventario-fila--cabecera" role="row">
             {cabeceraOrdenable("nombre", "Material")}
-            {cabeceraOrdenable("enMano", "Existencia física")}
-            {cabeceraOrdenable("reservado", "Comprometido")}
-            {cabeceraOrdenable("disponible", "Disponible")}
-            {cabeceraOrdenable("estado", "Estado")}
+            {cabeceraOrdenable("enMano", "Existencia física", Warehouse)}
+            {cabeceraOrdenable("reservado", "Comprometido", LockKeyhole)}
+            {cabeceraOrdenable("disponible", "Disponible", PackageCheck)}
+            {cabeceraOrdenable("estado", "Estado", Gauge)}
           </div>
           {cargando && visibles.length === 0 ? (
             <div aria-hidden="true">
@@ -286,6 +313,8 @@ export function Inventario({
           ) : (
             visibles.map((material) => {
             const estadoMaterial = estadoInventario(material);
+            const presentacion = presentarUnidadMaterial(material.nombre);
+            const nombreConUnidad = `${presentacion.nombre} (${presentacion.unidad})`;
             return (
               <div className="inventario-fila" role="row" key={material.id}>
                 <span className="inventario-material" role="cell" data-label="Material">
@@ -293,15 +322,21 @@ export function Inventario({
                     <button
                       type="button"
                       className="inventario-material__accion"
-                      aria-label={`Ajustar inventario de ${material.nombre}`}
+                      aria-label={`Ajustar inventario de ${nombreConUnidad}`}
                       onClick={() => abrirAjuste(material)}
                     >
-                      <strong>{material.nombre}</strong>
+                      <span className="inventario-material__nombre">
+                        <strong>{presentacion.nombre}</strong>
+                        <span className="inventario-material__unidad">({presentacion.unidad})</span>
+                      </span>
                       {material.codigo ? <small>{material.codigo}</small> : null}
                     </button>
                   ) : (
                     <>
-                      <strong>{material.nombre}</strong>
+                      <span className="inventario-material__nombre">
+                        <strong>{presentacion.nombre}</strong>
+                        <span className="inventario-material__unidad">({presentacion.unidad})</span>
+                      </span>
                       {material.codigo ? <small>{material.codigo}</small> : null}
                     </>
                   )}

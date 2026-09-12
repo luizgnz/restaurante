@@ -25,21 +25,21 @@ function cuenta(parcial: Partial<CuentaEnCursoUi> = {}): CuentaEnCursoUi {
 }
 
 describe("pantalla Órdenes sobre cuentas", () => {
-  it("muestra la cuenta activa con mesa, mesero y productos en una sola línea", () => {
+  it("muestra la cuenta activa con mesa y productos sin exponer el mesero", () => {
     const html = renderToStaticMarkup(
       createElement(Pedidos, { cuentas: [cuenta()], onAbrir: () => undefined }),
     );
     expect(html).toContain("Órdenes");
     expect(html).not.toContain(">Cocina<");
     expect(html).toContain("Mesa #7");
-    expect(html).toContain("Ana");
+    expect(html).not.toContain("Ana");
     // la espera vive en un chip neutral: reloj + minutos, sin texto relativo
     expect(html).toContain("chip-espera");
     expect(html).toContain("lucide-clock");
     expect(html).not.toContain("Hace dos minutos");
     // el estado de la tabla es el de la orden, no el de la cuenta
     expect(html).toContain("Enviado");
-    expect(html).toContain("Orden #1");
+    expect(html).toContain("Orden #10");
     // Los productos van seguidos por coma, no uno por línea.
     expect(html).toContain("2 × Hamburguesa (sin cebolla)");
     expect(html).not.toContain("pedido-linea");
@@ -72,8 +72,8 @@ describe("pantalla Órdenes sobre cuentas", () => {
     );
     expect(html).not.toContain("Precuenta emitida");
     expect(html).toContain("Enviado");
-    expect(html).toContain("Orden #1");
-    expect(html).toContain("Orden #2");
+    expect(html).toContain("Orden #10");
+    expect(html).toContain("Orden #11");
     expect(html).toContain("2 × Hamburguesa, 3 × Agua");
     expect(html).toContain("1 × Jugo");
   });
@@ -82,7 +82,7 @@ describe("pantalla Órdenes sobre cuentas", () => {
     const html = renderToStaticMarkup(
       createElement(Pedidos, { cuentas: [cuenta()], onAbrir: () => undefined }),
     );
-    expect(html).toContain('aria-label="Abrir Orden #1 de la Mesa #7"');
+    expect(html).toContain('aria-label="Abrir Orden #10 de la Mesa #7"');
     // la tabla comparte el sistema con la cocina
     expect(html).toContain('class="tabla-ordenes__fila tactil"');
   });
@@ -90,5 +90,29 @@ describe("pantalla Órdenes sobre cuentas", () => {
   it("sin cuentas en curso lo dice", () => {
     const html = renderToStaticMarkup(createElement(Pedidos, { cuentas: [], onAbrir: () => undefined }));
     expect(html).toContain("No hay cuentas en curso");
+  });
+
+  it("muestra las cancelaciones resueltas por Cocina como actualizaciones para reconocer", () => {
+    const html = renderToStaticMarkup(createElement(Pedidos, {
+      cuentas: [cuenta()],
+      actualizaciones: [{
+        id: 4,
+        ordenId: 10,
+        mesa: 7,
+        tipoServicio: "mesa",
+        numeroServicio: null,
+        clienteNombre: null,
+        producto: "Hamburguesa",
+        cantidad: 1,
+        motivo: "Ingrediente no disponible",
+        cocina: "Cocina",
+        creadaEn: "2026-09-10T20:00:00.000Z",
+      }],
+      onAbrir: () => undefined,
+    }));
+    expect(html).toContain("Incidencias");
+    expect(html).toContain("Cocina canceló: 1 × Hamburguesa");
+    expect(html).toContain("stock fue devuelto");
+    expect(html).toContain("Entendido");
   });
 });

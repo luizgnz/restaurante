@@ -13,6 +13,7 @@ export type CodigoPrecuenta =
   | "cuenta_inexistente"
   | "cuenta_cerrada"
   | "cuenta_sin_consumo"
+  | "precuenta_no_aplica"
   | "precuenta_inexistente";
 
 export class PrecuentaError extends Error {
@@ -120,15 +121,18 @@ export type SnapshotPrecuentaCuenta = SnapshotCuenta & {
   leyenda: string;
 };
 
-type CuentaParaPrecuenta = { id: number; estado: string };
+type CuentaParaPrecuenta = { id: number; estado: string; tipo_servicio: string };
 
 function cuentaParaPrecuenta(db: Database.Database, cuentaId: number): CuentaParaPrecuenta {
-  const cuenta = db.prepare("SELECT id, estado FROM cuentas WHERE id = ?").get(cuentaId) as
+  const cuenta = db.prepare("SELECT id, estado, tipo_servicio FROM cuentas WHERE id = ?").get(cuentaId) as
     | CuentaParaPrecuenta
     | undefined;
   if (!cuenta) throw new PrecuentaError("cuenta_inexistente", "Cuenta inexistente");
   if (cuenta.estado === "en_caja" || cuenta.estado === "cancelada") {
     throw new PrecuentaError("cuenta_cerrada", "La cuenta ya está cerrada");
+  }
+  if (cuenta.tipo_servicio === "para_llevar") {
+    throw new PrecuentaError("precuenta_no_aplica", "Los pedidos para llevar no usan precuenta");
   }
   return cuenta;
 }

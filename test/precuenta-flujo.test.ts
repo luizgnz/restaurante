@@ -50,7 +50,7 @@ function responder(url: string, init?: RequestInit): { status: number; body: unk
   if (url === "/api/carta") return { status: 200, body: { productos: [{ id: 1, nombre: "Hamburguesa", precio_centavos: 8900, armable: 0 }] } };
   if (url === "/api/cuentas") return { status: 200, body: { cuentas: [] } };
   if (url === "/api/config") return { status: 200, body: { pin_habilitado: true } };
-  if (url === "/api/cuentas/1") return { status: 200, body: { ...cuentaDetalle, estado: "precuenta_emitida" } };
+  if (url === "/api/cuentas/1") return { status: 200, body: cuentaDetalle };
   if (url === "/api/cuentas/1/precuenta" && metodo === "POST") return { status: 201, body: { precuentaId: 9, numero: 1, totalCentavos: 17800 } };
   return { status: 404, body: { codigo: "no_encontrado" } };
 }

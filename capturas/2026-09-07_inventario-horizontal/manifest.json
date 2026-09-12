@@ -1,0 +1,31 @@
+{
+  "fecha": "2026-09-07",
+  "rama": "codex/propuesta-mesas",
+  "commit_base": "9e1dd1b",
+  "cambios_sin_commit": true,
+  "servidor": "http://127.0.0.1:8082/",
+  "pantalla": "Inventario",
+  "objetivo": "Validar filas horizontales compactas, unidades explicitas sin subrayado y encabezados numericos representados con iconos funcionales",
+  "capturas": [
+    {
+      "archivo": "inventario-390.png",
+      "viewport": "390x844",
+      "resultado": "cinco columnas visibles; nombres sin subrayado y unidades entre parentesis sin invadir las cifras"
+    },
+    {
+      "archivo": "inventario-642.png",
+      "viewport": "642x913",
+      "resultado": "tabla movil compacta con unidades legibles y sin solapes"
+    },
+    {
+      "archivo": "inventario-768.png",
+      "viewport": "768x913",
+      "resultado": "encabezados por iconos y unidades en linea sin solapes"
+    },
+    {
+      "archivo": "inventario-1280.png",
+      "viewport": "1280x900",
+      "resultado": "tabla de escritorio con unidades discretas, iconos, tooltips y nombres accesibles"
+    }
+  ]
+}

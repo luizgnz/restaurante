@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { Check, Minus, Sparkles, X } from "lucide-react";
+import {
+  Check,
+  Minus,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";

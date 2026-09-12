@@ -1,0 +1,19 @@
+{
+  "fecha": "2026-09-08",
+  "rama": "codex/propuesta-mesas",
+  "commit_base": "9e1dd1b",
+  "cambios_sin_commit": true,
+  "servidor": "http://127.0.0.1:8082/",
+  "objetivo": "Validar toggle compacto de ordenes, identidad de sesion, acciones del modal y recarga automatica del inventario",
+  "capturas": [
+    { "archivo": "ordenes-390.png", "viewport": "390x844", "resultado": "toggle de iconos con estado activo inequívoco" },
+    { "archivo": "ordenes-768.png", "viewport": "768x900", "resultado": "el toggle recupera sus textos desde tablet" },
+    { "archivo": "ordenes-1280.png", "viewport": "1280x900", "resultado": "toggle de escritorio consistente" },
+    { "archivo": "sesion-menu-390.png", "viewport": "390x844", "resultado": "cabecera de sesión separada de las acciones" },
+    { "archivo": "sesion-menu-1280.png", "viewport": "1280x900", "resultado": "identidad de sesión legible en escritorio" },
+    { "archivo": "acciones-orden-390.png", "viewport": "390x844", "resultado": "cerrar por icono, editar como primaria y eliminar como riesgo secundario" },
+    { "archivo": "inventario-auto-390.png", "viewport": "390x844", "resultado": "sin botón manual de recarga y tabla intacta" },
+    { "archivo": "inventario-auto-768.png", "viewport": "768x900", "resultado": "herramientas sin hueco residual" },
+    { "archivo": "inventario-auto-1280.png", "viewport": "1280x900", "resultado": "franja de inventario equilibrada sin recarga manual" }
+  ]
+}

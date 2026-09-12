@@ -147,8 +147,8 @@ export function crearIncidenciaCocina(
         | { id: number; etapa: string; orden_linea_id: number | null; producto_id: number }
         | undefined;
       if (!linea?.orden_linea_id) throw new IncidenciaCocinaError("linea_inexistente", "El producto no pertenece a la orden");
-      if (linea.etapa !== "por_preparar") {
-        throw new IncidenciaCocinaError("producto_ya_iniciado", "El producto ya comenzó su preparación");
+      if (!["por_preparar", "en_proceso", "listo"].includes(linea.etapa)) {
+        throw new IncidenciaCocinaError("producto_ya_iniciado", "El producto ya no admite una incidencia");
       }
       if (productoReemplazoId != null) {
         if (productoReemplazoId === linea.producto_id) {

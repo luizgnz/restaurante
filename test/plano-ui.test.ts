@@ -137,6 +137,23 @@ describe("plano restaurante", () => {
     expect(html).not.toContain("Barra");
   });
 
+  it("detecta automáticamente un único Salón y evita un selector sin utilidad", () => {
+    const html = renderToStaticMarkup(
+      createElement(Plano, {
+        piso: "Salón",
+        pisos: [{ id: 1, nombre: "Salón" }],
+        pisoId: 1,
+        mesas: [],
+        onMesa: () => undefined,
+        onNuevoPedido: () => undefined,
+      }),
+    );
+
+    expect(html).toContain("salon-odoo--solo");
+    expect(html).toContain("salon-odoo__titulo-area");
+    expect(html).not.toContain('role="tablist"');
+  });
+
   it("pone los pisos al centro, marca el actual y lista los demás", () => {
     const html = renderToStaticMarkup(
       createElement(Plano, {

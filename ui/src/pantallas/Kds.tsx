@@ -1,4 +1,14 @@
-import { AlertTriangle, ArrowRightLeft, CheckCheck, ChefHat, CircleOff, Clock, Play } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRightLeft,
+  CheckCheck,
+  ChefHat,
+  CircleOff,
+  Clock,
+  Play,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Alerta } from "@/components/ui/alerta.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -44,8 +54,12 @@ export type TarjetaKdsUi = {
   tipo: "legacy" | "orden" | "correccion" | "anulacion";
   referencia: string;
   mesa: number | null;
+  tipoServicio?: "mesa" | "para_llevar";
+  numeroServicio?: number | null;
+  clienteNombre?: string | null;
   mesero: string;
   envioN: number;
+  ordenId: number | null;
   ordenNumero: number | null;
   numeroVersion: number | null;
   esAnulacion: boolean;
@@ -70,6 +84,7 @@ type Props = {
   cargando?: boolean;
   onCambiarEtapa: (comandaId: number, etapa: "en_proceso" | "listo") => Promise<void>;
   onCrearIncidencia: (incidencia: NuevaIncidencia) => Promise<void>;
+  onCancelarProducto?: (comandaLineaId: number, motivo: string) => Promise<void>;
   productos?: Array<{ id: number; nombre: string }>;
 };
 
@@ -90,7 +105,7 @@ function cantidad(linea: LineaKdsUi): string {
  *  listas, entregadas o canceladas. Sale del tablero. */
 function esEntregada(tarjeta: TarjetaKdsUi): boolean {
   const tareas = tarjeta.lineas.filter((linea) => !linea.esAviso);
-  return tareas.length > 0 && tareas.every((linea) => linea.etapa === "listo" || linea.etapa === "servido" || linea.etapa === "cancelado");
+  return tareas.length === 0 || tareas.every((linea) => linea.etapa === "listo" || linea.etapa === "servido" || linea.etapa === "cancelado");
 }
 
 /** Descripción acotada de lo pedido, para la fila de la tabla. */
@@ -106,18 +121,32 @@ function descripcionOrden(tarjeta: TarjetaKdsUi): string {
 
 /** Primera línea de la fila: el número de orden manda. */
 function tituloOrden(tarjeta: TarjetaKdsUi): string {
-  const orden = tarjeta.ordenNumero ?? tarjeta.envioN;
+  const orden = tarjeta.ordenId ?? tarjeta.ordenNumero ?? tarjeta.envioN;
   if (tarjeta.tipo === "correccion") return `Orden #${orden} · Corrección #${tarjeta.numeroVersion}`;
   if (tarjeta.tipo === "anulacion") return `Orden #${orden} · Anulación`;
   return `Orden #${orden}`;
 }
 
+function estadoOrden(tarjeta: TarjetaKdsUi): { etiqueta: string; tono: "secondary" | "warning" | "success" } {
+  const tareas = tarjeta.lineas.filter((linea) => !linea.esAviso && linea.etapa !== "cancelado");
+  if (tareas.length > 0 && tareas.every((linea) => linea.etapa === "por_preparar")) {
+    return { etiqueta: "Enviada a cocina", tono: "secondary" };
+  }
+  if (tareas.length > 0 && tareas.every((linea) => linea.etapa === "listo" || linea.etapa === "servido")) {
+    return { etiqueta: "Lista", tono: "success" };
+  }
+  return { etiqueta: "En preparación", tono: "warning" };
+}
+
 /** Segunda línea, en letra propia y sin grueso: dónde está la mesa. */
 function mesaTexto(tarjeta: TarjetaKdsUi): string {
+  if (tarjeta.tipoServicio === "para_llevar") {
+    return `Para llevar #${tarjeta.numeroServicio}${tarjeta.clienteNombre ? ` · ${tarjeta.clienteNombre}` : ""}`;
+  }
   return tarjeta.mesa == null ? "Sin mesa" : `Mesa #${tarjeta.mesa}`;
 }
 
-export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, productos = [] }: Props) {
+export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onCancelarProducto = async () => undefined, productos = [] }: Props) {
   const [modal, setModal] = useState<ModalIncidencia | null>(null);
   const [seleccionadaId, setSeleccionadaId] = useState<number | null>(null);
   const [nuevas, setNuevas] = useState<ReadonlySet<number>>(new Set());
@@ -155,12 +184,24 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
   const [productoReemplazoId, setProductoReemplazoId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
-  // Tabla: las órdenes más nuevas arriba; las que ya no tienen nada por
-  // cocinar desaparecen del tablero.
+  const [cancelando, setCancelando] = useState<LineaKdsUi | null>(null);
+  const [motivoCancelacion, setMotivoCancelacion] = useState("Ingrediente no disponible");
+  const [detalleCancelacion, setDetalleCancelacion] = useState("");
+  const [mostrarListas, setMostrarListas] = useState(false);
+  // Tablero operativo: las listas salen del flujo principal y se consultan
+  // desde su contador, sin formar una tercera columna vacía.
   const activas = [...tarjetas]
     .sort((a, b) => Date.parse(b.creadaEn) - Date.parse(a.creadaEn) || b.id - a.id)
     .filter((tarjeta) => !esEntregada(tarjeta));
-  const seleccionada = activas.find((tarjeta) => tarjeta.id === seleccionadaId) ?? null;
+  const listas = [...tarjetas]
+    .filter((tarjeta) => {
+      const tareas = tarjeta.lineas.filter((linea) => !linea.esAviso && linea.etapa !== "cancelado");
+      return tareas.length > 0 && tareas.every((linea) => linea.etapa === "listo");
+    })
+    .sort((a, b) => Date.parse(b.creadaEn) - Date.parse(a.creadaEn));
+  const porPreparar = activas.filter((tarjeta) => tarjeta.lineas.some((linea) => !linea.esAviso && linea.etapa === "por_preparar"));
+  const enProceso = activas.filter((tarjeta) => !porPreparar.includes(tarjeta));
+  const seleccionada = tarjetas.find((tarjeta) => tarjeta.id === seleccionadaId) ?? null;
 
   function abrirModal(tarjeta: TarjetaKdsUi, tipo: "rechazo" | "sugerencia", linea?: LineaKdsUi) {
     setModal({
@@ -218,48 +259,44 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
     <section className="page-shell kds-page cocina-page">
       <header className="page-header">
         <div><span className="page-eyebrow">Vista del cocinero</span><p>Recibe pedidos, prepara cada producto y avisa al mesero cuando haya un problema.</p></div>
+        <Button type="button" variant="outline" onClick={() => setMostrarListas(true)}>
+          <CheckCheck size={17} aria-hidden="true" /> Órdenes listas <Badge variant="secondary">{listas.length}</Badge>
+        </Button>
       </header>
 
-      <div className="tabla-ordenes" role="table" aria-label="Órdenes en cocina, de la más nueva a la más vieja">
-        <div role="row" className="tabla-ordenes__fila tabla-ordenes__fila--cabecera">
-          <span role="columnheader">Orden</span>
-          <span role="columnheader">Mesero</span>
-          <span role="columnheader">Espera</span>
-          <span role="columnheader">Productos</span>
-        </div>
-        {cargando && tarjetas.length === 0 ? (
-          <div aria-hidden="true">
-            {Array.from({ length: 5 }, (_, i) => (
-              <Skeleton key={i} className="mb-1.5 h-12 w-full rounded-lg" />
-            ))}
-          </div>
-        ) : (
-          activas.map((tarjeta) => {
-            const espera = esperaMinutos(tarjeta.creadaEn);
-            const pendiente = tarjeta.incidencias.some((incidencia) => incidencia.estado === "pendiente");
-            return (
-              <button
-                type="button"
-                role="row"
-                className={`tabla-ordenes__fila tactil${pendiente ? " is-bloqueada" : ""}${nuevas.has(tarjeta.id) ? " is-nueva" : ""}`}
-                key={tarjeta.id}
-                aria-label={`Abrir ${tituloOrden(tarjeta)} de la ${mesaTexto(tarjeta)}`}
-                onClick={() => setSeleccionadaId(tarjeta.id)}
-              >
-                <span role="cell" className="tabla-ordenes__orden">
-                  <strong>{tituloOrden(tarjeta)}</strong>
-                  <span className="tabla-ordenes__mesa">{mesaTexto(tarjeta)}</span>
-                  {pendiente ? <Badge variant="danger">Cocina esperando respuesta</Badge> : null}
-                </span>
-                <span role="cell">{tarjeta.mesero}</span>
-                <span role="cell"><span className="chip-espera" title="Minutos de espera"><Clock size={12} aria-hidden="true" />{espera}</span></span>
-                <span role="cell" className="tabla-ordenes__descripcion">{descripcionOrden(tarjeta)}</span>
-              </button>
-            );
-          })
-        )}
-        {!cargando && activas.length === 0 ? <div className="empty-state"><ChefHat size={32} aria-hidden="true" /><strong>No hay pedidos en cocina</strong><span>Los pedidos nuevos aparecerán automáticamente.</span></div> : null}
+      <div className="kds-tablero" aria-label="Órdenes activas en cocina">
+        {([['por_preparar', 'Por preparar', porPreparar], ['en_proceso', 'En proceso', enProceso]] as const).map(([clave, titulo, grupo]) => (
+          <section className={`kds-columna is-${clave}`} key={clave} aria-labelledby={`kds-${clave}`}>
+            <header><span className="kds-columna__punto" aria-hidden="true" /><h2 id={`kds-${clave}`}>{titulo}</h2><Badge variant="secondary">{grupo.length}</Badge></header>
+            <div className="kds-columna__lista">
+              {cargando && tarjetas.length === 0 ? Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-36 w-full rounded-lg" />) : null}
+              {grupo.map((tarjeta) => {
+                const pendiente = tarjeta.incidencias.some((incidencia) => incidencia.estado === "pendiente");
+                return <Card className={`kds-tarjeta${pendiente ? " is-bloqueada" : ""}${nuevas.has(tarjeta.id) ? " is-nueva" : ""}`} key={tarjeta.id}>
+                  <button type="button" className="kds-tarjeta__detalle" aria-label={`Abrir ${tituloOrden(tarjeta)} de ${mesaTexto(tarjeta)}`} onClick={() => setSeleccionadaId(tarjeta.id)}>
+                    <span className="kds-tarjeta__cabecera"><strong>{tituloOrden(tarjeta)}</strong><span className="chip-espera"><Clock size={12} aria-hidden="true" />{esperaMinutos(tarjeta.creadaEn)}</span></span>
+                    <span className="tabla-ordenes__mesa">{mesaTexto(tarjeta)}</span>
+                    <span className="kds-tarjeta__productos">{descripcionOrden(tarjeta)}</span>
+                    {tarjeta.tipoServicio === "para_llevar" ? <Badge variant="secondary">Empacar para llevar</Badge> : null}
+                    {pendiente ? <Badge variant="warning">Esperando respuesta</Badge> : null}
+                  </button>
+                  <Button type="button" disabled={pendiente} onClick={() => onCambiarEtapa(tarjeta.id, clave === "por_preparar" ? "en_proceso" : "listo")}>
+                    {clave === "por_preparar" ? <><Play size={17} aria-hidden="true" /> Empezar</> : <><CheckCheck size={17} aria-hidden="true" /> Marcar lista</>}
+                  </Button>
+                </Card>;
+              })}
+              {!cargando && grupo.length === 0 ? <div className="kds-columna__vacia"><ChefHat size={24} aria-hidden="true" /><span>Sin órdenes</span></div> : null}
+            </div>
+          </section>
+        ))}
       </div>
+
+      {mostrarListas ? <Dialog aria-label="Órdenes listas" onOverlayClick={() => setMostrarListas(false)}>
+        <DialogContent className="inventario-modal w-[min(560px,calc(100vw-1.5rem))] p-[1.4rem]">
+          <header className="cocina-orden-modal__cabecera"><div><span className="page-eyebrow">Fuera del tablero</span><h2>Órdenes listas</h2></div><Button type="button" variant="ghost" size="icon" aria-label="Cerrar" onClick={() => setMostrarListas(false)}><X size={20} /></Button></header>
+          <div className="kds-listas">{listas.map((tarjeta) => <button type="button" key={tarjeta.id} onClick={() => { setMostrarListas(false); setSeleccionadaId(tarjeta.id); }}><strong>{tituloOrden(tarjeta)}</strong><span>{mesaTexto(tarjeta)}</span><span className="chip-espera"><Clock size={12} />{esperaMinutos(tarjeta.creadaEn)}</span></button>)}{listas.length === 0 ? <p>No hay órdenes listas para retirar.</p> : null}</div>
+        </DialogContent>
+      </Dialog> : null}
 
       {modal ? (
         <Dialog
@@ -289,14 +326,22 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
       ) : null}
       {seleccionada ? (
         <Dialog aria-label={`Orden de la ${seleccionada.referencia}`} onOverlayClick={() => setSeleccionadaId(null)}>
-          <DialogContent className="inventario-modal w-[min(560px,calc(100vw-1.5rem))] p-[1.4rem]">
-            <span className="page-eyebrow">Orden completa</span>
-            <h2>{tituloOrden(seleccionada)}</h2>
+          <DialogContent className="inventario-modal cocina-orden-modal w-[min(560px,calc(100vw-1.5rem))] p-[1.4rem]">
+            <header className="cocina-orden-modal__cabecera">
+              <div>
+                <span className="page-eyebrow">Orden completa</span>
+                <h2>{tituloOrden(seleccionada)}</h2>
+              </div>
+              <Button type="button" variant="ghost" size="icon" aria-label="Cerrar orden" onClick={() => setSeleccionadaId(null)}>
+                <X size={20} aria-hidden="true" />
+              </Button>
+            </header>
             <p className="cocina-orden-modal__meta">
-              {mesaTexto(seleccionada)} · Mesero: {seleccionada.mesero}
+              <span>{mesaTexto(seleccionada)}</span>
               <span className="chip-espera">
                 <Clock size={12} aria-hidden="true" /> {esperaMinutos(seleccionada.creadaEn)}
               </span>
+              <Badge variant={estadoOrden(seleccionada).tono}>{estadoOrden(seleccionada).etiqueta}</Badge>
             </p>
             {seleccionada.indicaciones ? <p className="cocina-indicaciones">{seleccionada.indicaciones}</p> : null}
             <ul className="cocina-orden-modal__lineas">
@@ -304,10 +349,26 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
                 <li className={`cocina-linea etapa-${linea.etapa}`} key={linea.id}>
                   <div className="cocina-linea__principal">
                     <strong>{cantidad(linea)} × {linea.nombre}</strong>
-                    <Badge variant={tonoEtapa(linea.etapa)}>{etiquetaEtapa(linea.etapa)}</Badge>
+                    {linea.etapa === "por_preparar" ? null : <Badge variant={tonoEtapa(linea.etapa)}>{etiquetaEtapa(linea.etapa)}</Badge>}
                   </div>
                   {linea.nota ? <p className="cocina-linea__nota">Nota: {linea.nota}</p> : null}
                   {(linea.contornos ?? []).length > 0 ? <div className="kds-contornos">{linea.contornos!.map((contorno) => <em key={contorno}>{contorno}</em>)}</div> : null}
+                  {seleccionada.tipo === "orden" && ["por_preparar", "en_proceso", "listo", "servido"].includes(linea.etapa) ? (
+                    <div className="cocina-linea__acciones">
+                      <Button type="button" size="sm" variant="outline" onClick={() => { abrirModal(seleccionada, "sugerencia", linea); setSeleccionadaId(null); }}>
+                        <ArrowRightLeft size={16} aria-hidden="true" /> Proponer reemplazo
+                      </Button>
+                      {linea.etapa !== "por_preparar" ? (
+                        <Button type="button" size="sm" variant="outline" onClick={() => { setCancelando(linea); setSeleccionadaId(null); setMotivoCancelacion("Ingrediente no disponible"); setDetalleCancelacion(""); setError(""); }}>
+                          <Trash2 size={16} aria-hidden="true" /> Cancelar y devolver stock
+                        </Button>
+                      ) : (
+                        <Button type="button" size="sm" variant="outline" onClick={() => { abrirModal(seleccionada, "rechazo", linea); setSeleccionadaId(null); }}>
+                          <CircleOff size={16} aria-hidden="true" /> No se puede preparar
+                        </Button>
+                      )}
+                    </div>
+                  ) : null}
                   {seleccionada.incidencias.filter((incidencia) => incidencia.comandaLineaId === linea.id).map((incidencia) => (
                     <AvisoIncidencia incidencia={incidencia} key={incidencia.id} />
                   ))}
@@ -317,6 +378,7 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
             {(() => {
               const tareas = seleccionada.lineas.filter((linea) => !linea.esAviso && linea.etapa !== "cancelado");
               const porPreparar = tareas.filter((linea) => linea.etapa === "por_preparar").length;
+              const tieneTrabajoActivo = tareas.some((linea) => linea.etapa === "por_preparar" || linea.etapa === "en_proceso");
               const bloqueada = seleccionada.incidencias.some((incidencia) => incidencia.estado === "pendiente");
               const ordenIncidente = seleccionada.incidencias.find((incidencia) => incidencia.comandaLineaId == null);
               const tipo = seleccionada.tipo === "orden";
@@ -324,34 +386,54 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, pro
                 <>
                   {ordenIncidente ? <AvisoIncidencia incidencia={ordenIncidente} /> : null}
                   {bloqueada ? <Alerta>Cocina hizo una solicitud: el mesero debe responder antes de avanzar la orden.</Alerta> : null}
-                  {!bloqueada && tareas.length > 0 ? (
-                    <div className="inventario-modal__acciones cocina-orden-modal__acciones">
+                  {!bloqueada && tieneTrabajoActivo ? (
+                    <div className="cocina-orden-modal__acciones">
+                      <div className="cocina-orden-modal__acciones-principales">
                       {porPreparar > 0 ? (
-                        <Button type="button" variant="brand" onClick={() => onCambiarEtapa(seleccionada.id, "en_proceso")}>
+                        <Button type="button" onClick={() => onCambiarEtapa(seleccionada.id, "en_proceso")}>
                           <Play size={18} aria-hidden="true" /> Comenzar orden
                         </Button>
-                      ) : null}
-                      <Button type="button" variant="success" onClick={() => onCambiarEtapa(seleccionada.id, "listo")}>
-                        <CheckCheck size={18} aria-hidden="true" /> Lista completa
-                      </Button>
-                      {tipo ? (
-                        <>
-                          <Button type="button" variant="outline" onClick={() => { setSeleccionadaId(null); abrirModal(seleccionada, "sugerencia"); }}>
-                            <ArrowRightLeft size={18} aria-hidden="true" /> Sugerir cambio
-                          </Button>
-                          <Button type="button" variant="ghost" onClick={() => { setSeleccionadaId(null); abrirModal(seleccionada, "rechazo"); }}>
-                            <CircleOff size={18} aria-hidden="true" /> No disponible
-                          </Button>
-                        </>
-                      ) : null}
+                      ) : (
+                        <Button type="button" variant="success" onClick={() => onCambiarEtapa(seleccionada.id, "listo")}>
+                          <CheckCheck size={18} aria-hidden="true" /> Lista completa
+                        </Button>
+                      )}
+                      </div>
+                      {tipo ? <p className="cocina-orden-modal__ayuda">Los problemas se reportan en el producto afectado.</p> : null}
                     </div>
                   ) : null}
-                  <div className="inventario-modal__acciones">
-                    <Button type="button" variant="outline" onClick={() => setSeleccionadaId(null)}>Cerrar</Button>
-                  </div>
                 </>
               );
             })()}
+          </DialogContent>
+        </Dialog>
+      ) : null}
+      {cancelando ? (
+        <Dialog aria-label="Cancelar producto y devolver stock" onOverlayClick={() => setCancelando(null)}>
+          <DialogContent className="inventario-modal w-[min(440px,calc(100vw-1.5rem))] p-[1.4rem]">
+            <span className="page-eyebrow">Acción de Cocina</span>
+            <h2>Cancelar {cancelando.nombre}</h2>
+            <p>La receta completa volverá al inventario y la acción quedará registrada.</p>
+            <label>Motivo<Select value={motivoCancelacion} onChange={(event) => setMotivoCancelacion(event.target.value)}>
+              <option>Ingrediente no disponible</option>
+              <option>No se puede terminar</option>
+              <option>Preparación incorrecta</option>
+              <option>Solicitud del cliente</option>
+              <option>Otro</option>
+            </Select></label>
+            <label><span>Detalle <small>(opcional)</small></span><Textarea rows={2} value={detalleCancelacion} onChange={(event) => setDetalleCancelacion(event.target.value)} /></label>
+            {error ? <Alerta>{error}</Alerta> : null}
+            <div className="inventario-modal__acciones">
+              <Button type="button" variant="outline" onClick={() => setCancelando(null)}>Volver</Button>
+              <Button type="button" disabled={guardando} onClick={async () => {
+                setGuardando(true); setError("");
+                try {
+                  await onCancelarProducto(cancelando.id, [motivoCancelacion, detalleCancelacion.trim()].filter(Boolean).join(": "));
+                  setCancelando(null); setSeleccionadaId(null);
+                } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+                finally { setGuardando(false); }
+              }}>{guardando ? "Cancelando…" : "Cancelar y devolver stock"}</Button>
+            </div>
           </DialogContent>
         </Dialog>
       ) : null}
