@@ -29,10 +29,10 @@ jobs:
       - name: Compilar instalador
         shell: pwsh
         env:
-          RESTAURANTE_VERSION: ${{ github.ref_name }}
+          RESTAURANTE_VERSION: ${{ github.event_name == 'pull_request' && format('0.1.0-pr{0}', github.event.pull_request.number) || github.ref_name }}
         run: npm run build:windows
       - uses: actions/upload-artifact@v4
         with:
-          name: Restaurante-Setup-${{ github.ref_name }}-x64
+          name: Restaurante-Setup-${{ github.event_name == 'pull_request' && format('0.1.0-pr{0}', github.event.pull_request.number) || github.ref_name }}-x64
           path: installer/windows/output/*.exe
           if-no-files-found: error
