@@ -7,13 +7,15 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const installerDir = join(root, "installer", "windows");
 const stage = join(installerDir, "stage");
 const output = join(installerDir, "output");
-const version = process.env.RESTAURANTE_VERSION || "0.1.0";
+const rawVersion = process.env.RESTAURANTE_VERSION || "0.1.0";
+const version = rawVersion.replace(/[^0-9A-Za-z._-]+/g, "-");
+const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 
 function run(command, args, options = {}) {
   execFileSync(command, args, { cwd: root, stdio: "inherit", ...options });
 }
 
-run("npm", ["run", "build"]);
+run(npmCommand, ["run", "build"]);
 mkdirSync(stage, { recursive: true });
 rmSync(stage, { recursive: true, force: true });
 mkdirSync(stage, { recursive: true });

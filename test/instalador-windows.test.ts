@@ -5,6 +5,7 @@ const inno = readFileSync("installer/windows/Restaurante.iss", "utf8");
 const backup = readFileSync("installer/windows/prepare-update.ps1", "utf8");
 const rollback = readFileSync("installer/windows/rollback-update.ps1", "utf8");
 const task = readFileSync("installer/windows/register-task.ps1", "utf8");
+const build = readFileSync("scripts/build-windows-installer.mjs", "utf8");
 
 describe("instalador Windows", () => {
   it("valida la instalación y restaura la versión anterior si falla", () => {
@@ -28,5 +29,10 @@ describe("instalador Windows", () => {
     expect(task).toContain("New-ScheduledTaskAction");
     expect(task).toContain("restaurante.exe");
     expect(task).not.toContain("npm");
+  });
+
+  it("compila de forma portable y normaliza el nombre del instalador", () => {
+    expect(build).toContain('process.platform === "win32" ? "npm.cmd" : "npm"');
+    expect(build).toContain('replace(/[^0-9A-Za-z._-]+/g, "-")');
   });
 });
