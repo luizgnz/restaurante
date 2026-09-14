@@ -32,7 +32,8 @@ describe("instalador Windows", () => {
   });
 
   it("compila de forma portable y normaliza el nombre del instalador", () => {
-    expect(build).toContain('process.platform === "win32" ? "npm.cmd" : "npm"');
+    expect(build).toContain('process.env.ComSpec || "cmd.exe"');
+    expect(build).toContain('["/d", "/s", "/c", "npm run build"]');
     expect(build).toContain('replace(/[^0-9A-Za-z._-]+/g, "-")');
   });
 });

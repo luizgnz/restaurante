@@ -9,13 +9,14 @@ const stage = join(installerDir, "stage");
 const output = join(installerDir, "output");
 const rawVersion = process.env.RESTAURANTE_VERSION || "0.1.0";
 const version = rawVersion.replace(/[^0-9A-Za-z._-]+/g, "-");
-const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+const npmCommand = process.platform === "win32" ? process.env.ComSpec || "cmd.exe" : "npm";
+const npmArgs = process.platform === "win32" ? ["/d", "/s", "/c", "npm run build"] : ["run", "build"];
 
 function run(command, args, options = {}) {
   execFileSync(command, args, { cwd: root, stdio: "inherit", ...options });
 }
 
-run(npmCommand, ["run", "build"]);
+run(npmCommand, npmArgs);
 mkdirSync(stage, { recursive: true });
 rmSync(stage, { recursive: true, force: true });
 mkdirSync(stage, { recursive: true });
