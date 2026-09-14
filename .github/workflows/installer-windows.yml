@@ -22,7 +22,9 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - run: npm ci
+      # El instalador ejecuta el backend Go. Las dependencias nativas del
+      # backend Node legado no deben compilarse en el runner de Windows.
+      - run: npm ci --ignore-scripts
       - run: choco install innosetup --yes --no-progress
       - name: Compilar instalador
         shell: pwsh
