@@ -17,8 +17,11 @@
     "build": "tsc -p tsconfig.json --noEmit && vite build --config ui/vite.config.ts",
     "build:ui": "vite build --config ui/vite.config.ts",
     "build:go": "mkdir -p dist && go build -o dist/restaurante-go ./go/cmd/restaurante",
+    "build:windows": "node scripts/build-windows-installer.mjs",
     "start:node": "node --import tsx src/index.ts",
     "start": "npm run build:ui && npm run build:go && ./dist/restaurante-go",
+    "demo:restaurar": "node --import tsx scripts/reiniciar-dia-demo.ts",
+    "menu:generar": "node scripts/generar-menu-real.mjs",
     "licenses": "node scripts/check-licenses.mjs"
   },
   "devDependencies": {

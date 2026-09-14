@@ -22,9 +22,13 @@ func TestManageCatalogCreatesRecipeAndSlots(t *testing.T) {
 		t.Fatal(err)
 	}
 	track, available := true, false
-	materialID, err := catalog.CreateProduct(ctx, db, catalog.ProductInput{Nombre: "Papas g", CategoriaID: nil, TipoConsumo: "almacenable_unitario", RastrearInventario: &track, DisponibleEnPOS: &available})
+	materialID, err := catalog.CreateProduct(ctx, db, catalog.ProductInput{Nombre: "Papas", CategoriaID: nil, TipoConsumo: "almacenable_unitario", RastrearInventario: &track, DisponibleEnPOS: &available, UnidadBase: "g"})
 	if err != nil {
 		t.Fatal(err)
+	}
+	var baseUnit, inventoryUnit string
+	if err := db.QueryRow("SELECT unidad_base, unidad_inventario FROM productos WHERE id = ?", materialID).Scan(&baseUnit, &inventoryUnit); err != nil || baseUnit != "g" || inventoryUnit != "g" {
+		t.Fatalf("unidades=%s/%s err=%v", baseUnit, inventoryUnit, err)
 	}
 	recipeID, err := catalog.CreateProduct(ctx, db, catalog.ProductInput{Nombre: "Papas con pollo", PrecioCentavos: 8900, CategoriaID: &category.ID, TipoConsumo: "receta_kit", Receta: []catalog.RecipeLine{{IngredienteID: materialID, Cantidad: 200}}})
 	if err != nil {

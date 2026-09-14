@@ -209,7 +209,11 @@ func AcceptReplacement(ctx context.Context, db *sql.DB, id, employeeID int64, in
 		}
 		correction = &result
 	}
-	if _, err := db.ExecContext(ctx, "UPDATE cocina_incidencias SET estado = 'aceptada', respondida_en = ? WHERE id = ? AND estado = 'pendiente'", timestamp(), id); err != nil {
+	resolvedAt := timestamp()
+	if _, err := db.ExecContext(ctx, "UPDATE cocina_incidencias SET estado = 'aceptada', respondida_en = ? WHERE id = ? AND estado = 'pendiente'", resolvedAt, id); err != nil {
+		return Item{}, nil, err
+	}
+	if err := restartReadyDeliveryClock(ctx, db, incident.OrderID, resolvedAt); err != nil {
 		return Item{}, nil, err
 	}
 	updated, err := Get(ctx, db, id)
@@ -238,14 +242,21 @@ func Reject(ctx context.Context, db *sql.DB, id, employeeID int64, inventoryPoli
 	if err != nil {
 		return Item{}, nil, translateOrderError(err)
 	}
-	reason := "Cliente no aceptó el reemplazo"
+	reason := incident.Reason
+	if incident.Type == "sugerencia" {
+		reason = "Cliente no aceptó el reemplazo"
+	}
 	result, err := orders.Correct(ctx, db, orders.CorrectionInput{
 		OrderID: incident.OrderID, Key: "incidencia-" + intString(id) + "-eliminar", Reason: &reason, Lines: lines,
 	}, employeeID, orders.CorrectionOptions{InventoryPolicy: inventoryPolicy, Origin: "incidencia"})
 	if err != nil {
 		return Item{}, nil, translateOrderError(err)
 	}
-	if _, err := db.ExecContext(ctx, "UPDATE cocina_incidencias SET estado = 'eliminada', respondida_en = ? WHERE id = ? AND estado = 'pendiente'", timestamp(), id); err != nil {
+	resolvedAt := timestamp()
+	if _, err := db.ExecContext(ctx, "UPDATE cocina_incidencias SET estado = 'eliminada', respondida_en = ? WHERE id = ? AND estado = 'pendiente'", resolvedAt, id); err != nil {
+		return Item{}, nil, err
+	}
+	if err := restartReadyDeliveryClock(ctx, db, incident.OrderID, resolvedAt); err != nil {
 		return Item{}, nil, err
 	}
 	updated, err := Get(ctx, db, id)
@@ -265,6 +276,20 @@ func Get(ctx context.Context, db *sql.DB, id int64) (Item, error) {
 		return Item{}, &Error{"incidencia_inexistente", "La solicitud de cocina no existe"}
 	}
 	return items[0], nil
+}
+
+// restartReadyDeliveryClock da al mesero un plazo completo después de que una
+// incidencia deja de bloquear la orden. Los reemplazos nuevos siguen iniciando
+// su propio reloj únicamente cuando Cocina los marque como listos.
+func restartReadyDeliveryClock(ctx context.Context, db *sql.DB, orderID int64, resolvedAt string) error {
+	_, err := db.ExecContext(ctx, `
+		UPDATE comanda_lineas SET etapa_actualizada_en = ?
+		WHERE etapa = 'listo' AND id IN (
+			SELECT cl.id FROM comanda_lineas cl
+			JOIN comandas c ON c.id = cl.comanda_id
+			WHERE c.orden_id = ?
+		)`, resolvedAt, orderID)
+	return err
 }
 
 func lineForIncident(ctx context.Context, db *sql.DB, incident Item) (orders.CorrectionLine, error) {

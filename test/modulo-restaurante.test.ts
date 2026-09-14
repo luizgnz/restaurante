@@ -21,18 +21,23 @@ describe("módulo restaurante", () => {
       rastrear_inventario: true,
       codigo: "COM-1",
       color: "#aa3344",
+      unidad_base: "unidad",
     });
     expect(creado.id).toBeGreaterThan(0);
-    const fila = db.prepare("SELECT codigo, color, rastrear_inventario, tipo_consumo FROM productos WHERE id = ?").get(creado.id) as {
+    const fila = db.prepare("SELECT codigo, color, rastrear_inventario, tipo_consumo, unidad_base, unidad_inventario FROM productos WHERE id = ?").get(creado.id) as {
       codigo: string;
       color: string;
       rastrear_inventario: number;
       tipo_consumo: string;
+      unidad_base: string;
+      unidad_inventario: string;
     };
     expect(fila.codigo).toBe("COM-1");
     expect(fila.color).toBe("#aa3344");
     expect(fila.rastrear_inventario).toBe(1);
     expect(fila.tipo_consumo).toBe("almacenable_unitario");
+    expect(fila.unidad_base).toBe("unidad");
+    expect(fila.unidad_inventario).toBe("unidad");
     expect(db.prepare("SELECT producto_id FROM stock WHERE producto_id = ?").get(creado.id)).toBeTruthy();
     const app = createApp({ db, config: defaultConfig(), printer: new MemoryPrinter() });
     const carta = await app.request("/api/carta");

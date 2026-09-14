@@ -99,6 +99,18 @@ En macOS, la base operativa está por defecto en `~/Library/Application Support/
 
 Utiliza Git para el historial confirmado y un respaldo independiente, por ejemplo Time Machine, para proteger también el trabajo sin confirmar. Para SQLite, genera copias consistentes con las herramientas de respaldo de la aplicación; no sincronices la base activa ni sus archivos WAL/SHM. iCloud puede conservar documentos y copias de respaldo terminadas, pero no es la carpeta de ejecución del sistema. Estas recomendaciones no activan ni configuran respaldos automáticamente.
 
+### Catálogo real y restauración de prueba
+
+La migración `026_menu_real_restaurante` carga el menú normalizado del restaurante, sus recetas estimadas, existencias de demostración y fotos locales. Si encuentra una base operativa anterior, crea primero una copia `antes-menu-real-*.sqlite` dentro de la carpeta `data/backups`.
+
+Con la aplicación ejecutándose, el día de demostración puede restaurarse con:
+
+```bash
+npm run demo:restaurar
+```
+
+El comando respalda el estado actual, recrea las órdenes de ejemplo y devuelve el inventario a sus existencias iniciales de prueba. Para una operación real, esas cantidades deben reemplazarse por un conteo físico antes de abrir el restaurante. La fuente normalizada que genera la migración está en `scripts/generar-menu-real.mjs`; puede reconstruirse con `npm run menu:generar` después de modificarla de forma controlada.
+
 ## Capturas de la interfaz
 
 Capturas realizadas el **29 de agosto de 2026**, correspondientes al trabajo iniciado en el commit **`feeb899`**.

@@ -26,6 +26,7 @@ type App struct {
 	EntregaAutomaticaSiNoConfirma bool     `json:"entrega_automatica_si_no_confirma"`
 	EntregaAutomaticaMinutos      int      `json:"entrega_automatica_minutos"`
 	PrioridadParaLlevar           string   `json:"prioridad_para_llevar"`
+	SugerirEmpaqueParaLlevar     bool     `json:"sugerir_empaque_para_llevar"`
 	DevolverInsumosPreparados     bool     `json:"devolver_insumos_preparados"`
 	PINAlEmitirPrecuenta          bool     `json:"pin_al_emitir_precuenta"`
 	PINAlEnviarCaja               bool     `json:"pin_al_enviar_caja"`
@@ -34,6 +35,9 @@ type App struct {
 	TabletCocina                  bool     `json:"tablet_cocina"`
 	LiberarMesaCuando             string   `json:"liberar_mesa_cuando"`
 	BloqueoInactividadSeg         int      `json:"bloqueo_inactividad_seg"`
+	IntentosPINMaximos            int      `json:"intentos_pin_maximos"`
+	BloqueoPINSegundos            int      `json:"bloqueo_pin_segundos"`
+	DuracionSesionHoras           int      `json:"duracion_sesion_horas"`
 	ImpresoraComanda              Printer  `json:"impresora_comanda"`
 	ImpresoraBoleta               Printer  `json:"impresora_boleta"`
 	PlantillaComanda              Template `json:"plantilla_comanda"`
@@ -71,6 +75,7 @@ func Defaults() App {
 		EntregaAutomaticaSiNoConfirma: true,
 		EntregaAutomaticaMinutos:      30,
 		PrioridadParaLlevar:           "igual",
+		SugerirEmpaqueParaLlevar:     true,
 		DevolverInsumosPreparados:     true,
 		PINAlEmitirPrecuenta:          true,
 		PINAlEnviarCaja:               true,
@@ -78,6 +83,9 @@ func Defaults() App {
 		PrecuentaObligatoriaAntesCaja: true,
 		LiberarMesaCuando:             "al_enviar_a_caja",
 		BloqueoInactividadSeg:         60,
+		IntentosPINMaximos:            5,
+		BloqueoPINSegundos:            60,
+		DuracionSesionHoras:           16,
 		ImpresoraComanda:              Printer{Name: "Cocina", Port: 9100, WidthMM: 80},
 		ImpresoraBoleta:               Printer{Name: "Caja", Port: 9100, WidthMM: 80},
 		PlantillaComanda:              Template{Title: "COMANDA"},
@@ -107,6 +115,15 @@ func Load(dataDir string) (App, error) {
 	}
 	if config.EntregaAutomaticaMinutos < 1 || config.EntregaAutomaticaMinutos > 240 {
 		config.EntregaAutomaticaMinutos = Defaults().EntregaAutomaticaMinutos
+	}
+	if config.IntentosPINMaximos < 3 || config.IntentosPINMaximos > 10 {
+		config.IntentosPINMaximos = Defaults().IntentosPINMaximos
+	}
+	if config.BloqueoPINSegundos < 15 || config.BloqueoPINSegundos > 300 {
+		config.BloqueoPINSegundos = Defaults().BloqueoPINSegundos
+	}
+	if config.DuracionSesionHoras < 4 || config.DuracionSesionHoras > 24 {
+		config.DuracionSesionHoras = Defaults().DuracionSesionHoras
 	}
 	if config.PrioridadParaLlevar != "prioritaria" {
 		config.PrioridadParaLlevar = "igual"

@@ -28,17 +28,17 @@ type demoLine struct {
 type demoProduct struct{ id, price int64 }
 
 var demoOrders = []demoOrder{
-	{3, 10, []demoLine{{"Empanada", 3}, {"Café", 2}}},
-	{7, 20, []demoLine{{"Hamburguesa", 2}, {"Jugo", 1}}},
-	{5, 30, []demoLine{{"Pizza margarita", 2}, {"Papas fritas", 1}}},
-	{10, 45, []demoLine{{"Pizza margarita", 2}}},
-	{6, 55, []demoLine{{"Cerveza", 4}, {"Completo", 2}}},
-	{8, 80, []demoLine{{"Sopa del día", 2}}},
-	{9, 100, []demoLine{{"Ensalada César", 1}, {"Agua con gas", 2}}},
-	{4, 110, []demoLine{{"Flan", 2}, {"Café", 1}}},
+	{3, 10, []demoLine{{"Bandeja paisa", 2}, {"Café", 2}}},
+	{7, 20, []demoLine{{"Pollo a la plancha colombiano", 2}, {"Néctar Watts 350 ml", 1}}},
+	{5, 30, []demoLine{{"Arroz con pollo", 2}, {"Papas fritas pequeña", 1}}},
+	{10, 45, []demoLine{{"Carne mongoliana", 2}}},
+	{6, 55, []demoLine{{"Coca-Cola 350 ml", 4}, {"Costillar al horno", 2}}},
+	{8, 80, []demoLine{{"Sopa especial", 2}}},
+	{9, 100, []demoLine{{"Reineta chilena", 1}, {"Agua con gas", 2}}},
+	{4, 110, []demoLine{{"Porotos con riendas", 2}, {"Té", 1}}},
 }
 
-var movementTables = []string{"cancelaciones_productos_cocina", "entregas_ordenes", "cocina_incidencias", "comanda_lineas", "comandas", "caja_handoffs", "precuentas", "cancelaciones_cuentas", "auditoria_anulaciones", "orden_linea_contornos", "orden_linea_inventario", "orden_correccion_lineas", "orden_correcciones", "orden_lineas", "ordenes", "cuentas", "pedido_lineas", "pedidos", "print_jobs"}
+var movementTables = []string{"cancelaciones_productos_cocina", "entregas_ordenes", "cocina_incidencias", "comanda_lineas", "comandas", "caja_handoffs", "precuentas", "cancelaciones_cuentas", "auditoria_anulaciones", "orden_linea_contornos", "orden_linea_inventario", "orden_correccion_lineas", "orden_correcciones", "orden_lineas", "ordenes", "cuentas", "pedido_lineas", "pedidos", "print_jobs", "inventario_movimientos"}
 
 func ResetDemo(ctx context.Context, db *sql.DB, employeeID *int64, dataDir string) (DemoResult, error) {
 	state, err := Current(ctx, db)
@@ -106,6 +106,12 @@ func ResetDemo(ctx context.Context, db *sql.DB, employeeID *int64, dataDir strin
 			return DemoResult{}, err
 		}
 	}
+	if _, err := tx.ExecContext(ctx, `UPDATE stock
+		SET on_hand_real = COALESCE((SELECT ds.on_hand_real FROM demo_stock_base ds WHERE ds.producto_id = stock.producto_id), on_hand_real),
+			reserved_real = 0
+		WHERE producto_id IN (SELECT producto_id FROM demo_stock_base)`); err != nil {
+		return DemoResult{}, err
+	}
 	now := time.Now()
 	if state.Jornada != nil {
 		summaryJSON, _ := json.Marshal(previousSummary)
@@ -172,13 +178,13 @@ func ResetDemo(ctx context.Context, db *sql.DB, employeeID *int64, dataDir strin
 		}
 	}
 	if precountAccount != 0 {
-		pizza := products["Pizza margarita"]
+		producto := products["Carne mongoliana"]
 		snapshot := map[string]any{
 			"cuentaId": precountAccount, "mesaNumero": 10, "mesero": actorName,
 			"ordenes": []any{map[string]any{"numero": 1, "indicaciones": nil, "lineas": []any{map[string]any{
-				"productoId": pizza.id, "nombre": "Pizza margarita", "cantidad": 2, "precioCentavos": pizza.price, "nota": nil,
+				"productoId": producto.id, "nombre": "Carne mongoliana", "cantidad": 2, "precioCentavos": producto.price, "nota": nil,
 			}}}},
-			"totalCentavos": pizza.price * 2, "sello": fmt.Sprintf("o:1:%d/c:0:0", precountOrderID),
+			"totalCentavos": producto.price * 2, "sello": fmt.Sprintf("o:1:%d/c:0:0", precountOrderID),
 			"leyenda": "Esto no es boleta ni factura. El documento tributario lo emite caja.",
 		}
 		snapshotJSON, _ := json.Marshal(snapshot)

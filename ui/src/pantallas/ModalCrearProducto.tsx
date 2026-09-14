@@ -6,7 +6,7 @@ import { CrearProducto, type Categoria, type CrearProductoProps } from "./CrearP
 export type ModalCrearProductoProps = {
   abierto: boolean;
   categorias: Categoria[];
-  ingredientesDisponibles?: Array<{ id: number; nombre: string }>;
+  ingredientesDisponibles?: Array<{ id: number; nombre: string; unidad_base?: "unidad" | "g" | "ml" }>;
   error?: string;
   onGuardar: CrearProductoProps["onGuardar"];
   onCerrar: () => void;

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Boxes,
   ClipboardList,
+  FileBarChart,
   LayoutGrid,
   LogOut,
   Menu,
@@ -20,6 +21,7 @@ export type Destino =
   | "contornos"
   | "recetas"
   | "backend"
+  | "reportes"
   | "opciones";
 
 type Props = {
@@ -31,6 +33,8 @@ type Props = {
   puedeOrdenes?: boolean;
   puedeCocina?: boolean;
   puedeAdministrar?: boolean;
+  puedeGestionarJornada?: boolean;
+  puedeReportes?: boolean;
   onMesas: () => void;
   onOrdenes: () => void;
   onInventario: () => void;
@@ -49,6 +53,8 @@ export function Barra({
   puedeOrdenes = true,
   puedeCocina = true,
   puedeAdministrar = true,
+  puedeGestionarJornada = puedeAdministrar,
+  puedeReportes = puedeAdministrar,
   onMesas,
   onOrdenes,
   onInventario,
@@ -57,6 +63,7 @@ export function Barra({
   onIr,
 }: Props) {
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [logoFallido, setLogoFallido] = useState(false);
   const iconos = useRef<HTMLDivElement>(null);
 
   function ir(d: Destino) {
@@ -84,8 +91,17 @@ export function Barra({
     };
   }, [menuAbierto]);
 
+  useEffect(() => setLogoFallido(false), [logo]);
+
   return (
-    <nav className="pos-nav" aria-label="Navegación principal">
+    <>
+      <header className="pos-mobile-brand" aria-label={`Restaurante ${marca}`}>
+        <span className="pos-odoo__marca">
+          {logo && !logoFallido ? <img src={logo} alt="" className="pos-odoo__logo" onError={() => setLogoFallido(true)} /> : null}
+          <span className="pos-odoo__nombre">{marca}</span>
+        </span>
+      </header>
+      <nav className="pos-nav" aria-label="Navegación principal">
       <div className="pos-nav__primary">
         {puedeMesas ? (
           <Button type="button" variant={vista === "plano" ? "secondary" : "ghost"} className={`tactil pos-nav__item ${vista === "plano" ? "is-on" : ""}`} title="Mesas (M)" onClick={onMesas}>
@@ -119,8 +135,8 @@ export function Barra({
       </div>
       <div className="pos-nav__identity">
         <span className="pos-odoo__marca">
-          {logo ? <img src={logo} alt="" className="pos-odoo__logo" /> : null}
-          <span className="hidden max-w-[28vw] truncate min-[420px]:inline-block">{marca}</span>
+          {logo && !logoFallido ? <img src={logo} alt="" className="pos-odoo__logo" onError={() => setLogoFallido(true)} /> : null}
+          <span className="pos-odoo__nombre">{marca}</span>
         </span>
       </div>
       <div className="pos-nav__right">
@@ -174,6 +190,18 @@ export function Barra({
                     </Button>
                   </>
                 ) : null}
+                {!puedeAdministrar && puedeGestionarJornada ? (
+                  <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("backend")}>
+                    <SlidersHorizontal size={18} aria-hidden="true" />
+                    <span>Día operativo</span>
+                  </Button>
+                ) : null}
+                {puedeReportes ? (
+                  <Button type="button" variant="ghost" role="menuitem" onClick={() => ir("reportes")}>
+                    <FileBarChart size={18} aria-hidden="true" />
+                    <span>Reportes</span>
+                  </Button>
+                ) : null}
                 <div className="pos-odoo__panel-sep" role="separator" aria-hidden="true" />
                 <Button type="button" variant="ghost" role="menuitem" onClick={onCerrarSesion}>
                   <LogOut size={18} aria-hidden="true" />
@@ -184,6 +212,7 @@ export function Barra({
           </div>
         </div>
       </div>
-    </nav>
+      </nav>
+    </>
   );
 }

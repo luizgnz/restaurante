@@ -247,10 +247,9 @@ export function aceptarSugerencia(db: Database.Database, id: number): Incidencia
   if (incidencia.estado !== "pendiente") {
     throw new IncidenciaCocinaError("incidencia_resuelta", "La sugerencia ya fue respondida");
   }
-  db.prepare("UPDATE cocina_incidencias SET estado = 'aceptada', respondida_en = ? WHERE id = ?").run(
-    new Date().toISOString(),
-    id,
-  );
+  const respondidaEn = new Date().toISOString();
+  db.prepare("UPDATE cocina_incidencias SET estado = 'aceptada', respondida_en = ? WHERE id = ?").run(respondidaEn, id);
+  reiniciarRelojEntrega(db, incidencia.ordenId, respondidaEn);
   return incidenciaPorId(db, id);
 }
 
@@ -274,9 +273,17 @@ export function prepararEliminacion(
 }
 
 export function marcarIncidenciaEliminada(db: Database.Database, id: number): IncidenciaCocina {
-  db.prepare("UPDATE cocina_incidencias SET estado = 'eliminada', respondida_en = ? WHERE id = ?").run(
-    new Date().toISOString(),
-    id,
-  );
+  const incidencia = incidenciaPorId(db, id);
+  const respondidaEn = new Date().toISOString();
+  db.prepare("UPDATE cocina_incidencias SET estado = 'eliminada', respondida_en = ? WHERE id = ?").run(respondidaEn, id);
+  reiniciarRelojEntrega(db, incidencia.ordenId, respondidaEn);
   return incidenciaPorId(db, id);
+}
+
+function reiniciarRelojEntrega(db: Database.Database, ordenId: number, respondidaEn: string): void {
+  db.prepare(`UPDATE comanda_lineas SET etapa_actualizada_en = ?
+    WHERE etapa = 'listo' AND id IN (
+      SELECT cl.id FROM comanda_lineas cl JOIN comandas c ON c.id = cl.comanda_id
+      WHERE c.orden_id = ?
+    )`).run(respondidaEn, ordenId);
 }

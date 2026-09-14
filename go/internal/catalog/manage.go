@@ -29,6 +29,8 @@ type ManagedProduct struct {
 	RastrearInventario int    `json:"rastrear_inventario"`
 	DisponibleEnPOS    int    `json:"disponible_en_pos"`
 	Activo             int    `json:"activo"`
+	UnidadBase         string `json:"unidad_base"`
+	UnidadInventario   string `json:"unidad_inventario"`
 }
 
 type RecipeLine struct {
@@ -48,6 +50,7 @@ type ProductInput struct {
 	Color              *string      `json:"color"`
 	FotoData           *string      `json:"foto_data"`
 	Receta             []RecipeLine `json:"receta"`
+	UnidadBase         string       `json:"unidad_base"`
 }
 
 type dbtx interface {
@@ -99,7 +102,8 @@ func CreateCategory(ctx context.Context, db *sql.DB, name string) (Category, err
 
 func ListProducts(ctx context.Context, db *sql.DB) ([]ManagedProduct, error) {
 	rows, err := db.QueryContext(ctx, `SELECT p.id, p.nombre, p.precio_centavos, p.tipo_consumo,
-		EXISTS(SELECT 1 FROM stock s WHERE s.producto_id = p.id), p.disponible_en_pos, p.activo
+		EXISTS(SELECT 1 FROM stock s WHERE s.producto_id = p.id), p.disponible_en_pos, p.activo,
+		p.unidad_base, p.unidad_inventario
 		FROM productos p WHERE p.activo = 1 ORDER BY p.nombre`)
 	if err != nil {
 		return nil, err
@@ -108,7 +112,7 @@ func ListProducts(ctx context.Context, db *sql.DB) ([]ManagedProduct, error) {
 	items := []ManagedProduct{}
 	for rows.Next() {
 		var item ManagedProduct
-		if err := rows.Scan(&item.ID, &item.Nombre, &item.PrecioCentavos, &item.TipoConsumo, &item.RastrearInventario, &item.DisponibleEnPOS, &item.Activo); err != nil {
+		if err := rows.Scan(&item.ID, &item.Nombre, &item.PrecioCentavos, &item.TipoConsumo, &item.RastrearInventario, &item.DisponibleEnPOS, &item.Activo, &item.UnidadBase, &item.UnidadInventario); err != nil {
 			return nil, err
 		}
 		items = append(items, item)
@@ -163,14 +167,24 @@ func CreateProduct(ctx context.Context, db *sql.DB, input ProductInput) (int64, 
 			kind = "no_almacenable"
 		}
 	}
+	unit := strings.ToLower(strings.TrimSpace(input.UnidadBase))
+	if unit == "" {
+		unit = "unidad"
+	}
+	if unit != "unidad" && unit != "g" && unit != "ml" {
+		return 0, &DomainError{"unidad_invalida", "La unidad base debe ser unidad, g o ml"}
+	}
+	if !track {
+		unit = "unidad"
+	}
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
 	defer tx.Rollback()
 	result, err := tx.ExecContext(ctx, `INSERT INTO productos
-		(nombre, precio_centavos, categoria_id, tipo_consumo, disponible_en_pos, activo, codigo, color, foto_data, rastrear_inventario)
-		VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?)`, input.Nombre, input.PrecioCentavos, input.CategoriaID, kind, boolInt(available), code, nullableTrim(input.Color), nullableTrim(input.FotoData), boolInt(track))
+		(nombre, precio_centavos, categoria_id, tipo_consumo, disponible_en_pos, activo, codigo, color, foto_data, rastrear_inventario, unidad_base, unidad_inventario)
+		VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)`, input.Nombre, input.PrecioCentavos, input.CategoriaID, kind, boolInt(available), code, nullableTrim(input.Color), nullableTrim(input.FotoData), boolInt(track), unit, unit)
 	if err != nil {
 		return 0, err
 	}

@@ -2,14 +2,17 @@ import { useEffect, useState } from "react";
 import {
   CheckCircle2,
   CircleUserRound,
+  ClipboardCheck,
   EthernetPort,
   FilePenLine,
   LoaderCircle,
   Network,
+  Palette,
   Plus,
   Printer,
   RefreshCw,
   ShieldCheck,
+  ShoppingBag,
   SlidersHorizontal,
   Users,
   Wifi,
@@ -19,6 +22,7 @@ import { api } from "../api.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
+import { SelectorLogo } from "./EditorLogo.tsx";
 
 export type ImpresoraConfigUi = { habilitada: boolean; nombre: string; host: string; puerto: number; ancho_mm: 58 | 80 };
 export type PlantillaImpresionUi = { titulo: string; encabezado: string; pie: string };
@@ -37,6 +41,7 @@ export type OpcionesValores = {
   entrega_automatica_si_no_confirma?: boolean;
   entrega_automatica_minutos?: number;
   prioridad_para_llevar?: "igual" | "prioritaria";
+  sugerir_empaque_para_llevar?: boolean;
   precuenta_obligatoria_antes_de_caja: boolean;
   enviar_a_caja_requiere_avanzado: boolean;
   impresora_comanda: ImpresoraConfigUi;
@@ -45,6 +50,9 @@ export type OpcionesValores = {
   plantilla_boleta: PlantillaImpresionUi;
   servidor_red_habilitado: boolean;
   nombre_servidor: string;
+  intentos_pin_maximos?: number;
+  bloqueo_pin_segundos?: number;
+  duracion_sesion_horas?: number;
 };
 
 type RolClave = "administrador" | "encargado_turno" | "mesero" | "cocina" | "caja" | "inventario";
@@ -54,17 +62,15 @@ type EstadoRed = { habilitado: boolean; nombre: string; puerto: number; urls: st
 type TrabajoImpresion = { id: number; tipo: string; estado: string; intentos: number; ultimoError: string | null; creadoEn: string };
 type Props = { valores: OpcionesValores; onCambiar: (patch: Partial<OpcionesValores>) => void };
 
-function leerImagen(file: File, cb: (url: string) => void) {
-  const reader = new FileReader();
-  reader.onload = () => cb(String(reader.result));
-  reader.readAsDataURL(file);
-}
-
 function NavOpciones() {
   return <nav className="settings-nav" aria-label="Secciones de opciones">
-    <a href="#general" aria-label="General" title="General"><SlidersHorizontal size={17} aria-hidden="true" /><span>General</span></a>
+    <a href="#identidad" title="Identidad"><SlidersHorizontal size={17} aria-hidden="true" /><span>Identidad</span></a>
+    <a href="#apariencia" title="Apariencia"><Palette size={17} aria-hidden="true" /><span>Apariencia</span></a>
+    <a href="#operacion" title="Órdenes"><ClipboardCheck size={17} aria-hidden="true" /><span>Órdenes</span></a>
+    <a href="#entrega" title="Entrega"><ShoppingBag size={17} aria-hidden="true" /><span>Entrega</span></a>
+    <a href="#seguridad" title="Seguridad"><ShieldCheck size={17} aria-hidden="true" /><span>Seguridad</span></a>
+    <a href="#usuarios" title="Usuarios"><Users size={17} aria-hidden="true" /><span>Usuarios</span></a>
     <a href="#impresion" aria-label="Impresión" title="Impresión"><Printer size={17} aria-hidden="true" /><span>Impresión</span></a>
-    <a href="#usuarios" aria-label="Usuarios" title="Usuarios"><Users size={17} aria-hidden="true" /><span>Usuarios</span></a>
     <a href="#red-local" aria-label="Red local" title="Red local"><Network size={17} aria-hidden="true" /><span>Red local</span></a>
   </nav>;
 }
@@ -243,29 +249,35 @@ export function Opciones({ valores, onCambiar }: Props) {
   return <section className="page-shell form-odoo opciones-page">
     <header className="page-header"><div><span className="page-eyebrow">Administración del sistema</span><h1>Opciones</h1><p>Configura el restaurante, impresión, permisos y dispositivos conectados.</p></div></header>
     <NavOpciones />
-    <fieldset className="form-odoo__tarjeta settings-card" id="general">
+    <fieldset className="form-odoo__tarjeta settings-card" id="identidad">
       <legend>Identidad</legend>
       <label>Nombre del restaurante<input maxLength={40} value={valores.nombre_local} onChange={(event) => onCambiar({ nombre_local: event.target.value })} onBlur={(event) => onCambiar({ nombre_local: event.target.value.trim() || "Restaurante" })} /></label>
-      <label>Logo<input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) leerImagen(file, (url) => onCambiar({ logo_data: url })); }} /></label>
-      {valores.logo_data ? <><img src={valores.logo_data} alt="" className="form-odoo__foto-vista" /><button type="button" onClick={() => onCambiar({ logo_data: null })}>Quitar logo</button></> : null}
+      <div className="settings-field-label">Logo</div>
+      <SelectorLogo logo={valores.logo_data} nombreRestaurante={valores.nombre_local} onCambiar={(logo_data) => onCambiar({ logo_data })} />
     </fieldset>
-    <fieldset className="form-odoo__tarjeta settings-card">
+    <fieldset className="form-odoo__tarjeta settings-card" id="apariencia">
       <legend>Apariencia</legend>
       <label>Tipo de letra<select value={valores.tipografia} onChange={(event) => onCambiar({ tipografia: event.target.value as OpcionesValores["tipografia"] })}><option value="sans">Sans</option><option value="serif">Serif</option><option value="redondeada">Redondeada</option></select></label>
       <label>Tamaño<select value={valores.tamano_ui} onChange={(event) => onCambiar({ tamano_ui: event.target.value as OpcionesValores["tamano_ui"] })}><option value="compacto">Compacto</option><option value="normal">Normal</option><option value="grande">Grande</option></select></label>
       <p className="login-odoo__ayuda">Se aplica a todo el sistema en cuanto lo cambias.</p>
     </fieldset>
-    <fieldset className="form-odoo__tarjeta settings-card settings-card--wide">
-      <legend>Seguridad y autorizaciones</legend>
+    <fieldset className="form-odoo__tarjeta settings-card settings-card--wide" id="operacion">
+      <legend>Operación de órdenes</legend>
       <div className="security-grid">
-        <label className="settings-switch"><Switch checked={valores.pin_habilitado} onChange={(event) => onCambiar({ pin_habilitado: event.target.checked })}  />Pedir PIN al enviar cada orden</label>
-        <label className="settings-switch"><Switch checked={valores.pin_al_emitir_precuenta} onChange={(event) => onCambiar({ pin_al_emitir_precuenta: event.target.checked })}  />Pedir PIN al emitir precuenta</label>
-        <label className="settings-switch"><Switch checked={valores.pin_al_enviar_caja} onChange={(event) => onCambiar({ pin_al_enviar_caja: event.target.checked })}  />Pedir PIN al enviar a caja</label>
         <label className="settings-switch"><Switch checked={valores.confirmar_comanda} onChange={(event) => onCambiar({ confirmar_comanda: event.target.checked })}  />Mostrar vista previa de la comanda antes de enviar</label>
         <label className="settings-switch"><Switch checked={valores.precuenta_obligatoria_antes_de_caja} onChange={(event) => onCambiar({ precuenta_obligatoria_antes_de_caja: event.target.checked })}  />Pedir precuenta antes de cerrar la cuenta</label>
-        <label className="settings-switch"><Switch checked={valores.enviar_a_caja_requiere_avanzado} onChange={(event) => onCambiar({ enviar_a_caja_requiere_avanzado: event.target.checked })}  />El PIN de caja debe ser de un usuario con rol de caja o administrador</label>
         <label className="settings-switch"><Switch checked={valores.auditoria_anulaciones} onChange={(event) => onCambiar({ auditoria_anulaciones: event.target.checked, ...(event.target.checked ? {} : { justificacion_anulacion: false }) })}  />Guardar registro de órdenes anuladas</label>
         {valores.auditoria_anulaciones ? <label className="settings-switch"><Switch checked={valores.justificacion_anulacion} onChange={(event) => onCambiar({ justificacion_anulacion: event.target.checked })}  />Pedir justificación al anular</label> : null}
+        <p className="login-odoo__ayuda">Al cancelar un producto, el sistema devuelve siempre su receta completa al inventario.</p>
+      </div>
+    </fieldset>
+    <fieldset className="form-odoo__tarjeta settings-card settings-card--wide" id="entrega">
+      <legend>Entrega y pedidos para llevar</legend>
+      <div className="security-grid">
+        <label className="settings-switch">
+          <Switch checked={valores.sugerir_empaque_para_llevar ?? true} onChange={(event) => onCambiar({ sugerir_empaque_para_llevar: event.target.checked })} />
+          Sugerir empaques según la comida del pedido para llevar
+        </label>
         <label className="settings-switch">
           <Switch checked={valores.entrega_automatica_si_no_confirma ?? true} onChange={(event) => onCambiar({ entrega_automatica_si_no_confirma: event.target.checked })} />
           Marcar automáticamente si el mesero no confirma (Recomendado)
@@ -281,9 +293,30 @@ export function Opciones({ valores, onCambiar }: Props) {
             <option value="prioritaria">Antes que las mesas</option>
           </select>
         </label>
-        <p className="login-odoo__ayuda">Al cancelar un producto, el sistema devuelve siempre su receta completa al inventario.</p>
       </div>
     </fieldset>
+    <fieldset className="form-odoo__tarjeta settings-card settings-card--wide" id="seguridad">
+      <legend>Seguridad y PIN</legend>
+      <div className="security-grid">
+        <label className="settings-switch"><Switch checked={valores.pin_habilitado} onChange={(event) => onCambiar({ pin_habilitado: event.target.checked })}  />Pedir PIN al enviar cada orden</label>
+        <label className="settings-switch"><Switch checked={valores.pin_al_emitir_precuenta} onChange={(event) => onCambiar({ pin_al_emitir_precuenta: event.target.checked })}  />Pedir PIN al emitir precuenta</label>
+        <label className="settings-switch"><Switch checked={valores.pin_al_enviar_caja} onChange={(event) => onCambiar({ pin_al_enviar_caja: event.target.checked })}  />Pedir PIN al enviar a caja</label>
+        <label className="settings-switch"><Switch checked={valores.enviar_a_caja_requiere_avanzado} onChange={(event) => onCambiar({ enviar_a_caja_requiere_avanzado: event.target.checked })}  />El PIN de caja debe ser de un usuario con rol de caja o administrador</label>
+        <div className="settings-security-limits" aria-describedby="security-limits-help">
+          <label htmlFor="intentos-pin">Intentos de PIN antes de la pausa
+            <input id="intentos-pin" name="intentos_pin_maximos" type="number" min={3} max={10} value={valores.intentos_pin_maximos ?? 5} onChange={(event) => { const value = event.currentTarget.valueAsNumber; if (value >= 3 && value <= 10) onCambiar({ intentos_pin_maximos: value }); }} />
+          </label>
+          <label htmlFor="pausa-pin">Duración de la pausa
+            <span className="settings-inline-field"><input id="pausa-pin" name="bloqueo_pin_segundos" type="number" min={15} max={300} value={valores.bloqueo_pin_segundos ?? 60} onChange={(event) => { const value = event.currentTarget.valueAsNumber; if (value >= 15 && value <= 300) onCambiar({ bloqueo_pin_segundos: value }); }} /> segundos</span>
+          </label>
+          <label htmlFor="duracion-sesion">Duración máxima de la sesión
+            <span className="settings-inline-field"><input id="duracion-sesion" name="duracion_sesion_horas" type="number" min={4} max={24} value={valores.duracion_sesion_horas ?? 16} onChange={(event) => { const value = event.currentTarget.valueAsNumber; if (value >= 4 && value <= 24) onCambiar({ duracion_sesion_horas: value }); }} /> horas</span>
+          </label>
+        </div>
+        <p id="security-limits-help" className="login-odoo__ayuda">Protección sencilla para la red local: la pausa nunca bloquea permanentemente a un empleado.</p>
+      </div>
+    </fieldset>
+    <GestionUsuarios />
     <fieldset className="form-odoo__tarjeta settings-card settings-card--wide printing-settings" id="impresion">
       <legend>Impresión y diseño</legend>
       <div className="settings-section-heading"><div><h2>Impresoras</h2><p>Configura destinos independientes para cocina y caja.</p></div></div>
@@ -294,7 +327,6 @@ export function Opciones({ valores, onCambiar }: Props) {
       <ColaImpresion />
       <p className="settings-callout is-warning"><ShieldCheck size={18} />El comprobante impreso por el sistema no es automáticamente una boleta tributaria. Para validez fiscal se debe integrar el proveedor de facturación o servicio tributario correspondiente.</p>
     </fieldset>
-    <GestionUsuarios />
     <EstadoServidor valores={valores} onCambiar={onCambiar} />
   </section>;
 }

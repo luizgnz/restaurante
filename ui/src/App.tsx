@@ -32,6 +32,7 @@ import type { SlotArmadoUi } from "./pantallas/ModalArmadoPlato.tsx";
 import { Opciones, type ImpresoraConfigUi, type OpcionesValores, type PlantillaImpresionUi } from "./pantallas/Opciones.tsx";
 import { Pedidos, type ActualizacionCocinaUi, type CuentaEnCursoUi } from "./pantallas/Pedidos.tsx";
 import { Recetas, type ProductoAdministrable } from "./pantallas/Recetas.tsx";
+import { Reportes } from "./pantallas/Reportes.tsx";
 import { PinPad } from "./pantallas/PinPad.tsx";
 import { PrecuentaEnPantalla, type PrecuentaUi } from "./pantallas/PrecuentaEnPantalla.tsx";
 import { Plano, type Mesa, type Piso } from "./pantallas/Plano.tsx";
@@ -50,6 +51,7 @@ import {
   vistaTrasAccionCuenta,
   type ContextoOrden,
 } from "./lib/flujo-cuentas.ts";
+import { useModalCoordinator } from "./lib/modal-coordinator.ts";
 
 type PinPendiente =
   | { tipo: "enviar-orden"; borrador: BorradorOrden }
@@ -113,6 +115,7 @@ export function App() {
   const [entregaAutomatica, setEntregaAutomatica] = useState(true);
   const [entregaAutomaticaMinutos, setEntregaAutomaticaMinutos] = useState(30);
   const [prioridadParaLlevar, setPrioridadParaLlevar] = useState<NonNullable<OpcionesValores["prioridad_para_llevar"]>>("igual");
+  const [sugerirEmpaqueParaLlevar, setSugerirEmpaqueParaLlevar] = useState(true);
   const [pinPrecuenta, setPinPrecuenta] = useState(true);
   const [pinCaja, setPinCaja] = useState(true);
   const [precuentaReimpresa, setPrecuentaReimpresa] = useState<PrecuentaUi | null>(null);
@@ -126,6 +129,9 @@ export function App() {
   const [plantillaBoleta, setPlantillaBoleta] = useState<PlantillaImpresionUi>({ titulo: "COMPROBANTE", encabezado: "", pie: "Gracias por su visita" });
   const [servidorRedHabilitado, setServidorRedHabilitado] = useState(true);
   const [nombreServidor, setNombreServidor] = useState("Restaurante");
+  const [intentosPinMaximos, setIntentosPinMaximos] = useState(5);
+  const [bloqueoPinSegundos, setBloqueoPinSegundos] = useState(60);
+  const [duracionSesionHoras, setDuracionSesionHoras] = useState(16);
   const [confirmarCierre, setConfirmarCierre] = useState(false);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [contornosConfig, setContornosConfig] = useState<ConfigContornosUi | null>(null);
@@ -135,6 +141,7 @@ export function App() {
   const [errorModal, setErrorModal] = useState("");
   const [carga, setCarga] = useState({ plano: true, kds: true, cuentas: true, inventario: true });
   const envioEnCurso = useRef(false);
+  const { modalActivo, abrirModal, cerrarModal } = useModalCoordinator();
 
   async function cargarSesion() {
     setSesion(await api<Sesion>("/api/sesion"));
@@ -225,6 +232,7 @@ export function App() {
     if (typeof data.entrega_automatica_si_no_confirma === "boolean") setEntregaAutomatica(data.entrega_automatica_si_no_confirma);
     if (typeof data.entrega_automatica_minutos === "number") setEntregaAutomaticaMinutos(data.entrega_automatica_minutos);
     if (data.prioridad_para_llevar) setPrioridadParaLlevar(data.prioridad_para_llevar);
+    if (typeof data.sugerir_empaque_para_llevar === "boolean") setSugerirEmpaqueParaLlevar(data.sugerir_empaque_para_llevar);
     if (typeof data.pin_al_emitir_precuenta === "boolean") setPinPrecuenta(data.pin_al_emitir_precuenta);
     if (typeof data.pin_al_enviar_caja === "boolean") setPinCaja(data.pin_al_enviar_caja);
     if (typeof data.justificacion_anulacion === "boolean") setJustificacionAnulacion(data.justificacion_anulacion);
@@ -240,6 +248,9 @@ export function App() {
     if (data.plantilla_boleta) setPlantillaBoleta(data.plantilla_boleta);
     if (typeof data.servidor_red_habilitado === "boolean") setServidorRedHabilitado(data.servidor_red_habilitado);
     if (typeof data.nombre_servidor === "string") setNombreServidor(data.nombre_servidor);
+    if (typeof data.intentos_pin_maximos === "number") setIntentosPinMaximos(data.intentos_pin_maximos);
+    if (typeof data.bloqueo_pin_segundos === "number") setBloqueoPinSegundos(data.bloqueo_pin_segundos);
+    if (typeof data.duracion_sesion_horas === "number") setDuracionSesionHoras(data.duracion_sesion_horas);
   }
 
   async function guardarOpciones(patch: Partial<OpcionesValores>) {
@@ -352,6 +363,7 @@ export function App() {
   function abrirCrearProducto() {
     setErrorCrearProducto("");
     setCrearProductoAbierto(true);
+    abrirModal("crear-producto");
     cargarCategorias().catch((e) => setErrorCrearProducto(String(e)));
     cargarProductosAdmin().catch((e) => setErrorCrearProducto(String(e)));
   }
@@ -442,6 +454,7 @@ export function App() {
             contornos: linea.contornosTexto ? linea.contornosTexto.split(" · ") : [],
           })),
       });
+      abrirModal("comanda");
       setContextoOrden(null);
       setBorradorOrden(null);
       setPinPendiente(null);
@@ -456,11 +469,13 @@ export function App() {
     if (enviando || pinPendiente || previewOrden) return;
     if (confirmarComanda) {
       setPreviewOrden(borrador);
+      abrirModal("vista-previa");
       return;
     }
     if (pinHabilitado) {
       setErrorModal("");
       setPinPendiente({ tipo: "enviar-orden", borrador });
+      abrirModal("pin");
       return;
     }
     await enviarOrden(borrador);
@@ -487,6 +502,7 @@ export function App() {
     if (pinHabilitado) {
       setErrorModal("");
       setPinPendiente({ tipo: "enviar-orden", borrador });
+      abrirModal("pin");
       return;
     }
     await enviarOrden(borrador);
@@ -519,10 +535,12 @@ export function App() {
           ),
           totalCentavos: detalle.totalCentavos,
         });
+        abrirModal("precuenta");
       }
       await Promise.all([cargarPlano(), cargarCuentasEnCurso()]);
       setPinPendiente(null);
       if (tipo === "cancelar") {
+        cerrarModal();
         setVista("plano");
         setCuentaActual(null);
         setContextoOrden(null);
@@ -569,6 +587,7 @@ export function App() {
       })),
       totalCentavos: snap.totalCentavos,
     });
+    abrirModal("reimpresion");
   }
 
   function empezarAccionCuenta(tipo: "precuenta" | "enviar-caja") {
@@ -577,6 +596,7 @@ export function App() {
     if (requierePin) {
       setErrorModal("");
       setPinPendiente({ tipo, cuentaId: cuentaActual.id });
+      abrirModal("pin");
       return;
     }
     conError(() => accionCuenta(tipo, cuentaActual.id));
@@ -615,6 +635,8 @@ export function App() {
   };
   const roles = usuario.roles ?? (["administrador"] as RolClave[]);
   const puedeAdministrar = roles.includes("administrador");
+  const puedeGestionarJornada = puedeAdministrar || roles.includes("encargado_turno");
+  const puedeReportes = puedeGestionarJornada || roles.includes("inventario");
   const puedeMesas = puedeAdministrar || roles.includes("mesero") || roles.includes("encargado_turno");
   const puedeCocina = puedeAdministrar || roles.includes("cocina");
   const puedeOrdenes = puedeMesas || roles.includes("caja");
@@ -635,6 +657,8 @@ export function App() {
         puedeOrdenes={puedeOrdenes}
         puedeCocina={puedeCocina}
         puedeAdministrar={puedeAdministrar}
+        puedeGestionarJornada={puedeGestionarJornada}
+        puedeReportes={puedeReportes}
         onMesas={() => ir("plano")}
         onOrdenes={() => ir("pedidos")}
         onInventario={() => ir("inventario")}
@@ -651,7 +675,7 @@ export function App() {
       />
       {error ? <Alerta onCerrar={() => setError("")}>{error}</Alerta> : null}
       <main>
-        {pinPendiente ? (
+        {modalActivo === "pin" && pinPendiente ? (
           <PinPad
             titulo={
               pinPendiente.tipo === "enviar-orden"
@@ -666,63 +690,66 @@ export function App() {
             onPin={resolverPinEnModal}
             onCancelar={() => {
               setPinPendiente(null);
+              cerrarModal("pin");
               setErrorModal("");
             }}
           />
         ) : null}
-        {previewOrden ? (
+        {modalActivo === "vista-previa" && previewOrden ? (
           <VistaPreviaComanda
             texto={textoPreviewOrden(previewOrden)}
-            onVolver={() => setPreviewOrden(null)}
+            onVolver={() => { setPreviewOrden(null); cerrarModal("vista-previa"); }}
             onContinuar={() => conError(continuarPreviewOrden)}
           />
         ) : null}
-        {comandaReciente ? (
+        {modalActivo === "comanda" && comandaReciente ? (
           <ComandaEnPantalla
             restaurante={nombreLocal}
             comanda={comandaReciente}
-            onCerrar={() => setComandaReciente(null)}
+            onCerrar={() => { setComandaReciente(null); cerrarModal("comanda"); }}
           />
         ) : null}
-        {precuentaReciente ? (
+        {modalActivo === "precuenta" && precuentaReciente ? (
           <PrecuentaEnPantalla
             restaurante={nombreLocal}
             precuenta={precuentaReciente}
-            onCerrar={() => setPrecuentaReciente(null)}
+            onCerrar={() => { setPrecuentaReciente(null); cerrarModal("precuenta"); }}
           />
         ) : null}
-        {precuentaReimpresa ? (
+        {modalActivo === "reimpresion" && precuentaReimpresa ? (
           <PrecuentaEnPantalla
             restaurante={nombreLocal}
             precuenta={precuentaReimpresa}
-            onCerrar={() => setPrecuentaReimpresa(null)}
+            onCerrar={() => { setPrecuentaReimpresa(null); cerrarModal("reimpresion"); }}
           />
         ) : null}
-        {confirmarCierre && cuentaActual ? (
+        {modalActivo === "confirmar-cierre" && confirmarCierre && cuentaActual ? (
           <ConfirmarCierreCuenta
             mesaNumero={cuentaActual.mesa.numero}
             totalCentavos={cuentaActual.totalCentavos}
-            onCancelar={() => setConfirmarCierre(false)}
+            onCancelar={() => { setConfirmarCierre(false); cerrarModal("confirmar-cierre"); }}
             onConfirmar={() => {
               setConfirmarCierre(false);
+              cerrarModal("confirmar-cierre");
               empezarAccionCuenta("enviar-caja");
             }}
           />
         ) : null}
-        {confirmarCancelar && cuentaActual ? (
+        {modalActivo === "confirmar-cancelacion" && confirmarCancelar && cuentaActual ? (
           <ConfirmarCancelarCuenta
             mesaNumero={cuentaActual.mesa.numero}
             totalCentavos={cuentaActual.totalCentavos}
-            onCancelar={() => setConfirmarCancelar(false)}
+            onCancelar={() => { setConfirmarCancelar(false); cerrarModal("confirmar-cancelacion"); }}
             onConfirmar={(motivo) => {
               setConfirmarCancelar(false);
               if (!cuentaActual) return;
               setErrorModal("");
               setPinPendiente({ tipo: "cancelar-cuenta", cuentaId: cuentaActual.id, motivo });
+              abrirModal("pin");
             }}
           />
         ) : null}
-        {modalCuentaId != null && cuentaActual?.id === modalCuentaId ? (
+        {modalActivo === "cuenta" && modalCuentaId != null && cuentaActual?.id === modalCuentaId ? (
           <ModalOrdenesCuenta
             cuenta={cuentaActual}
             ordenId={modalOrdenId}
@@ -730,26 +757,29 @@ export function App() {
               setModalCuentaId(null);
               setModalOrdenId(null);
               setEdicionOrden({ orden, modo: "editar" });
+              abrirModal("editar-orden");
             }}
             onAnularOrden={(orden) => {
               setModalCuentaId(null);
               setModalOrdenId(null);
               setEdicionOrden({ orden, modo: "anular" });
+              abrirModal("editar-orden");
             }}
             onCerrar={() => {
               setModalCuentaId(null);
               setModalOrdenId(null);
+              cerrarModal("cuenta");
             }}
           />
         ) : null}
-        {edicionOrden && cuentaActual ? (
+        {modalActivo === "editar-orden" && edicionOrden && cuentaActual ? (
           <ModalEditarOrden
             orden={edicionOrden.orden}
             productos={productos}
             modo={edicionOrden.modo}
             pedirJustificacionAlAnular={auditoriaAnulaciones && justificacionAnulacion}
             requiereResponsableAlAnular={edicionOrden.modo === "anular" && cuentaActual.tipoServicio === "para_llevar"}
-            onCancelar={() => setEdicionOrden(null)}
+            onCancelar={() => { setEdicionOrden(null); cerrarModal("editar-orden"); }}
             onGuardar={async (cambio, pin) => {
               const ruta =
                 edicionOrden.modo === "anular"
@@ -765,6 +795,7 @@ export function App() {
               });
               await cargarCuenta(cuentaActual.id);
               setEdicionOrden(null);
+              cerrarModal("editar-orden");
               await Promise.all([cargarPlano(), cargarCuentasEnCurso()]);
             }}
           />
@@ -826,6 +857,7 @@ export function App() {
               estado: m.estado === "libre" ? "libre" : "ocupada",
             }))}
             contornos={contornosConfig}
+            sugerirEmpaqueParaLlevar={sugerirEmpaqueParaLlevar}
             onSlotsDeProducto={slotsDeProducto}
             onCambiar={cambiarBorrador}
             onEnviar={(borrador) => conError(() => empezarEnviarOrden(borrador))}
@@ -841,11 +873,11 @@ export function App() {
             cuenta={cuentaActual}
             puedeCerrar={!precuentaObligatoria || cuentaActual.estado === "precuenta_emitida"}
             onNuevaOrden={() => abrirConstructor(contextoNuevaOrdenDeCuenta(cuentaActual))}
-            onEditarOrden={(orden) => setEdicionOrden({ orden, modo: "editar" })}
-            onAnularOrden={(orden) => setEdicionOrden({ orden, modo: "anular" })}
+            onEditarOrden={(orden) => { setEdicionOrden({ orden, modo: "editar" }); abrirModal("editar-orden"); }}
+            onAnularOrden={(orden) => { setEdicionOrden({ orden, modo: "anular" }); abrirModal("editar-orden"); }}
             onPrecuenta={() => empezarAccionCuenta("precuenta")}
-            onCerrarCuenta={() => setConfirmarCierre(true)}
-            onCancelarCuenta={() => setConfirmarCancelar(true)}
+            onCerrarCuenta={() => { setConfirmarCierre(true); abrirModal("confirmar-cierre"); }}
+            onCancelarCuenta={() => { setConfirmarCancelar(true); abrirModal("confirmar-cancelacion"); }}
             onReimprimir={() => conError(() => reimprimirPrecuentaActual())}
           />
         ) : null}
@@ -955,6 +987,7 @@ export function App() {
                     await cargarCuenta(cuentaId);
                     setModalOrdenId(ordenId ?? null);
                     setModalCuentaId(cuentaId);
+                    abrirModal("cuenta");
                   })
                 }
               />
@@ -981,15 +1014,30 @@ export function App() {
               });
               await Promise.all([cargarInventario(), cargarCarta()]);
             }}
+            onConfigurarUmbral={async (productoId, umbral, pin) => {
+              await api(`/api/inventario/${productoId}/umbral`, {
+                method: "PATCH",
+                body: JSON.stringify({ umbral, pin }),
+              });
+              await cargarInventario();
+            }}
+            onConfigurarUnidad={async (productoId, unidad, pin) => {
+              await api(`/api/inventario/${productoId}/unidad`, {
+                method: "PATCH",
+                body: JSON.stringify({ unidad, pin }),
+              });
+              await cargarInventario();
+            }}
           />
         ) : null}
         <ModalCrearProducto
-          abierto={crearProductoAbierto}
+          abierto={modalActivo === "crear-producto" && crearProductoAbierto}
           categorias={categorias}
           ingredientesDisponibles={productosAdmin.filter((producto) => producto.tipo_consumo !== "receta_kit" && Boolean(producto.rastrear_inventario))}
           error={errorCrearProducto}
           onCerrar={() => {
             setCrearProductoAbierto(false);
+            cerrarModal("crear-producto");
             setErrorCrearProducto("");
           }}
           onGuardar={async (p) => {
@@ -998,6 +1046,7 @@ export function App() {
               await api("/api/productos", { method: "POST", body: JSON.stringify(p) });
               await Promise.all([cargarCarta(), cargarProductosAdmin()]);
               setCrearProductoAbierto(false);
+              cerrarModal("crear-producto");
             } catch (e) {
               setErrorCrearProducto(e instanceof Error ? e.message : String(e));
             }
@@ -1044,17 +1093,20 @@ export function App() {
         ) : null}
         {vista === "backend" ? (
           <Backend
+            esAdministrador={puedeAdministrar}
             onCrearProducto={abrirCrearProducto}
             onCategorias={() => ir("categorias")}
             onContornos={() => ir("contornos")}
             onRecetas={() => ir("recetas")}
             onEditarMapa={() => ir("editar-mapa")}
             onMesas={() => ir("plano")}
+            onReportes={() => ir("reportes")}
             onMovimientoActualizado={async () => {
               await Promise.all([cargarPlano(), cargarCuentasEnCurso(), cargarKds(), cargarIncidenciasCocina()]);
             }}
           />
         ) : null}
+        {vista === "reportes" ? <Reportes puedeVentas={puedeGestionarJornada} onVolver={() => ir(puedeAdministrar ? "backend" : vistaInicial(roles).vista)} /> : null}
         {vista === "recetas" ? <Recetas productos={productosAdmin} onVolver={() => ir("backend")} /> : null}
         {vista === "categorias" ? (
           <Categorias
@@ -1112,6 +1164,7 @@ export function App() {
               entrega_automatica_si_no_confirma: entregaAutomatica,
               entrega_automatica_minutos: entregaAutomaticaMinutos,
               prioridad_para_llevar: prioridadParaLlevar,
+              sugerir_empaque_para_llevar: sugerirEmpaqueParaLlevar,
               justificacion_anulacion: justificacionAnulacion,
               precuenta_obligatoria_antes_de_caja: precuentaObligatoria,
               enviar_a_caja_requiere_avanzado: cierreRequiereAvanzado,
@@ -1121,6 +1174,9 @@ export function App() {
               plantilla_boleta: plantillaBoleta,
               servidor_red_habilitado: servidorRedHabilitado,
               nombre_servidor: nombreServidor,
+              intentos_pin_maximos: intentosPinMaximos,
+              bloqueo_pin_segundos: bloqueoPinSegundos,
+              duracion_sesion_horas: duracionSesionHoras,
             }}
             onCambiar={(patch) => conError(() => guardarOpciones(patch))}
           />

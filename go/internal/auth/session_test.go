@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"testing"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -29,6 +30,27 @@ func testDB(t *testing.T) *sql.DB {
 		t.Fatal(err)
 	}
 	return db
+}
+
+func TestExpireClosesOnlySessionsOlderThanMaximumAge(t *testing.T) {
+	db := testDB(t)
+	token, _, err := Open(context.Background(), db, "admin", "secreto")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if expired, err := Expire(context.Background(), db, token, 16*time.Hour); err != nil || expired {
+		t.Fatalf("sesión nueva venció: expired=%v err=%v", expired, err)
+	}
+	old := time.Now().UTC().Add(-17 * time.Hour).Format("2006-01-02T15:04:05.000Z")
+	if _, err := db.Exec("UPDATE sesiones_usuario SET abierta_en = ? WHERE token_hash = ?", old, tokenHash(token)); err != nil {
+		t.Fatal(err)
+	}
+	if expired, err := Expire(context.Background(), db, token, 16*time.Hour); err != nil || !expired {
+		t.Fatalf("sesión antigua siguió abierta: expired=%v err=%v", expired, err)
+	}
+	if recovered, err := ByToken(context.Background(), db, token); err != nil || recovered != nil {
+		t.Fatalf("sesión vencida recuperada: session=%#v err=%v", recovered, err)
+	}
 }
 
 func TestOpenAcceptsArgon2HashGeneratedByNode(t *testing.T) {

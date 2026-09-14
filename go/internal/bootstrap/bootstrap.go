@@ -57,7 +57,7 @@ func ensureFloor(ctx context.Context, db *sql.DB) error {
 	}
 	var floorID int64
 	if floorCount == 0 {
-		result, err := db.ExecContext(ctx, "INSERT INTO pisos (nombre, activo) VALUES ('Salón', 1)")
+		result, err := db.ExecContext(ctx, "INSERT INTO pisos (nombre, activo) VALUES ('Salón principal', 1)")
 		if err != nil {
 			return err
 		}
@@ -121,30 +121,30 @@ func ensureCatalog(ctx context.Context, db *sql.DB) error {
 	if err != nil {
 		return err
 	}
-	insert := func(name string, price, categoryID int64, kind string, pos, track bool, color string) (int64, error) {
+	insert := func(name string, price, categoryID int64, kind string, pos, track bool, color, unit string) (int64, error) {
 		var category any = categoryID
 		if categoryID == 0 {
 			category = nil
 		}
-		result, err := tx.ExecContext(ctx, `INSERT INTO productos (nombre,precio_centavos,categoria_id,tipo_consumo,disponible_en_pos,activo,color,rastrear_inventario) VALUES (?,?,?,?,?,1,?,?)`, name, price, category, kind, boolInt(pos), color, boolInt(track))
+		result, err := tx.ExecContext(ctx, `INSERT INTO productos (nombre,precio_centavos,categoria_id,tipo_consumo,disponible_en_pos,activo,color,rastrear_inventario,unidad_base,unidad_inventario) VALUES (?,?,?,?,?,1,?,?,?,?)`, name, price, category, kind, boolInt(pos), color, boolInt(track), unit, unit)
 		if err != nil {
 			return 0, err
 		}
 		return result.LastInsertId()
 	}
-	pan, err := insert("Pan", 0, 0, "almacenable_unitario", false, true, "")
+	pan, err := insert("Pan", 0, 0, "almacenable_unitario", false, true, "", "unidad")
 	if err != nil {
 		return err
 	}
-	carne, err := insert("Carne g", 0, 0, "almacenable_unitario", false, true, "")
+	carne, err := insert("Carne", 0, 0, "almacenable_unitario", false, true, "", "g")
 	if err != nil {
 		return err
 	}
-	queso, err := insert("Queso", 0, 0, "almacenable_unitario", false, true, "")
+	queso, err := insert("Queso", 0, 0, "almacenable_unitario", false, true, "", "unidad")
 	if err != nil {
 		return err
 	}
-	lechuga, err := insert("Lechuga g", 0, 0, "almacenable_unitario", false, true, "")
+	lechuga, err := insert("Lechuga", 0, 0, "almacenable_unitario", false, true, "", "g")
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func ensureCatalog(ctx context.Context, db *sql.DB) error {
 			return err
 		}
 	}
-	hamburger, err := insert("Hamburguesa", 8900, food, "receta_kit", true, true, "#8b4513")
+	hamburger, err := insert("Hamburguesa", 8900, food, "receta_kit", true, true, "#8b4513", "unidad")
 	if err != nil {
 		return err
 	}
@@ -177,7 +177,7 @@ func ensureCatalog(ctx context.Context, db *sql.DB) error {
 			kind = "almacenable_unitario"
 			track = true
 		}
-		id, err := insert(value.name, value.price, value.category, kind, true, track, value.color)
+		id, err := insert(value.name, value.price, value.category, kind, true, track, value.color, "unidad")
 		if err != nil {
 			return err
 		}
