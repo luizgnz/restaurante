@@ -1624,7 +1624,7 @@ describe("corregirOrden e inventario por línea", () => {
 
   it("un producto sin inventario rastreado se corrige sin libro", async () => {
     const e = await ordenEnviada((ids) => [{ productoId: ids.jugo, cantidad: 1 }]);
-    const cafe = (e.db.prepare("SELECT id FROM productos WHERE nombre = ?").get("Café") as { id: number }).id;
+    const cafe = (e.db.prepare("SELECT id FROM productos WHERE nombre = ? ORDER BY id DESC LIMIT 1").get("Completo") as { id: number }).id;
     const conCafe = await enviarOrden(
       e.db,
       {

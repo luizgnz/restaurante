@@ -27,12 +27,16 @@ const valores = {
 };
 
 describe("opciones", () => {
-  it("agrupa identidad, apariencia, seguridad, impresión, usuarios y red", () => {
+  it("ordena identidad, apariencia, operación, entrega, seguridad, usuarios, impresión y red", () => {
     const html = renderToStaticMarkup(createElement(Opciones, { valores, onCambiar: () => undefined }));
     expect(html).toContain("Opciones");
     expect(html).toContain("Identidad");
+    expect(html).toContain("Seleccionar logo");
+    expect(html).toContain("máximo 5 MB");
     expect(html).toContain("Apariencia");
-    expect(html).toContain("Seguridad y autorizaciones");
+    expect(html).toContain("Operación de órdenes");
+    expect(html).toContain("Entrega y pedidos para llevar");
+    expect(html).toContain("Seguridad y PIN");
     expect(html).toContain("Impresoras");
     expect(html).toContain("Confirmar conexión");
     expect(html).toContain("Diseñar plantilla");
@@ -47,11 +51,19 @@ describe("opciones", () => {
     expect(html).not.toContain("Antes de crear la orden");
     expect(html).toContain("Pedir precuenta antes de cerrar la cuenta");
     expect(html).toContain("El PIN de caja debe ser de un usuario con rol de caja o administrador");
+    expect(html).toContain("Intentos de PIN antes de la pausa");
+    expect(html).toContain("Duración de la pausa");
+    expect(html).toContain("Duración máxima de la sesión");
+    expect(html).toContain("nunca bloquea permanentemente");
     expect(html).toContain("ESC/POS");
     expect(html).not.toContain("Tablet en cocina");
+    const secciones = ["id=\"identidad\"", "id=\"apariencia\"", "id=\"operacion\"", "id=\"entrega\"", "id=\"seguridad\"", "id=\"usuarios\"", "id=\"impresion\"", "id=\"red-local\""];
+    const posiciones = secciones.map((seccion) => html.indexOf(seccion));
+    expect(posiciones.every((posicion) => posicion >= 0)).toBe(true);
+    expect(posiciones).toEqual([...posiciones].sort((a, b) => a - b));
   });
 
-  it("auditoría en seguridad; justificación solo si auditoría activa", () => {
+  it("auditoría operativa; justificación solo si auditoría activa", () => {
     const sinAuditoria = renderToStaticMarkup(
       createElement(Opciones, { valores, onCambiar: () => undefined }),
     );

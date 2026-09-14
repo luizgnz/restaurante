@@ -1,7 +1,8 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { Kds, type TarjetaKdsUi } from "../ui/src/pantallas/Kds.tsx";
+import { Kds, MOTIVOS_COCINA, type TarjetaKdsUi } from "../ui/src/pantallas/Kds.tsx";
+import { MOTIVOS_MESERO } from "../ui/src/pantallas/ModalEditarOrden.tsx";
 import { Pedidos, type CuentaEnCursoUi } from "../ui/src/pantallas/Pedidos.tsx";
 
 const tarjeta: TarjetaKdsUi = {
@@ -44,6 +45,10 @@ const cuenta: CuentaEnCursoUi = {
 };
 
 describe("vistas coordinadas de cocina y mesero", () => {
+  it("usa los motivos rápidos aprobados para cada rol", () => {
+    expect([...MOTIVOS_MESERO]).toEqual(["Registrado por error", "Cliente pidió cambio", "Otro"]);
+    expect([...MOTIVOS_COCINA]).toEqual(["Falta ingrediente", "No se puede terminar", "Preparación incorrecta", "Otro"]);
+  });
   it("cocina muestra el tablero de dos columnas con una tarjeta por orden", () => {
     const html = renderToStaticMarkup(
       createElement(Kds, {

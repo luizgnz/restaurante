@@ -424,7 +424,7 @@ describe("enviarOrden escribe el libro de inventario por línea", () => {
     const db = openTestDb();
     const ids = seedCartaDemo(db);
     await crearEmpleado(db, { nombre: "Ana", pin: "1234", derecho: "basico" });
-    const cafe = (db.prepare("SELECT id FROM productos WHERE nombre = ?").get("Café") as { id: number }).id;
+    const cafe = (db.prepare("SELECT id FROM productos WHERE nombre = ? ORDER BY id DESC LIMIT 1").get("Completo") as { id: number }).id;
 
     const result = await enviarOrden(
       db,

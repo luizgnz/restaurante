@@ -27,6 +27,8 @@ describe("actualización automática del inventario", () => {
           onRecargar={onRecargar}
           onRegistrarEntrada={async () => undefined}
           onRegistrarPerdida={async () => undefined}
+          onConfigurarUmbral={async () => undefined}
+          onConfigurarUnidad={async () => undefined}
         />,
       );
     });

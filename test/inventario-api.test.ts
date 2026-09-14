@@ -139,4 +139,65 @@ describe("API de inventario", () => {
     expect(await codigoDe(res)).toBe("motivo_invalido");
     e.db.close();
   });
+
+  it("configura un umbral individual entero y permite volver a la regla general", async () => {
+    const e = await entornoApi();
+    await abrirSalon(e);
+    const cambiar = (umbral: number | null, pin = "2222") => e.app.request(`/api/inventario/${e.ids.pan}/umbral`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ umbral, pin }),
+    });
+
+    const decimal = await cambiar(2.5);
+    expect(decimal.status).toBe(400);
+    expect(await codigoDe(decimal)).toBe("umbral_invalido");
+
+    const guardado = await cambiar(8);
+    expect(guardado.status).toBe(200);
+    expect(await guardado.json()).toMatchObject({ material: { id: e.ids.pan, umbralPocoStock: 8 } });
+
+    const restaurado = await cambiar(null);
+    expect(restaurado.status).toBe(200);
+    expect(await restaurado.json()).toMatchObject({ material: { id: e.ids.pan, umbralPocoStock: null } });
+    e.db.close();
+  });
+
+  it("separa la unidad del nombre y convierte kg a gramos sin duplicar stock", async () => {
+    const e = await entornoApi();
+    await abrirSalon(e);
+    const harina = e.db.prepare("SELECT id, nombre FROM productos WHERE codigo = 'insumo:harina-g'").get() as { id: number; nombre: string };
+    expect(harina.nombre).toBe("Harina");
+
+    const unidad = await e.app.request(`/api/inventario/${harina.id}/unidad`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ unidad: "kg", pin: "2222" }),
+    });
+    expect(unidad.status).toBe(200);
+    expect(await unidad.json()).toMatchObject({ material: { nombre: "Harina", unidadBase: "g", unidadInventario: "kg", enMano: 10 } });
+
+    const umbral = await e.app.request(`/api/inventario/${harina.id}/umbral`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ umbral: 2, pin: "2222" }),
+    });
+    expect(umbral.status).toBe(200);
+    expect(await umbral.json()).toMatchObject({ material: { umbralPocoStock: 2, unidadInventario: "kg" } });
+    expect((e.db.prepare("SELECT umbral_poco_stock FROM productos WHERE id = ?").get(harina.id) as { umbral_poco_stock: number }).umbral_poco_stock).toBe(2_000);
+
+    const entrada = await post(e.app, `/api/inventario/${harina.id}/entradas`, { cantidad: 1.5, pin: "2222" });
+    expect(entrada.status).toBe(201);
+    expect(await entrada.json()).toMatchObject({ material: { enMano: 11.5, unidadInventario: "kg" } });
+    expect((e.db.prepare("SELECT on_hand_real FROM stock WHERE producto_id = ?").get(harina.id) as { on_hand_real: number }).on_hand_real).toBe(11_500);
+
+    const incompatible = await e.app.request(`/api/inventario/${e.ids.pan}/unidad`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ unidad: "kg", pin: "2222" }),
+    });
+    expect(incompatible.status).toBe(400);
+    expect(await codigoDe(incompatible)).toBe("unidad_invalida");
+    e.db.close();
+  });
 });

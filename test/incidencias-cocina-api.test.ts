@@ -58,7 +58,7 @@ describe("coordinación Cocina ↔ Mesero", () => {
     e.db.close();
   });
 
-  it("si el cliente no acepta, responde a cocina sin cancelar el producto", async () => {
+  it("si el cliente no acepta el reemplazo, elimina el producto original", async () => {
     const e = await entornoApi();
     await post(e.app, "/api/sesion/abrir", { usuario: "admin", password: "admin" });
     const orden = await crearOrden(e, {
@@ -85,15 +85,13 @@ describe("coordinación Cocina ↔ Mesero", () => {
     const eliminada = await post(e.app, `/api/cocina/incidencias/${incidencia.id}/eliminar`, { pin: "1234" });
     expect(eliminada.status).toBe(200);
     const cuenta = await verCuenta(e.app, orden.cuentaId);
-    expect(cuenta.ordenes[0].lineas).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ nombre: "Hamburguesa", cantidad: 1 }),
-        expect.objectContaining({ nombre: "Jugo", cantidad: 2 }),
-      ]),
-    );
+    expect(cuenta.ordenes[0].lineas).toEqual(expect.arrayContaining([
+      expect.objectContaining({ nombre: "Hamburguesa", cantidad: 0 }),
+      expect.objectContaining({ nombre: "Jugo", cantidad: 2 }),
+    ]));
     expect(
       (e.db.prepare("SELECT etapa FROM comanda_lineas WHERE id = ?").get(hamburguesa.id) as { etapa: string }).etapa,
-    ).toBe("por_preparar");
+    ).toBe("cancelado");
     e.db.close();
   });
 

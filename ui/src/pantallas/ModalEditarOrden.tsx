@@ -104,6 +104,8 @@ export function prepararLineasCorreccion(lineas: LineaEditable[]): CambioOrdenUi
   return salida;
 }
 
+export const MOTIVOS_MESERO = ["Registrado por error", "Cliente pidió cambio", "Otro"] as const;
+
 export function ModalEditarOrden({
   orden,
   productos,
@@ -116,7 +118,7 @@ export function ModalEditarOrden({
   const [lineas, setLineas] = useState<LineaEditable[]>(() => crearLineasEditables(orden, modo));
   const [claveIdempotencia] = useState(uuid);
   const [indicaciones, setIndicaciones] = useState(orden.indicaciones ?? "");
-  const [motivo, setMotivo] = useState("Agregado y no entregado");
+  const [motivo, setMotivo] = useState<(typeof MOTIVOS_MESERO)[number]>(MOTIVOS_MESERO[0]);
   const [detalleMotivo, setDetalleMotivo] = useState("");
   const [pidiendoPin, setPidiendoPin] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -326,12 +328,8 @@ export function ModalEditarOrden({
           {requiereMotivo ? (
             <div className="correccion-modal__motivo">
               <label>Motivo
-                <Select value={motivo} onChange={(event) => setMotivo(event.target.value)}>
-                  <option>Agregado y no entregado</option>
-                  <option>Cantidad registrada de más</option>
-                  <option>Producto duplicado</option>
-                  <option>Devuelto por el cliente</option>
-                  <option>Otro</option>
+                <Select value={motivo} onChange={(event) => setMotivo(event.target.value as (typeof MOTIVOS_MESERO)[number])}>
+                  {MOTIVOS_MESERO.map((opcion) => <option key={opcion}>{opcion}</option>)}
                 </Select>
               </label>
               <label><span>Detalle <small>(opcional)</small></span>

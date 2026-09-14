@@ -17,6 +17,8 @@ import {
   PinError,
   ROLES,
   exigirPin,
+  exigirCredenciales,
+  rolesDeEmpleado,
   type RolClave,
 } from "../modules/empleados/empleados.ts";
 import {
@@ -46,12 +48,25 @@ import {
 import {
   registrarEntradaInventario,
   registrarPerdidaInventario,
+  configurarUmbralPocoStock,
+  configurarUnidadInventario,
   listarInventario,
   type MotivoPerdidaInventario,
+  type UnidadInventario,
 } from "../modules/inventario/gestion.ts";
 import { faltantesDeStock, InventarioError } from "../modules/inventario/asientos.ts";
 import { reiniciarDiaDemo } from "../modules/jornadas/demo.ts";
-import { abrirJornada, cerrarJornada, estadoJornada, JornadaError } from "../modules/jornadas/jornadas.ts";
+import {
+  abrirJornada,
+  cerrarJornada,
+  cerrarJornadaMasivo,
+  estadoJornada,
+  guardarTurno,
+  JornadaError,
+  listarTurnos,
+  marcarListasEntregadas,
+  type TurnoPlantilla,
+} from "../modules/jornadas/jornadas.ts";
 import { corregirOrden, CorreccionError } from "../modules/ordenes/correcciones.ts";
 import { OrdenError } from "../modules/ordenes/enviar.ts";
 import { PrecuentaError } from "../modules/precuenta/precuenta.ts";
@@ -105,7 +120,9 @@ function tieneRol(usuario: UsuarioSesion, permitidos: RolClave[]): boolean {
 function rolesDeRuta(pathname: string, method: string): RolClave[] | null {
   if (pathname === "/api/salud" || pathname === "/api/sesion" || pathname === "/api/sesion/abrir") return null;
   if (pathname.startsWith("/api/usuarios")) return ["administrador"];
-  if (pathname.startsWith("/api/jornadas")) return ["administrador"];
+  if (pathname.startsWith("/api/jornadas/demo")) return ["administrador"];
+  if (pathname.startsWith("/api/jornadas/turnos") && method !== "GET") return ["administrador"];
+  if (pathname.startsWith("/api/jornadas")) return ["administrador", "encargado_turno"];
   if (pathname.startsWith("/api/empleados")) return ["administrador"];
   if (pathname.startsWith("/api/impresoras") || pathname.startsWith("/api/impresion")) return ["administrador"];
   if (pathname.startsWith("/api/red/")) return ["administrador"];
@@ -169,6 +186,7 @@ const CODIGOS_409 = new Set([
   "jornada_con_cuentas",
   "jornada_con_cocina",
   "jornada_con_incidencias",
+  "umbral_incompatible",
 ]);
 
 function statusPorCodigo(codigo: string): StatusError {
@@ -254,7 +272,7 @@ function deprecado(sucesor: string): MiddlewareHandler {
   };
 }
 
-const LOGO_MAX = 400 * 1024;
+const LOGO_MAX = 1024 * 1024;
 
 function configPublica(config: AppConfig) {
   return {
@@ -272,6 +290,10 @@ function configPublica(config: AppConfig) {
     entrega_automatica_si_no_confirma: config.entrega_automatica_si_no_confirma,
     entrega_automatica_minutos: config.entrega_automatica_minutos,
     prioridad_para_llevar: config.prioridad_para_llevar,
+    sugerir_empaque_para_llevar: config.sugerir_empaque_para_llevar,
+    intentos_pin_maximos: config.intentos_pin_maximos,
+    bloqueo_pin_segundos: config.bloqueo_pin_segundos,
+    duracion_sesion_horas: config.duracion_sesion_horas,
     pin_al_emitir_precuenta: config.pin_al_emitir_precuenta,
     pin_al_enviar_caja: config.pin_al_enviar_caja,
     precuenta_obligatoria_antes_de_caja: config.precuenta_obligatoria_antes_de_caja,
@@ -315,10 +337,10 @@ function urlsDeRed(puerto: number, habilitado: boolean): string[] {
 
 function logoValido(data: string | null | undefined): string | null {
   if (data == null || data === "") return null;
-  const m = /^data:image\/[a-zA-Z0-9.+-]+;base64,([A-Za-z0-9+/]+={0,2})$/.exec(data);
+  const m = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(data);
   if (!m) throw new PedidoError("logo_invalido", "El logo no es una imagen válida");
-  const bytes = Math.floor((m[1].length * 3) / 4);
-  if (bytes > LOGO_MAX) throw new PedidoError("logo_grande", "El logo supera 400 KB");
+  const bytes = Math.floor((m[2].length * 3) / 4);
+  if (bytes > LOGO_MAX) throw new PedidoError("logo_grande", "El logo procesado supera 1 MB; vuelve a recortarlo");
   return data;
 }
 
@@ -380,13 +402,60 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
 
   app.get("/api/jornadas/actual", (c) => c.json(estadoJornada(db)));
 
-  app.post("/api/jornadas/abrir", (c) => {
-    const jornada = abrirJornada(db, empleadoActual(c.get("usuario")));
+  app.post("/api/jornadas/abrir", async (c) => {
+    const body = await leerJson<{ turnoPlantillaId?: number }>(c);
+    const jornada = abrirJornada(db, empleadoActual(c.get("usuario")), Number(body.turnoPlantillaId ?? 0));
     return c.json({ jornada, resumen: estadoJornada(db).resumen }, 201);
   });
 
   app.post("/api/jornadas/cerrar", async (c) => {
     return c.json(await cerrarJornada(db, empleadoActual(c.get("usuario")), dataDir));
+  });
+
+  app.get("/api/jornadas/turnos", (c) => {
+    const usuario = c.get("usuario");
+    return c.json({ turnos: listarTurnos(db, Boolean(usuario?.roles.includes("administrador"))) });
+  });
+
+  app.post("/api/jornadas/turnos", async (c) => {
+    const body = await leerJson<TurnoPlantilla>(c);
+    return c.json({ turno: guardarTurno(db, {
+      id: 0,
+      nombre: textoRequerido(body.nombre, "turno_invalido", "El turno necesita un nombre"),
+      horaInicio: typeof body.horaInicio === "string" ? body.horaInicio : null,
+      horaFin: typeof body.horaFin === "string" ? body.horaFin : null,
+      esPredeterminada: body.esPredeterminada === true,
+      activa: true,
+    }) }, 201);
+  });
+
+  app.put("/api/jornadas/turnos/:id", async (c) => {
+    const body = await leerJson<TurnoPlantilla>(c);
+    return c.json({ turno: guardarTurno(db, {
+      id: idDeRuta(c),
+      nombre: textoRequerido(body.nombre, "turno_invalido", "El turno necesita un nombre"),
+      horaInicio: typeof body.horaInicio === "string" ? body.horaInicio : null,
+      horaFin: typeof body.horaFin === "string" ? body.horaFin : null,
+      esPredeterminada: body.esPredeterminada === true,
+      activa: body.activa !== false,
+    }) });
+  });
+
+  app.post("/api/jornadas/listos/entregar", (c) => {
+    const jornada = estadoJornada(db).jornada;
+    if (!jornada) throw new JornadaError("jornada_cerrada", "No hay una jornada operativa abierta");
+    return c.json({ ordenesEntregadas: marcarListasEntregadas(db, jornada.id, empleadoActual(c.get("usuario"))) });
+  });
+
+  app.post("/api/jornadas/cerrar-masivo", async (c) => {
+    const body = await leerJson<{ usuario: string; password: string; cierreEn?: string }>(c);
+    const actor = await exigirCredenciales(db, body.usuario ?? "", body.password ?? "");
+    const roles = rolesDeEmpleado(db, actor.id);
+    if (!roles.includes("administrador") && !roles.includes("encargado_turno")) {
+      throw new PinError("sin_derecho", "Ese usuario no puede cerrar el turno");
+    }
+    const cierre = body.cierreEn ? new Date(body.cierreEn) : undefined;
+    return c.json(await cerrarJornadaMasivo(db, actor.id, dataDir, cierre));
   });
 
   app.post("/api/jornadas/demo/reiniciar", async (c) => {
@@ -617,6 +686,34 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
     );
   });
 
+  app.patch("/api/inventario/:id/umbral", async (c) => {
+    if (!sesionAbierta(db)) throw new PinError("credenciales_invalidas", "Hace falta sesión");
+    const body = await leerJson<{ umbral: unknown; pin: unknown }>(c);
+    if (body.umbral !== null && typeof body.umbral !== "number") {
+      throw new SolicitudError("umbral_invalido", "El umbral debe ser un número entero o quedar vacío");
+    }
+    if (typeof body.pin !== "string") throw new SolicitudError("pin_invalido", "Hace falta el PIN de administrador");
+    return c.json(await configurarUmbralPocoStock(db, {
+      productoId: idDeRuta(c),
+      umbral: body.umbral,
+      pin: body.pin,
+    }));
+  });
+
+  app.patch("/api/inventario/:id/unidad", async (c) => {
+    if (!sesionAbierta(db)) throw new PinError("credenciales_invalidas", "Hace falta sesión");
+    const body = await leerJson<{ unidad: unknown; pin: unknown }>(c);
+    if (!["unidad", "g", "kg", "ml", "l"].includes(String(body.unidad))) {
+      throw new SolicitudError("unidad_invalida", "Selecciona una unidad válida");
+    }
+    if (typeof body.pin !== "string") throw new SolicitudError("pin_invalido", "Hace falta el PIN de administrador");
+    return c.json(await configurarUnidadInventario(db, {
+      productoId: idDeRuta(c),
+      unidad: body.unidad as UnidadInventario,
+      pin: body.pin,
+    }));
+  });
+
   app.post("/api/productos", async (c) => {
     const body = await c.req.json<{
       nombre?: string;
@@ -629,6 +726,7 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
       color?: string | null;
       foto_data?: string | null;
       receta?: LineaRecetaInput[];
+      unidad_base?: "unidad" | "g" | "ml";
     }>();
     const creado = crearProducto(db, {
       nombre: body.nombre ?? "",
@@ -641,6 +739,7 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
       color: body.color,
       foto_data: body.foto_data,
       receta: Array.isArray(body.receta) ? body.receta : undefined,
+      unidad_base: body.unidad_base,
     });
     return c.json(creado, 201);
   });
@@ -667,6 +766,10 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
       entrega_automatica_si_no_confirma?: boolean;
       entrega_automatica_minutos?: number;
       prioridad_para_llevar?: AppConfig["prioridad_para_llevar"];
+      sugerir_empaque_para_llevar?: boolean;
+      intentos_pin_maximos?: number;
+      bloqueo_pin_segundos?: number;
+      duracion_sesion_horas?: number;
       pin_al_emitir_precuenta?: boolean;
       pin_al_enviar_caja?: boolean;
       precuenta_obligatoria_antes_de_caja?: boolean;
@@ -706,6 +809,19 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
     }
     if (body.prioridad_para_llevar === "igual" || body.prioridad_para_llevar === "prioritaria") {
       config.prioridad_para_llevar = body.prioridad_para_llevar;
+    }
+    if (typeof body.sugerir_empaque_para_llevar === "boolean") config.sugerir_empaque_para_llevar = body.sugerir_empaque_para_llevar;
+    if (body.intentos_pin_maximos !== undefined) {
+      if (!Number.isInteger(body.intentos_pin_maximos) || body.intentos_pin_maximos < 3 || body.intentos_pin_maximos > 10) throw new SolicitudError("intentos_pin_invalidos", "Los intentos de PIN deben estar entre 3 y 10");
+      config.intentos_pin_maximos = body.intentos_pin_maximos;
+    }
+    if (body.bloqueo_pin_segundos !== undefined) {
+      if (!Number.isInteger(body.bloqueo_pin_segundos) || body.bloqueo_pin_segundos < 15 || body.bloqueo_pin_segundos > 300) throw new SolicitudError("bloqueo_pin_invalido", "La pausa del PIN debe estar entre 15 y 300 segundos");
+      config.bloqueo_pin_segundos = body.bloqueo_pin_segundos;
+    }
+    if (body.duracion_sesion_horas !== undefined) {
+      if (!Number.isInteger(body.duracion_sesion_horas) || body.duracion_sesion_horas < 4 || body.duracion_sesion_horas > 24) throw new SolicitudError("duracion_sesion_invalida", "La sesión debe durar entre 4 y 24 horas");
+      config.duracion_sesion_horas = body.duracion_sesion_horas;
     }
     if (typeof body.pin_al_emitir_precuenta === "boolean") config.pin_al_emitir_precuenta = body.pin_al_emitir_precuenta;
     if (typeof body.pin_al_enviar_caja === "boolean") config.pin_al_enviar_caja = body.pin_al_enviar_caja;
@@ -938,8 +1054,23 @@ export function createApp(deps: AppDeps): Hono<{ Variables: AppVariables }> {
     const body = await leerJson<{ pin: unknown }>(c);
     if (typeof body.pin !== "string") throw new SolicitudError("pin_invalido", "Hace falta el PIN del mesero");
     await exigirPin(db, body.pin, "anular");
-    prepararEliminacion(db, id);
-    return c.json({ incidencia: marcarIncidenciaEliminada(db, id), correccion: null });
+    const { incidencia, lineas } = prepararEliminacion(db, id);
+    const motivo = incidencia.tipo === "sugerencia" ? "Cliente no aceptó el reemplazo" : incidencia.motivo;
+    const correccion = await corregirOrden(db, {
+      ordenId: incidencia.ordenId,
+      lineas: lineas.map((linea) => ({
+        lineaClave: linea.lineaClave,
+        productoId: linea.productoId,
+        ordenLineaId: linea.ordenLineaId,
+        cantidad: 0,
+        nota: linea.nota,
+      })),
+      motivo,
+      claveIdempotencia: `incidencia-${id}-eliminar`,
+      pin: body.pin,
+      origen: "incidencia",
+    }, printer, config);
+    return c.json({ incidencia: marcarIncidenciaEliminada(db, id), correccion });
   });
 
   // Legacy: lectura del modelo de pedidos. La UI del modelo de cuentas usa

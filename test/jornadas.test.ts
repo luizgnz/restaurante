@@ -82,4 +82,51 @@ describe("jornada operativa", () => {
     expect(listarCuentasActivas(e.db)).toHaveLength(8);
     e.db.close();
   });
+
+  it("configura turnos y abre el predeterminado elegido", async () => {
+    const e = await entornoApi();
+    const creado = await post(e.app, "/api/jornadas/turnos", {
+      nombre: "Noche",
+      horaInicio: "18:00",
+      horaFin: "23:30",
+      esPredeterminada: true,
+    });
+    expect(creado.status).toBe(201);
+    const turno = (await creado.json() as { turno: { id: number } }).turno;
+    await cerrarJornada(e.db, null);
+    const abierta = await post(e.app, "/api/jornadas/abrir", { turnoPlantillaId: turno.id });
+    expect(abierta.status).toBe(201);
+    expect(estadoJornada(e.db).jornada).toMatchObject({ turnoPlantillaId: turno.id, turnoNombre: "Noche" });
+    e.db.close();
+  });
+
+  it("cierra las cuentas vacías juntas con credenciales autorizadas", async () => {
+    const e = await entornoApi();
+    const jornada = estadoJornada(e.db).jornada!;
+    const jefa = e.db.prepare("SELECT id FROM empleados WHERE usuario='admin'").get() as { id: number };
+    e.db.prepare(
+      `INSERT INTO cuentas (mesa_id,estado,abierta_por_empleado_id,abierta_en,jornada_id,tipo_servicio)
+       VALUES (?,'abierta',?,?,?,'mesa')`,
+    ).run(e.ids.mesa7, jefa.id, new Date().toISOString(), jornada.id);
+    const respuesta = await post(e.app, "/api/jornadas/cerrar-masivo", { usuario: "admin", password: "admin" });
+    if (respuesta.status !== 200) throw new Error(`cierre masivo ${respuesta.status}: ${await respuesta.text()}`);
+    const resultado = await respuesta.json() as { cierreMasivo: { cuentasVaciasAnuladasIds: number[] } };
+    expect(resultado.cierreMasivo.cuentasVaciasAnuladasIds).toHaveLength(1);
+    expect(estadoJornada(e.db).jornada).toBeNull();
+    expect((e.db.prepare("SELECT estado FROM cuentas ORDER BY id DESC LIMIT 1").get() as { estado: string }).estado).toBe("cancelada");
+    e.db.close();
+  });
+
+  it("confirma juntas las órdenes listas antes de cerrar", async () => {
+    const e = await entornoApi();
+    const orden = await crearOrden(e);
+    e.db.prepare("UPDATE comanda_lineas SET etapa='listo',etapa_actualizada_en=? WHERE comanda_id=?")
+      .run(new Date().toISOString(), orden.comandaId);
+    expect(estadoJornada(e.db).resumen?.ordenesListas).toBe(1);
+    const respuesta = await post(e.app, "/api/jornadas/listos/entregar");
+    expect(respuesta.status).toBe(200);
+    expect(await respuesta.json()).toMatchObject({ ordenesEntregadas: 1 });
+    expect(estadoJornada(e.db).resumen?.ordenesListas).toBe(0);
+    e.db.close();
+  });
 });

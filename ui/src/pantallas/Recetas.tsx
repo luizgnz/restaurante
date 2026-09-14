@@ -15,6 +15,8 @@ export type ProductoAdministrable = {
   nombre: string;
   tipo_consumo: string;
   rastrear_inventario: number;
+  unidad_base: "unidad" | "g" | "ml";
+  unidad_inventario: "unidad" | "g" | "kg" | "ml" | "l";
 };
 
 type LineaReceta = { ingredienteId: number; nombre?: string; cantidad: number };
@@ -32,6 +34,10 @@ export function Recetas({ productos, onVolver }: Props) {
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const ingredientes = productos.filter((producto) => producto.id !== productoId && producto.tipo_consumo !== "receta_kit" && Boolean(producto.rastrear_inventario));
+  const unidadDe = (ingredienteId: number) => {
+    const unidad = ingredientes.find((ingrediente) => ingrediente.id === ingredienteId)?.unidad_base;
+    return unidad === "g" ? "g" : unidad === "ml" ? "ml" : "unidad(es)";
+  };
 
   useEffect(() => {
     if (!productoId && recetas[0]) setProductoId(recetas[0].id);
@@ -104,7 +110,7 @@ export function Recetas({ productos, onVolver }: Props) {
                   {ingredientes.map((ingrediente) => <option key={ingrediente.id} value={ingrediente.id}>{ingrediente.nombre}</option>)}
                 </Select>
               </label>
-              <label>Cantidad
+              <label>Cantidad ({unidadDe(linea.ingredienteId)})
                 <Input type="number" min="0.001" step="0.001" inputMode="decimal" value={linea.cantidad} onChange={(event) => setLineas(lineas.map((actual, posicion) => posicion === indice ? { ...actual, cantidad: Number(event.target.value) } : actual))} />
               </label>
               <Button type="button" variant="outline" size="icon" aria-label="Quitar ingrediente" title="Quitar ingrediente" onClick={() => setLineas(lineas.filter((_, posicion) => posicion !== indice))}><Trash2 size={18} /></Button>
