@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -25,6 +25,7 @@ run("go", ["build", "-trimpath", "-ldflags", "-s -w", "-o", join(stage, "restaur
 });
 cpSync(join(root, "ui", "dist"), join(stage, "ui"), { recursive: true });
 cpSync(join(root, "src", "db", "migrations"), join(stage, "migrations"), { recursive: true });
+rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
 
 const candidates = [process.env.ISCC_PATH, "C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe", "C:\\Program Files\\Inno Setup 6\\ISCC.exe"].filter(Boolean);
@@ -34,4 +35,5 @@ if (!iscc) {
   process.exit(0);
 }
 run(iscc, [join(installerDir, "Restaurante.iss")], { cwd: installerDir, env: { ...process.env, RESTAURANTE_VERSION: version } });
+copyFileSync(join(installerDir, "LEEME-INSTALACION.txt"), join(output, "LEEME-INSTALACION.txt"));
 console.log(`Instalador generado en ${output}`);

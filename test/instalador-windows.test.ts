@@ -42,5 +42,7 @@ describe("instalador Windows", () => {
     expect(build).toContain('process.env.ComSpec || "cmd.exe"');
     expect(build).toContain('["/d", "/s", "/c", "npm run build"]');
     expect(build).toContain('replace(/[^0-9A-Za-z._-]+/g, "-")');
+    expect(build).toContain('rmSync(output, { recursive: true, force: true })');
+    expect(build).toContain('LEEME-INSTALACION.txt');
   });
 });
