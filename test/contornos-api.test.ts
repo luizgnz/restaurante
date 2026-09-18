@@ -55,11 +55,12 @@ describe("API de contornos", () => {
 
   it("valida cuerpos inválidos sin tocar la base", async () => {
     const e = await crearBase();
+    const gruposAntes = (e.db.prepare("SELECT count(*) AS c FROM contorno_grupos").get() as { c: number }).c;
     const sinNombre = await post(e.app, "/api/contornos/grupos", { nombre: "   " });
     expect(sinNombre.status).toBe(400);
     const varianteSinGrupo = await post(e.app, "/api/contornos/variantes", { nombre: "Pollo" });
     expect(varianteSinGrupo.status).toBe(400);
-    expect((e.db.prepare("SELECT count(*) AS c FROM contorno_grupos").get() as { c: number }).c).toBe(4);
+    expect((e.db.prepare("SELECT count(*) AS c FROM contorno_grupos").get() as { c: number }).c).toBe(gruposAntes);
     e.db.close();
   });
 

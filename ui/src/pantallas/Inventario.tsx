@@ -10,6 +10,7 @@ import {
   PackageCheck,
   Plus,
   Search,
+  Scale,
   ShieldCheck,
   TriangleAlert,
   Warehouse,
@@ -33,7 +34,13 @@ export type MaterialInventarioUi = {
   reservado: number;
   disponible: number;
   ultimaEntradaEn: string | null;
+  umbralPocoStock: number | null;
+  unidadBase: UnidadBaseInventario;
+  unidadInventario: UnidadInventario;
 };
+
+export type UnidadBaseInventario = "unidad" | "g" | "ml";
+export type UnidadInventario = "unidad" | "g" | "kg" | "ml" | "l";
 
 type Props = {
   materiales: MaterialInventarioUi[];
@@ -42,29 +49,32 @@ type Props = {
   onRecargar: () => Promise<void>;
   onRegistrarEntrada: (productoId: number, cantidad: number, pin: string) => Promise<void>;
   onRegistrarPerdida: (productoId: number, cantidad: number, motivo: MotivoPerdidaInventario, pin: string) => Promise<void>;
+  onConfigurarUmbral: (productoId: number, umbral: number | null, pin: string) => Promise<void>;
+  onConfigurarUnidad: (productoId: number, unidad: UnidadInventario, pin: string) => Promise<void>;
 };
 
 type FiltroInventario = "todos" | "disponibles" | "sin-stock" | "con-reservas";
-type TipoAjusteInventario = "entrada" | "perdida";
+type TipoAjusteInventario = "entrada" | "perdida" | "umbral" | "unidad";
 export type ColumnaOrdenInventario = "nombre" | "enMano" | "reservado" | "disponible" | "estado";
 export type OrdenInventario = { columna: ColumnaOrdenInventario; direccion: "asc" | "desc" };
 export type MotivoPerdidaInventario = "producto_danado" | "consumo_interno";
 
 function cantidad(valor: number): string {
-  return new Intl.NumberFormat("es-CL", { maximumFractionDigits: 2 }).format(valor);
+  return new Intl.NumberFormat("es-CL", { maximumFractionDigits: 3 }).format(valor);
 }
 
-export function presentarUnidadMaterial(nombre: string): { nombre: string; unidad: "Grs." | "kg" | "Uds." } {
-  const coincidencia = nombre.trim().match(/^(.*?)\s+(g|gr|grs\.?|kg|ud|uds\.?)$/i);
-  if (!coincidencia) return { nombre: nombre.trim(), unidad: "Uds." };
+export function etiquetaUnidad(unidad: UnidadInventario): string {
+  return unidad === "unidad" ? "Uds." : unidad === "g" ? "gr" : unidad === "l" ? "L" : unidad;
+}
 
-  const [, nombreBase, sufijo] = coincidencia;
-  const unidad = sufijo.toLocaleLowerCase("es").startsWith("k")
-    ? "kg"
-    : sufijo.toLocaleLowerCase("es").startsWith("g")
-      ? "Grs."
-      : "Uds.";
-  return { nombre: nombreBase.trim(), unidad };
+export function presentarUnidadMaterial(nombre: string, unidad: UnidadInventario = "unidad"): { nombre: string; unidad: string } {
+  return { nombre: nombre.trim(), unidad: etiquetaUnidad(unidad) };
+}
+
+function unidadesCompatibles(base: UnidadBaseInventario): UnidadInventario[] {
+  if (base === "g") return ["g", "kg"];
+  if (base === "ml") return ["ml", "l"];
+  return ["unidad"];
 }
 
 export function estadoInventario(material: MaterialInventarioUi): {
@@ -73,7 +83,7 @@ export function estadoInventario(material: MaterialInventarioUi): {
   prioridad: number;
 } {
   if (material.disponible <= 0) return { texto: "Sin stock", variante: "danger", prioridad: 0 };
-  const umbralPocoStock = Math.max(2, material.enMano * 0.2);
+  const umbralPocoStock = material.umbralPocoStock ?? Math.max(2, material.enMano * 0.2);
   if (material.disponible <= umbralPocoStock) return { texto: "Poco stock", variante: "warning", prioridad: 1 };
   return { texto: "Disponible", variante: "success", prioridad: 2 };
 }
@@ -97,12 +107,16 @@ export function Inventario({
   onRecargar,
   onRegistrarEntrada,
   onRegistrarPerdida,
+  onConfigurarUmbral,
+  onConfigurarUnidad,
 }: Props) {
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState<FiltroInventario>("todos");
   const [orden, setOrden] = useState<OrdenInventario>({ columna: "estado", direccion: "asc" });
   const [seleccionado, setSeleccionado] = useState<MaterialInventarioUi | null>(null);
   const [entrada, setEntrada] = useState("");
+  const [umbral, setUmbral] = useState("");
+  const [unidad, setUnidad] = useState<UnidadInventario>("unidad");
   const [tipoAjuste, setTipoAjuste] = useState<TipoAjusteInventario>("entrada");
   const [motivoPerdida, setMotivoPerdida] = useState<MotivoPerdidaInventario>("producto_danado");
   const [pin, setPin] = useState("");
@@ -211,6 +225,8 @@ export function Inventario({
   function abrirAjuste(material: MaterialInventarioUi) {
     setSeleccionado(material);
     setEntrada("");
+    setUmbral(material.umbralPocoStock == null ? "" : String(material.umbralPocoStock));
+    setUnidad(material.unidadInventario);
     setTipoAjuste("entrada");
     setMotivoPerdida("producto_danado");
     setPin("");
@@ -219,13 +235,44 @@ export function Inventario({
 
   async function registrar() {
     if (!seleccionado || guardando) return;
+    if (!pin.trim()) {
+      setError("Ingresa el PIN de administrador.");
+      return;
+    }
+    if (tipoAjuste === "umbral") {
+      const valorUmbral = umbral.trim() === "" ? null : Number(umbral);
+      if (valorUmbral !== null && (!Number.isInteger(valorUmbral) || valorUmbral < 0 || valorUmbral > 1_000_000)) {
+        setError("El umbral debe ser un número entero entre 0 y 1.000.000, o quedar vacío para usar la regla general.");
+        return;
+      }
+      setGuardando(true);
+      setError("");
+      try {
+        await onConfigurarUmbral(seleccionado.id, valorUmbral, pin);
+        setSeleccionado(null);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setGuardando(false);
+      }
+      return;
+    }
+    if (tipoAjuste === "unidad") {
+      setGuardando(true);
+      setError("");
+      try {
+        await onConfigurarUnidad(seleccionado.id, unidad, pin);
+        setSeleccionado(null);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setGuardando(false);
+      }
+      return;
+    }
     const valor = Number(entrada);
     if (!Number.isFinite(valor) || valor <= 0) {
       setError("Ingresa una cantidad mayor que cero.");
-      return;
-    }
-    if (!pin.trim()) {
-      setError("Ingresa el PIN de administrador.");
       return;
     }
     setGuardando(true);
@@ -313,7 +360,7 @@ export function Inventario({
           ) : (
             visibles.map((material) => {
             const estadoMaterial = estadoInventario(material);
-            const presentacion = presentarUnidadMaterial(material.nombre);
+            const presentacion = presentarUnidadMaterial(material.nombre, material.unidadInventario);
             const nombreConUnidad = `${presentacion.nombre} (${presentacion.unidad})`;
             return (
               <div className="inventario-fila" role="row" key={material.id}>
@@ -347,7 +394,11 @@ export function Inventario({
                 <span role="cell" data-label="Estado">
                   <Badge
                     variant={estadoMaterial.variante}
-                    title={estadoMaterial.texto === "Poco stock" ? "Queda el 20% o menos de la existencia física, o un máximo de 2 unidades" : undefined}
+                    title={estadoMaterial.texto === "Poco stock"
+                      ? material.umbralPocoStock == null
+                        ? "Usa la regla general: 20 % o menos de la existencia física, con un mínimo de 2 unidades"
+                        : `Usa el umbral individual de ${cantidad(material.umbralPocoStock)} ${etiquetaUnidad(material.unidadInventario)}`
+                      : undefined}
                   >
                     {estadoMaterial.texto}
                   </Badge>
@@ -370,7 +421,7 @@ export function Inventario({
           <DialogContent className="inventario-modal w-[min(440px,calc(100vw-1.5rem))] p-[1.4rem]">
             <span className="page-eyebrow">Movimiento de inventario</span>
             <h2>Ajustar {seleccionado.nombre}</h2>
-            <p>Existencia física actual: <strong>{cantidad(seleccionado.enMano)}</strong></p>
+            <p>Existencia física actual: <strong>{cantidad(seleccionado.enMano)} {etiquetaUnidad(seleccionado.unidadInventario)}</strong></p>
             <div className="inventario-ajuste__tipo" role="group" aria-label="Tipo de movimiento">
                 <Button
                   type="button"
@@ -390,8 +441,26 @@ export function Inventario({
                 >
                   <Minus size={16} aria-hidden="true" /> Registrar pérdida
                 </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={tipoAjuste === "umbral" ? "secondary" : "outline"}
+                  aria-pressed={tipoAjuste === "umbral"}
+                  onClick={() => { setTipoAjuste("umbral"); setError(""); }}
+                >
+                  <Gauge size={16} aria-hidden="true" /> Alerta de stock
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={tipoAjuste === "unidad" ? "secondary" : "outline"}
+                  aria-pressed={tipoAjuste === "unidad"}
+                  onClick={() => { setTipoAjuste("unidad"); setError(""); }}
+                >
+                  <Scale size={16} aria-hidden="true" /> Cambiar unidad
+                </Button>
             </div>
-            <label>
+            {tipoAjuste === "entrada" || tipoAjuste === "perdida" ? <label>
               {tipoAjuste === "perdida" ? "Cantidad perdida" : "Cantidad que ingresa"}
               <Input
                 autoFocus
@@ -403,7 +472,36 @@ export function Inventario({
                 value={entrada}
                 onChange={(event) => setEntrada(event.target.value)}
               />
-            </label>
+              <small>Ingresa la cantidad en {etiquetaUnidad(seleccionado.unidadInventario)}.</small>
+            </label> : (
+              tipoAjuste === "umbral" ? <label>
+                Umbral individual <small>(opcional)</small>
+                <Input
+                  autoFocus
+                  type="number"
+                  min="0"
+                  max="1000000"
+                  step="1"
+                  inputMode="numeric"
+                  placeholder="Vacío: usar regla general"
+                  value={umbral}
+                  onChange={(event) => setUmbral(event.target.value)}
+                />
+                <small>Se mide en {etiquetaUnidad(seleccionado.unidadInventario)} y solo admite valores enteros.</small>
+              </label> : <label>
+                Unidad para entradas y existencias
+                <Select
+                  autoFocus
+                  value={unidad}
+                  onChange={(event) => setUnidad(event.target.value as UnidadInventario)}
+                >
+                  {unidadesCompatibles(seleccionado.unidadBase).map((opcion) => (
+                    <option value={opcion} key={opcion}>{etiquetaUnidad(opcion)}</option>
+                  ))}
+                </Select>
+                <small>Las recetas conservan su unidad base y el sistema convierte automáticamente.</small>
+              </label>
+            )}
             {tipoAjuste === "perdida" ? (
               <label>
                 Motivo
@@ -436,7 +534,11 @@ export function Inventario({
                   ? "Registrando…"
                   : tipoAjuste === "perdida"
                     ? "Registrar pérdida"
-                    : "Agregar al inventario"}
+                    : tipoAjuste === "umbral"
+                      ? "Guardar alerta"
+                      : tipoAjuste === "unidad"
+                        ? "Guardar unidad"
+                      : "Agregar al inventario"}
               </Button>
             </div>
           </DialogContent>

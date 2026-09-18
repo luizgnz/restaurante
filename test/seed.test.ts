@@ -9,8 +9,8 @@ describe("seed carta", () => {
     const db = openTestDb();
     const ids = seedCartaDemo(db);
     expect(armableDeProducto(db, ids.hamburguesa)).toBeGreaterThanOrEqual(5);
-    const conFoto = db.prepare("SELECT count(*) AS c FROM productos WHERE disponible_en_pos = 1 AND foto_data IS NOT NULL").get() as { c: number };
-    expect(conFoto.c).toBe(0); // sin pseudo-fotos: la carta demo dibuja el icono por categoría
+    const hamburguesa = db.prepare("SELECT foto_data FROM productos WHERE id = ?").get(ids.hamburguesa) as { foto_data: string | null };
+    expect(hamburguesa.foto_data).toBeNull(); // el seed legacy no inventa una pseudo-foto.
     db.close();
   });
 

@@ -28,6 +28,7 @@ func main() {
 	uiDir := flag.String("ui-dir", "ui/dist", "directorio de la UI compilada")
 	migrationsDir := flag.String("migrations-dir", "src/db/migrations", "directorio de migraciones SQLite")
 	data := flag.String("data-dir", dataDir, "directorio persistente de datos")
+	verifyInstall := flag.Bool("verify-install", false, "valida datos, migraciones y catálogo y termina")
 	flag.Parse()
 	appConfig, err := config.Load(*data)
 	if err != nil {
@@ -48,6 +49,13 @@ func main() {
 	defer db.Close()
 	if err := bootstrap.Ensure(context.Background(), db); err != nil {
 		log.Fatalf("preparar instalación: %v", err)
+	}
+	if *verifyInstall {
+		if err := db.PingContext(context.Background()); err != nil {
+			log.Fatalf("validar base de datos: %v", err)
+		}
+		log.Printf("Instalación verificada: %s", app.DatabasePath(*data))
+		return
 	}
 
 	server := &http.Server{

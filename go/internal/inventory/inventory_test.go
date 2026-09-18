@@ -21,17 +21,68 @@ func inventoryDB(t *testing.T) *sql.DB {
 	_, err = db.Exec(`
 		CREATE TABLE empleados (id INTEGER PRIMARY KEY, nombre TEXT, pin_hash TEXT, derecho TEXT, activo INTEGER);
 		CREATE TABLE empleado_roles (empleado_id INTEGER, rol_clave TEXT);
-		CREATE TABLE productos (id INTEGER PRIMARY KEY, nombre TEXT, codigo TEXT, activo INTEGER);
+		CREATE TABLE productos (id INTEGER PRIMARY KEY, nombre TEXT, codigo TEXT, activo INTEGER, umbral_poco_stock INTEGER, unidad_base TEXT, unidad_inventario TEXT);
 		CREATE TABLE stock (producto_id INTEGER PRIMARY KEY, on_hand_real REAL, reserved_real REAL);
 		CREATE TABLE inventario_movimientos (id INTEGER PRIMARY KEY, producto_id INTEGER, tipo TEXT, cantidad_real REAL, stock_anterior_real REAL, stock_nuevo_real REAL, empleado_id INTEGER, motivo TEXT, creado_en TEXT);
 		INSERT INTO empleados VALUES (1, 'Jefa', '` + nodeHash + `', 'avanzado', 1);
 		INSERT INTO empleado_roles VALUES (1, 'administrador');
-		INSERT INTO productos VALUES (4, 'Agua con gas', 'AG-01', 1);
+		INSERT INTO productos VALUES (4, 'Agua con gas', 'AG-01', 1, NULL, 'unidad', 'unidad');
 		INSERT INTO stock VALUES (4, 8, 2);`)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return db
+}
+
+func TestInventoryUnitConvertsWithoutChangingBaseStock(t *testing.T) {
+	db := inventoryDB(t)
+	if _, err := db.Exec("UPDATE productos SET nombre = 'Harina', unidad_base = 'g', unidad_inventario = 'g', umbral_poco_stock = 2000 WHERE id = 4"); err != nil {
+		t.Fatal(err)
+	}
+	material, err := SetInventoryUnit(context.Background(), db, 4, "kg", "secreto")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if material.EnMano != 0.008 || material.UmbralPocoStock == nil || *material.UmbralPocoStock != 2 {
+		t.Fatalf("conversión inesperada: %#v", material)
+	}
+	entry, err := RegisterEntry(context.Background(), db, 4, 1.5, "secreto")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if entry.Material.EnMano != 1.508 {
+		t.Fatalf("entrada convertida inesperada: %#v", entry.Material)
+	}
+	var raw float64
+	if err := db.QueryRow("SELECT on_hand_real FROM stock WHERE producto_id = 4").Scan(&raw); err != nil || raw != 1508 {
+		t.Fatalf("stock base = %v, err = %v", raw, err)
+	}
+}
+
+func TestLowStockThresholdIsOptionalAndInteger(t *testing.T) {
+	db := inventoryDB(t)
+	threshold := int64(6)
+	material, err := SetLowStockThreshold(context.Background(), db, 4, &threshold, "secreto")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if material.UmbralPocoStock == nil || *material.UmbralPocoStock != 6 {
+		t.Fatalf("umbral inesperado: %#v", material.UmbralPocoStock)
+	}
+	if _, err := SetLowStockThreshold(context.Background(), db, 4, nil, "secreto"); err != nil {
+		t.Fatal(err)
+	}
+	listed, err := List(context.Background(), db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if listed[0].UmbralPocoStock != nil {
+		t.Fatalf("el umbral debía volver a la regla general: %#v", listed[0])
+	}
+	invalid := int64(-1)
+	if _, err := SetLowStockThreshold(context.Background(), db, 4, &invalid, "secreto"); err != ErrInvalidThreshold {
+		t.Fatalf("error = %v, se esperaba umbral inválido", err)
+	}
 }
 
 func TestEntryAndLossKeepInventoryLedger(t *testing.T) {

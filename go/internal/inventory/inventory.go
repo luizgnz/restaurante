@@ -11,20 +11,26 @@ import (
 )
 
 var (
-	ErrInvalidAmount = errors.New("cantidad inválida")
-	ErrInvalidReason = errors.New("motivo inválido")
-	ErrNotFound      = errors.New("material inexistente")
-	ErrInsufficient  = errors.New("stock insuficiente")
+	ErrInvalidAmount    = errors.New("cantidad inválida")
+	ErrInvalidReason    = errors.New("motivo inválido")
+	ErrInvalidThreshold = errors.New("umbral inválido")
+	ErrInvalidUnit      = errors.New("unidad inválida")
+	ErrThresholdUnit    = errors.New("umbral incompatible con la unidad")
+	ErrNotFound         = errors.New("material inexistente")
+	ErrInsufficient     = errors.New("stock insuficiente")
 )
 
 type Material struct {
-	ID              int64   `json:"id"`
-	Nombre          string  `json:"nombre"`
-	Codigo          *string `json:"codigo"`
-	EnMano          float64 `json:"enMano"`
-	Reservado       float64 `json:"reservado"`
-	Disponible      float64 `json:"disponible"`
-	UltimaEntradaEn *string `json:"ultimaEntradaEn"`
+	ID               int64    `json:"id"`
+	Nombre           string   `json:"nombre"`
+	Codigo           *string  `json:"codigo"`
+	EnMano           float64  `json:"enMano"`
+	Reservado        float64  `json:"reservado"`
+	Disponible       float64  `json:"disponible"`
+	UltimaEntradaEn  *string  `json:"ultimaEntradaEn"`
+	UmbralPocoStock  *float64 `json:"umbralPocoStock"`
+	UnidadBase       string   `json:"unidadBase"`
+	UnidadInventario string   `json:"unidadInventario"`
 }
 
 type Result struct {
@@ -34,7 +40,8 @@ type Result struct {
 
 const materialSelect = `
   SELECT p.id, p.nombre, p.codigo, s.on_hand_real, s.reserved_real,
-    (SELECT max(m.creado_en) FROM inventario_movimientos m WHERE m.producto_id = p.id AND m.tipo = 'entrada') AS ultima_entrada_en
+    (SELECT max(m.creado_en) FROM inventario_movimientos m WHERE m.producto_id = p.id AND m.tipo = 'entrada') AS ultima_entrada_en,
+    p.umbral_poco_stock, p.unidad_base, p.unidad_inventario
   FROM productos p JOIN stock s ON s.producto_id = p.id WHERE p.activo = 1`
 
 func List(ctx context.Context, db *sql.DB) ([]Material, error) {
@@ -79,6 +86,93 @@ func RegisterLoss(ctx context.Context, db *sql.DB, productID int64, amount float
 	return register(ctx, db, productID, -amount, "perdida", reason, employee.ID)
 }
 
+func SetLowStockThreshold(ctx context.Context, db *sql.DB, productID int64, threshold *int64, pin string) (Material, error) {
+	if threshold != nil && (*threshold < 0 || *threshold > 1_000_000) {
+		return Material{}, ErrInvalidThreshold
+	}
+	if _, err := auth.VerifyPINForAdmin(ctx, db, pin); err != nil {
+		return Material{}, err
+	}
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return Material{}, err
+	}
+	defer tx.Rollback()
+	var baseUnit, inventoryUnit string
+	if err := tx.QueryRowContext(ctx, `SELECT unidad_base, unidad_inventario FROM productos
+		WHERE id = ? AND activo = 1 AND EXISTS (SELECT 1 FROM stock WHERE producto_id = productos.id)`, productID).Scan(&baseUnit, &inventoryUnit); err == sql.ErrNoRows {
+		return Material{}, ErrNotFound
+	} else if err != nil {
+		return Material{}, err
+	}
+	factor, ok := unitFactor(baseUnit, inventoryUnit)
+	if !ok {
+		return Material{}, ErrInvalidUnit
+	}
+	var storedThreshold any
+	if threshold != nil {
+		storedThreshold = int64(float64(*threshold) * factor)
+	}
+	result, err := tx.ExecContext(ctx, "UPDATE productos SET umbral_poco_stock = ? WHERE id = ?", storedThreshold, productID)
+	if err != nil {
+		return Material{}, err
+	}
+	changed, err := result.RowsAffected()
+	if err != nil {
+		return Material{}, err
+	}
+	if changed != 1 {
+		return Material{}, ErrNotFound
+	}
+	material, err := materialByID(ctx, tx, productID)
+	if err != nil {
+		return Material{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return Material{}, err
+	}
+	return material, nil
+}
+
+func SetInventoryUnit(ctx context.Context, db *sql.DB, productID int64, unit, pin string) (Material, error) {
+	if _, err := auth.VerifyPINForAdmin(ctx, db, pin); err != nil {
+		return Material{}, err
+	}
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return Material{}, err
+	}
+	defer tx.Rollback()
+	var baseUnit string
+	var threshold sql.NullInt64
+	err = tx.QueryRowContext(ctx, `SELECT unidad_base, umbral_poco_stock FROM productos
+		WHERE id = ? AND activo = 1 AND EXISTS (SELECT 1 FROM stock WHERE producto_id = productos.id)`, productID).Scan(&baseUnit, &threshold)
+	if err == sql.ErrNoRows {
+		return Material{}, ErrNotFound
+	}
+	if err != nil {
+		return Material{}, err
+	}
+	factor, ok := unitFactor(baseUnit, unit)
+	if !ok {
+		return Material{}, ErrInvalidUnit
+	}
+	if threshold.Valid && threshold.Int64%int64(factor) != 0 {
+		return Material{}, ErrThresholdUnit
+	}
+	if _, err := tx.ExecContext(ctx, "UPDATE productos SET unidad_inventario = ? WHERE id = ?", unit, productID); err != nil {
+		return Material{}, err
+	}
+	material, err := materialByID(ctx, tx, productID)
+	if err != nil {
+		return Material{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return Material{}, err
+	}
+	return material, nil
+}
+
 func register(ctx context.Context, db *sql.DB, productID int64, delta float64, kind, reason string, employeeID int64) (Result, error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -86,12 +180,21 @@ func register(ctx context.Context, db *sql.DB, productID int64, delta float64, k
 	}
 	defer tx.Rollback()
 	var before float64
-	err = tx.QueryRowContext(ctx, `SELECT s.on_hand_real FROM productos p JOIN stock s ON s.producto_id = p.id WHERE p.id = ? AND p.activo = 1`, productID).Scan(&before)
+	var baseUnit, inventoryUnit string
+	err = tx.QueryRowContext(ctx, `SELECT s.on_hand_real, p.unidad_base, p.unidad_inventario FROM productos p JOIN stock s ON s.producto_id = p.id WHERE p.id = ? AND p.activo = 1`, productID).Scan(&before, &baseUnit, &inventoryUnit)
 	if err == sql.ErrNoRows {
 		return Result{}, ErrNotFound
 	}
 	if err != nil {
 		return Result{}, err
+	}
+	factor, ok := unitFactor(baseUnit, inventoryUnit)
+	if !ok {
+		return Result{}, ErrInvalidUnit
+	}
+	delta *= factor
+	if delta > 1_000_000 || delta < -1_000_000 {
+		return Result{}, ErrInvalidAmount
 	}
 	if delta < 0 && -delta > before {
 		return Result{}, ErrInsufficient
@@ -129,17 +232,48 @@ type scanner interface{ Scan(...any) error }
 func scanMaterial(row scanner) (Material, error) {
 	var material Material
 	var code, last sql.NullString
-	if err := row.Scan(&material.ID, &material.Nombre, &code, &material.EnMano, &material.Reservado, &last); err != nil {
+	var threshold sql.NullInt64
+	var onHand, reserved float64
+	if err := row.Scan(&material.ID, &material.Nombre, &code, &onHand, &reserved, &last, &threshold, &material.UnidadBase, &material.UnidadInventario); err != nil {
 		return Material{}, err
 	}
+	factor, ok := unitFactor(material.UnidadBase, material.UnidadInventario)
+	if !ok {
+		return Material{}, ErrInvalidUnit
+	}
+	material.EnMano = onHand / factor
+	material.Reservado = reserved / factor
 	if code.Valid {
 		material.Codigo = &code.String
 	}
 	if last.Valid {
 		material.UltimaEntradaEn = &last.String
 	}
+	if threshold.Valid {
+		converted := float64(threshold.Int64) / factor
+		material.UmbralPocoStock = &converted
+	}
 	material.Disponible = material.EnMano - material.Reservado
 	return material, nil
+}
+
+func unitFactor(baseUnit, inventoryUnit string) (float64, bool) {
+	switch baseUnit {
+	case "unidad":
+		return 1, inventoryUnit == "unidad"
+	case "g":
+		if inventoryUnit == "g" {
+			return 1, true
+		}
+		return 1000, inventoryUnit == "kg"
+	case "ml":
+		if inventoryUnit == "ml" {
+			return 1, true
+		}
+		return 1000, inventoryUnit == "l"
+	default:
+		return 0, false
+	}
 }
 
 func materialByID(ctx context.Context, tx *sql.Tx, productID int64) (Material, error) {

@@ -8,7 +8,7 @@ export type Categoria = { id: number; nombre: string };
 
 export type CrearProductoProps = {
   categorias: Categoria[];
-  ingredientesDisponibles?: Array<{ id: number; nombre: string }>;
+  ingredientesDisponibles?: Array<{ id: number; nombre: string; unidad_base?: "unidad" | "g" | "ml" }>;
   error: string;
   onGuardar: (p: {
     nombre: string;
@@ -21,6 +21,7 @@ export type CrearProductoProps = {
     color: string;
     foto_data: string | null;
     receta: Array<{ ingredienteId: number; cantidad: number }>;
+    unidad_base: "unidad" | "g" | "ml";
   }) => void;
   onCancelar: () => void;
   onDirtyChange?: (sucio: boolean) => void;
@@ -43,6 +44,7 @@ export function CrearProducto({ categorias, ingredientesDisponibles = [], error,
   const [tipo, setTipo] = useState("no_almacenable");
   const [enPos, setEnPos] = useState(true);
   const [rastrear, setRastrear] = useState(false);
+  const [unidadBase, setUnidadBase] = useState<"unidad" | "g" | "ml">("unidad");
   const [codigo, setCodigo] = useState("");
   const [color, setColor] = useState(COLOR_INICIAL);
   const [foto, setFoto] = useState<string | null>(null);
@@ -58,6 +60,7 @@ export function CrearProducto({ categorias, ingredientesDisponibles = [], error,
     tipo !== "no_almacenable" ||
     !enPos ||
     rastrear ||
+    unidadBase !== "unidad" ||
     categoriaId !== categoriaInicial;
 
   useEffect(() => {
@@ -82,7 +85,13 @@ export function CrearProducto({ categorias, ingredientesDisponibles = [], error,
       color,
       foto_data: foto,
       receta,
+      unidad_base: unidadBase,
     });
+  }
+
+  function unidadIngrediente(ingredienteId: number) {
+    const unidad = ingredientesDisponibles.find((ingrediente) => ingrediente.id === ingredienteId)?.unidad_base;
+    return unidad === "g" ? "g" : unidad === "ml" ? "ml" : "unidad(es)";
   }
 
   return (
@@ -153,7 +162,7 @@ export function CrearProducto({ categorias, ingredientesDisponibles = [], error,
           <label>Ingrediente<Select value={linea.ingredienteId} onChange={(event) => setReceta(receta.map((item, i) => i === indice ? { ...item, ingredienteId: Number(event.target.value) } : item))}>
             {ingredientesDisponibles.map((ingrediente) => <option key={ingrediente.id} value={ingrediente.id}>{ingrediente.nombre}</option>)}
           </Select></label>
-          <label>Cantidad<Input type="number" min="0.001" step="0.001" inputMode="decimal" value={linea.cantidad} onChange={(event) => setReceta(receta.map((item, i) => i === indice ? { ...item, cantidad: Number(event.target.value) } : item))} /></label>
+          <label>Cantidad ({unidadIngrediente(linea.ingredienteId)})<Input type="number" min="0.001" step="0.001" inputMode="decimal" value={linea.cantidad} onChange={(event) => setReceta(receta.map((item, i) => i === indice ? { ...item, cantidad: Number(event.target.value) } : item))} /></label>
           <Button type="button" variant="destructive" onClick={() => setReceta(receta.filter((_, i) => i !== indice))}>Quitar</Button>
         </div>)}
         <Button type="button" variant="outline" disabled={ingredientesDisponibles.length === 0} onClick={() => {
@@ -167,6 +176,15 @@ export function CrearProducto({ categorias, ingredientesDisponibles = [], error,
         <Checkbox checked={rastrear} onChange={(e) => setRastrear(e.target.checked)} />
         Rastrear en el inventario
       </label>
+      {rastrear ? <label>
+        Unidad base del material
+        <Select value={unidadBase} onChange={(event) => setUnidadBase(event.target.value as "unidad" | "g" | "ml")}>
+          <option value="unidad">Unidad</option>
+          <option value="g">Gramos (g)</option>
+          <option value="ml">Mililitros (ml)</option>
+        </Select>
+        <small>Las recetas usarán esta unidad. En Inventario podrás mostrar y registrar también en kg o L.</small>
+      </label> : null}
       <label className="settings-switch">
         <Checkbox checked={enPos} onChange={(e) => setEnPos(e.target.checked)} />
         Disponible en la carta

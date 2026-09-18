@@ -1,0 +1,40 @@
+name: instalador-windows
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      # El instalador ejecuta el backend Go. Las dependencias nativas del
+      # backend Node legado no deben compilarse en el runner de Windows.
+      - run: npm ci --ignore-scripts
+      - run: choco install innosetup --yes --no-progress
+      - name: Compilar instalador
+        shell: pwsh
+        env:
+          RESTAURANTE_VERSION: ${{ github.event_name == 'pull_request' && format('0.1.0-pr{0}', github.event.pull_request.number) || github.ref_name }}
+        run: npm run build:windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Restaurante-Setup-${{ github.event_name == 'pull_request' && format('0.1.0-pr{0}', github.event.pull_request.number) || github.ref_name }}-x64
+          # UseSetupLdr=no genera Setup.exe y uno o más Setup-*.bin. Todos son
+          # obligatorios para evitar ejecutar el motor desde %TEMP%.
+          path: installer/windows/output/*
+          if-no-files-found: error

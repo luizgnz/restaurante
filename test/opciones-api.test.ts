@@ -46,6 +46,21 @@ describe("opciones API", () => {
     db.close();
   });
 
+  it("la sugerencia de empaques se puede desactivar sin ocultar el producto", async () => {
+    const db = openTestDb();
+    const config = defaultConfig();
+    const app = createApp({ db, config, printer: new MemoryPrinter() });
+    expect(((await (await app.request("/api/config")).json()) as { sugerir_empaque_para_llevar: boolean }).sugerir_empaque_para_llevar).toBe(true);
+    const res = await app.request("/api/config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sugerir_empaque_para_llevar: false }),
+    });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { sugerir_empaque_para_llevar: boolean }).sugerir_empaque_para_llevar).toBe(false);
+    db.close();
+  });
+
   it("cerrar cuenta con permiso básico se puede habilitar", async () => {
     const db = openTestDb();
     const config = defaultConfig();

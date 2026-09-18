@@ -26,3 +26,9 @@ func TestLoadUsesDefaultsAndNormalizesInvalidValues(t *testing.T) {
 		t.Fatalf("configuración inesperada: %#v", loaded)
 	}
 }
+
+func TestEmpaqueParaLlevarHabilitadoPorDefecto(t *testing.T) {
+	if !Defaults().SugerirEmpaqueParaLlevar {
+		t.Fatal("la sugerencia de empaque debe quedar habilitada por defecto")
+	}
+}

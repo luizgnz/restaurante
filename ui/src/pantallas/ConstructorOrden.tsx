@@ -134,12 +134,22 @@ export type ConstructorOrdenProps = {
   borrador: BorradorOrden;
   contornos?: ConfigContornosUi | null;
   onSlotsDeProducto?: (productoId: number) => Promise<SlotArmadoUi[]>;
+  sugerirEmpaqueParaLlevar?: boolean;
   onCambiar: (borrador: BorradorOrden) => void;
   onEnviar: (borrador: BorradorOrden) => Promise<void>;
   onCancelar: () => void;
 };
 
 export type LineaConstructorUi = BorradorOrden["lineas"][number] & { idUi: string };
+
+export function cantidadEmpaquesSugerida(productos: ProductoCarta[], lineas: Array<Pick<LineaConstructorUi, "productoId" | "cantidad">>): number {
+  const categoriasConEmpaque = new Set(["platos completos", "platos colombianos", "platos chilenos", "porciones"]);
+  return lineas.reduce((total, linea) => {
+    const producto = productos.find((item) => item.id === linea.productoId);
+    if (!producto || !categoriasConEmpaque.has(normalizarCategoria(producto.categoria_nombre))) return total;
+    return total + Math.max(0, linea.cantidad);
+  }, 0);
+}
 
 function uuid() {
   return globalThis.crypto?.randomUUID?.() ?? `ui-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -181,6 +191,7 @@ export function ConstructorOrden({
   borrador,
   contornos,
   onSlotsDeProducto,
+  sugerirEmpaqueParaLlevar = true,
   onCambiar,
   onEnviar,
   onCancelar,
@@ -203,6 +214,11 @@ export function ConstructorOrden({
     const unitario = (productos.find((item) => item.id === linea.productoId)?.precio_centavos ?? 0) + (linea.adicionalCentavos ?? 0);
     return total + unitario * linea.cantidad;
   }, 0);
+  const productoEmpaque = productos.find((producto) => producto.codigo === "menu-real:extras:empaque")
+    ?? productos.find((producto) => normalizarCategoria(producto.categoria_nombre) === "extras" && normalizarCategoria(producto.nombre) === "empaque");
+  const lineaEmpaque = productoEmpaque ? lineasUi.find((linea) => linea.productoId === productoEmpaque.id) : undefined;
+  const cantidadEmpaque = lineaEmpaque?.cantidad ?? 0;
+  const empaquesSugeridos = cantidadEmpaquesSugerida(productos, lineasUi);
   const categorias = [...new Set(productos.map((producto) => producto.categoria_nombre?.trim()).filter((nombre): nombre is string => Boolean(nombre)))].sort((a, b) => a.localeCompare(b, "es"));
   const termino = busqueda.trim().toLocaleLowerCase("es");
   const productosVisibles = productos.filter((producto) => {
@@ -235,6 +251,21 @@ export function ConstructorOrden({
       linea.cantidad > 1
         ? actualizarLineaConstructor(lineasUi, linea.idUi, { cantidad: linea.cantidad - 1 })
         : lineasUi.filter((item) => item.idUi !== linea.idUi),
+    );
+  }
+
+  function fijarCantidadEmpaque(cantidad: number) {
+    if (!productoEmpaque) return;
+    const segura = Math.max(0, Math.trunc(cantidad));
+    if (!lineaEmpaque && segura > 0) {
+      cambiarLineas([...lineasUi, { idUi: uuid(), productoId: productoEmpaque.id, cantidad: segura, nota: "" }]);
+      return;
+    }
+    if (!lineaEmpaque) return;
+    cambiarLineas(
+      segura === 0
+        ? lineasUi.filter((linea) => linea.idUi !== lineaEmpaque.idUi)
+        : actualizarLineaConstructor(lineasUi, lineaEmpaque.idUi, { cantidad: segura }),
     );
   }
 
@@ -482,6 +513,21 @@ export function ConstructorOrden({
               <X size={20} aria-hidden="true" />
             </Button>
           </div>
+          {esParaLlevar && sugerirEmpaqueParaLlevar && productoEmpaque && empaquesSugeridos > 0 ? (
+            <div className="constructor-empaque" aria-label="Sugerencia de empaques">
+              <div>
+                <span className="constructor-orden__eyebrow">Para llevar</span>
+                <strong>{empaquesSugeridos} {empaquesSugeridos === 1 ? "empaque sugerido" : "empaques sugeridos"}</strong>
+                <small>Uno por cada plato o porción; las bebidas no se cuentan.</small>
+              </div>
+              <div className="constructor-empaque__cantidad">
+                <Button type="button" variant="outline" size="icon" aria-label="Quitar un empaque" disabled={cantidadEmpaque === 0} onClick={() => fijarCantidadEmpaque(cantidadEmpaque - 1)}>−</Button>
+                <strong aria-label={`${cantidadEmpaque} empaques`}>{cantidadEmpaque}</strong>
+                <Button type="button" variant="outline" size="icon" aria-label="Agregar un empaque" onClick={() => fijarCantidadEmpaque(cantidadEmpaque + 1)}>+</Button>
+              </div>
+              {cantidadEmpaque !== empaquesSugeridos ? <Button type="button" variant="outline" onClick={() => fijarCantidadEmpaque(empaquesSugeridos)}>Usar sugerencia</Button> : <Badge variant="secondary">Cantidad aplicada</Badge>}
+            </div>
+          ) : null}
           {lineasUi
             .filter((linea) => linea.cantidad > 0)
             .map((linea) => {
