@@ -12,7 +12,9 @@ $env:RESTAURANTE_VERSION = "1.0.0"
 npm run build:windows
 ```
 
-En Windows, el comando utiliza Inno Setup 6 si está instalado en su ubicación estándar o si `ISCC_PATH` apunta a `ISCC.exe`. El resultado queda en `installer/windows/output/`. En macOS o Linux se prepara y verifica el paquete Windows, pero el `Setup.exe` definitivo se compila en el workflow `instalador-windows` sobre un runner Windows.
+En Windows, el comando utiliza Inno Setup 6 si está instalado en su ubicación estándar o si `ISCC_PATH` apunta a `ISCC.exe`. El resultado queda en `installer/windows/output/`. En macOS o Linux se prepara y verifica el paquete Windows, pero el instalador definitivo se compila en el workflow `instalador-windows` sobre un runner Windows.
+
+El instalador se distribuye como un ZIP que contiene `Restaurante-Setup-<versión>-x64.exe` y sus archivos `Restaurante-Setup-<versión>-x64-*.bin`. Deben extraerse juntos en una carpeta antes de ejecutar el `.exe`; no se debe enviar el ejecutable por separado. Esta distribución evita que Inno Setup intente lanzar su motor desde `%TEMP%`, ubicación bloqueada por algunas políticas de Seguridad de Windows.
 
 ## Comportamiento
 
@@ -23,6 +25,8 @@ En Windows, el comando utiliza Inno Setup 6 si está instalado en su ubicación 
 5. Si la validación falla, restaura automáticamente la aplicación y la base anteriores y cancela la instalación.
 6. Registra `Restaurante POS` como tarea de inicio bajo la cuenta del sistema, sin depender de una sesión de usuario.
 7. El desinstalador elimina la aplicación y la tarea, pero conserva base, configuración y respaldos.
+
+Los scripts de respaldo, restauración y registro de la tarea se ejecutan desde `C:\Program Files\Restaurante\installer`, no desde `%TEMP%`.
 
 ## Verificación real obligatoria antes de publicar
 

@@ -18,6 +18,11 @@ OutputDir=output
 OutputBaseFilename=Restaurante-Setup-{#MyAppVersion}-x64
 Compression=lzma2/max
 SolidCompression=yes
+; Evita que SetupLdr extraiga y ejecute el motor del instalador desde %TEMP%.
+; Algunos equipos del restaurante bloquean por directiva cualquier ejecutable
+; lanzado desde una carpeta temporal. El paquete resultante es multifichero y
+; debe distribuirse completo (Setup.exe + Setup-*.bin).
+UseSetupLdr=no
 WizardStyle=modern
 SetupLogging=yes
 UninstallDisplayName=Restaurante
@@ -25,7 +30,7 @@ CloseApplications=yes
 RestartApplications=no
 
 [Files]
-Source: "prepare-update.ps1"; Flags: dontcopy noencryption
+Source: "prepare-update.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
 Source: "{#StageDir}\restaurante.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StageDir}\ui\*"; DestDir: "{app}\ui"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#StageDir}\migrations\*"; DestDir: "{app}\migrations"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -65,15 +70,20 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;
+  PrepareScript: String;
 begin
   Result := '';
   HadPreviousInstall := DirExists(ExpandConstant('{app}'));
   if HadPreviousInstall then begin
     Exec(ExpandConstant('{sys}\schtasks.exe'), '/End /TN "Restaurante POS"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    ExtractTemporaryFile('prepare-update.ps1');
+    PrepareScript := ExpandConstant('{app}\installer\prepare-update.ps1');
+    if not FileExists(PrepareScript) then begin
+      Result := 'La instalación anterior no contiene el componente de respaldo. Ejecute primero el instalador de transición o contacte a soporte.';
+      exit;
+    end;
     if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
       '-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' +
-      ExpandConstant('{tmp}\prepare-update.ps1') + '" -InstallDir "' +
+      PrepareScript + '" -InstallDir "' +
       ExpandConstant('{app}') + '" -DataDir "' + ExpandConstant('{commonappdata}\Restaurante') + '"',
       '', SW_HIDE, ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
       Result := 'No se pudo crear el respaldo previo. La instalación no continuará.';

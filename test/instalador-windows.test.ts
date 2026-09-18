@@ -15,6 +15,13 @@ describe("instalador Windows", () => {
     expect(rollback).toContain("salon.sqlite");
   });
 
+  it("no ejecuta el motor ni scripts del instalador desde la carpeta temporal", () => {
+    expect(inno).toContain("UseSetupLdr=no");
+    expect(inno).toContain('Source: "prepare-update.ps1"; DestDir: "{app}\\installer"');
+    expect(inno).not.toContain("ExtractTemporaryFile('prepare-update.ps1')");
+    expect(inno).not.toContain("{tmp}\\prepare-update.ps1");
+  });
+
   it("conserva solo los tres respaldos automáticos de actualización", () => {
     expect(backup).toContain("Select-Object -Skip 3");
     expect(backup).toContain("active-backup.txt");

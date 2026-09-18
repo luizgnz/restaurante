@@ -34,5 +34,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Restaurante-Setup-${{ github.event_name == 'pull_request' && format('0.1.0-pr{0}', github.event.pull_request.number) || github.ref_name }}-x64
-          path: installer/windows/output/*.exe
+          # UseSetupLdr=no genera Setup.exe y uno o más Setup-*.bin. Todos son
+          # obligatorios para evitar ejecutar el motor desde %TEMP%.
+          path: installer/windows/output/*
           if-no-files-found: error
