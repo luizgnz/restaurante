@@ -11,6 +11,8 @@ describe("instalador Windows", () => {
   it("valida la instalación y restaura la versión anterior si falla", () => {
     expect(inno).toContain("-verify-install");
     expect(inno).toContain("rollback-update.ps1");
+    expect(inno).toContain("HadPreviousInstall := PreviousInstallExists");
+    expect(inno).toContain("Era una primera instalación: no había una base anterior que restaurar");
     expect(inno).toContain("RaiseException");
     expect(rollback).toContain("salon.sqlite");
   });
@@ -35,6 +37,8 @@ describe("instalador Windows", () => {
   it("registra el servidor local al iniciar Windows sin depender de npm", () => {
     expect(task).toContain("New-ScheduledTaskAction");
     expect(task).toContain("restaurante.exe");
+    expect(task).toContain("Invoke-RestMethod -Uri $url");
+    expect(inno).toContain("StartedOK := RunPowerShell('register-task.ps1'");
     expect(task).not.toContain("npm");
   });
 
@@ -44,5 +48,6 @@ describe("instalador Windows", () => {
     expect(build).toContain('replace(/[^0-9A-Za-z._-]+/g, "-")');
     expect(build).toContain('rmSync(output, { recursive: true, force: true })');
     expect(build).toContain('LEEME-INSTALACION.txt');
+    expect(build).toContain('"-buildvcs=false"');
   });
 });

@@ -2,10 +2,25 @@ package runtime
 
 import (
 	"context"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+func TestSQLiteFileDSNWindows(t *testing.T) {
+	dsn := sqliteFileDSN(`C:\ProgramData\Restaurante\data\salon.sqlite`, true)
+	parsed, err := url.Parse(dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if parsed.Scheme != "file" || parsed.Path != "/C:/ProgramData/Restaurante/data/salon.sqlite" {
+		t.Fatalf("URI SQLite de Windows incorrecta: %s", dsn)
+	}
+	if parsed.Query().Get("_pragma") != "journal_mode(WAL)" {
+		t.Fatalf("faltan opciones SQLite: %s", dsn)
+	}
+}
 
 func TestOpenAndMigrateAppliesFilesOnce(t *testing.T) {
 	dir := t.TempDir()

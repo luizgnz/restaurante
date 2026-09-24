@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -29,7 +30,20 @@ func main() {
 	migrationsDir := flag.String("migrations-dir", "src/db/migrations", "directorio de migraciones SQLite")
 	data := flag.String("data-dir", dataDir, "directorio persistente de datos")
 	verifyInstall := flag.Bool("verify-install", false, "valida datos, migraciones y catálogo y termina")
+	logFile := flag.String("log-file", "", "archivo para registrar errores y arranques")
+	noBrowser := flag.Bool("no-browser", false, "no abre el navegador al iniciar el servidor")
 	flag.Parse()
+	if *logFile != "" {
+		if err := os.MkdirAll(filepath.Dir(*logFile), 0o750); err != nil {
+			log.Fatalf("crear directorio de registro: %v", err)
+		}
+		file, err := os.OpenFile(*logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+		if err != nil {
+			log.Fatalf("abrir registro: %v", err)
+		}
+		defer file.Close()
+		log.SetOutput(io.MultiWriter(os.Stderr, file))
+	}
 	appConfig, err := config.Load(*data)
 	if err != nil {
 		log.Fatalf("cargar configuración: %v", err)
@@ -51,6 +65,9 @@ func main() {
 		log.Fatalf("preparar instalación: %v", err)
 	}
 	if *verifyInstall {
+		if _, err := os.Stat(filepath.Join(*uiDir, "index.html")); err != nil {
+			log.Fatalf("interfaz no disponible: %v", err)
+		}
 		if err := db.PingContext(context.Background()); err != nil {
 			log.Fatalf("validar base de datos: %v", err)
 		}
@@ -66,7 +83,9 @@ func main() {
 	log.Printf("Restaurante Go en http://%s", *listen)
 	log.Printf("Datos SQLite: %s", app.DatabasePath(*data))
 	log.Printf("Inventario: %s · sin stock: %s", appConfig.PoliticaInventario, appConfig.BloqueoSinStock)
-	openBrowser(*listen)
+	if !*noBrowser {
+		openBrowser(*listen)
+	}
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}

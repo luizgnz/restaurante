@@ -21,12 +21,14 @@ El instalador se distribuye como un ZIP que contiene `Restaurante-Setup-<versió
 1. Si existe una instalación anterior, detiene la tarea local y copia la aplicación y `salon.sqlite` a `C:\ProgramData\Restaurante\backups\updates\<fecha-hora>`.
 2. Conserva únicamente los tres puntos automáticos de actualización más recientes. No elimina respaldos manuales ni de jornada.
 3. Instala la aplicación en `C:\Program Files\Restaurante` y mantiene datos y configuración en `C:\ProgramData\Restaurante`.
-4. Ejecuta `restaurante.exe -verify-install`, que abre SQLite, aplica migraciones, asegura el catálogo inicial y comprueba la base antes de activar la versión.
-5. Si la validación falla, restaura automáticamente la aplicación y la base anteriores y cancela la instalación.
-6. Registra `Restaurante POS` como tarea de inicio bajo la cuenta del sistema, sin depender de una sesión de usuario.
+4. Ejecuta `restaurante.exe -verify-install`, que abre SQLite, aplica migraciones, asegura el catálogo inicial y comprueba la base y la interfaz antes de activar la versión. En la primera instalación crea `salon.sqlite`; no intenta restaurar una base inexistente.
+5. Registra `Restaurante POS` como tarea de inicio bajo la cuenta del sistema y espera hasta que `/api/salud` responda. Solo entonces ofrece «Abrir Restaurante».
+6. Si falla la validación o el arranque durante una actualización, restaura la aplicación y la base anteriores. En una primera instalación informa el error y deja los registros para diagnóstico.
 7. El desinstalador elimina la aplicación y la tarea, pero conserva base, configuración y respaldos.
 
 Los scripts de respaldo, restauración y registro de la tarea se ejecutan desde `C:\Program Files\Restaurante\installer`, no desde `%TEMP%`.
+
+Para diagnosticar un fallo, revise `C:\ProgramData\Restaurante\logs\install.log`, `server.log` e `install-task.log`. El flujo `instalador-windows` ejecuta el binario compilado en un Windows limpio con datos temporales y comprueba SQLite, la API de salud y la página inicial.
 
 ## Verificación real obligatoria antes de publicar
 

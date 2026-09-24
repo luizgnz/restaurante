@@ -31,6 +31,47 @@ jobs:
         env:
           RESTAURANTE_VERSION: ${{ github.event_name == 'pull_request' && format('0.1.0-pr{0}', github.event.pull_request.number) || github.ref_name }}
         run: npm run build:windows
+      - name: Probar primera instalación y arranque en Windows
+        shell: pwsh
+        run: |
+          $exe = Join-Path $PWD 'installer/windows/stage/restaurante.exe'
+          $ui = Join-Path $PWD 'installer/windows/stage/ui'
+          $migrations = Join-Path $PWD 'installer/windows/stage/migrations'
+          $data = Join-Path $env:RUNNER_TEMP 'Restaurante smoke'
+          $log = Join-Path $data 'logs/smoke.log'
+          & $exe -verify-install -ui-dir $ui -migrations-dir $migrations -data-dir $data -log-file $log
+          if ($LASTEXITCODE -ne 0) {
+            if (Test-Path $log) { Get-Content $log }
+            throw 'El binario Windows no validó una base nueva.'
+          }
+          if (-not (Test-Path (Join-Path $data 'data/salon.sqlite'))) {
+            throw 'No se creó la base de datos inicial.'
+          }
+          $arguments = '-no-browser -listen 127.0.0.1:18080 -ui-dir "{0}" -migrations-dir "{1}" -data-dir "{2}" -log-file "{3}"' -f $ui, $migrations, $data, $log
+          $server = Start-Process -FilePath $exe -ArgumentList $arguments -PassThru
+          try {
+            $ready = $false
+            for ($attempt = 0; $attempt -lt 30; $attempt++) {
+              Start-Sleep -Seconds 1
+              try {
+                $health = Invoke-RestMethod -Uri 'http://127.0.0.1:18080/api/salud' -TimeoutSec 2
+                if ($health.ok -eq $true -and $health.runtime -eq 'go') {
+                  $ready = $true
+                  break
+                }
+              } catch {}
+            }
+            if (-not $ready) { throw 'El servidor no respondió al chequeo de salud.' }
+            $page = Invoke-WebRequest -Uri 'http://127.0.0.1:18080/' -UseBasicParsing -TimeoutSec 5
+            if ($page.StatusCode -ne 200 -or $page.Content -notmatch '<html') {
+              throw 'La interfaz no se entregó correctamente.'
+            }
+          } catch {
+            if (Test-Path $log) { Get-Content $log }
+            throw
+          } finally {
+            Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: Restaurante-Setup-${{ github.event_name == 'pull_request' && format('0.1.0-pr{0}', github.event.pull_request.number) || github.ref_name }}-x64

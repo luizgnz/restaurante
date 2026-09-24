@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -19,7 +20,7 @@ func OpenAndMigrate(ctx context.Context, databasePath, migrationsDir string) (*s
 		return nil, fmt.Errorf("crear directorio de datos: %w", err)
 	}
 
-	dsn := (&url.URL{Scheme: "file", Path: databasePath}).String() + "?_foreign_keys=on&_busy_timeout=5000&_pragma=journal_mode(WAL)"
+	dsn := sqliteFileDSN(databasePath, runtime.GOOS == "windows")
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("abrir SQLite: %w", err)
@@ -37,6 +38,19 @@ func OpenAndMigrate(ctx context.Context, databasePath, migrationsDir string) (*s
 		return nil, err
 	}
 	return db, nil
+}
+
+func sqliteFileDSN(databasePath string, windows bool) string {
+	path := databasePath
+	if windows {
+		// SQLite espera file:///C:/...; las barras invertidas de Windows no
+		// forman una URI de archivo válida y terminan escapadas como %5C.
+		path = strings.ReplaceAll(path, `\`, "/")
+		if len(path) >= 2 && path[1] == ':' {
+			path = "/" + path
+		}
+	}
+	return (&url.URL{Scheme: "file", Path: path}).String() + "?_foreign_keys=on&_busy_timeout=5000&_pragma=journal_mode(WAL)"
 }
 
 // backupBeforeCatalogMigration protege una base operativa antes de sustituir

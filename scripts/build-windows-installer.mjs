@@ -20,7 +20,7 @@ run(npmCommand, npmArgs);
 mkdirSync(stage, { recursive: true });
 rmSync(stage, { recursive: true, force: true });
 mkdirSync(stage, { recursive: true });
-run("go", ["build", "-trimpath", "-ldflags", "-s -w", "-o", join(stage, "restaurante.exe"), "./go/cmd/restaurante"], {
+run("go", ["build", "-buildvcs=false", "-trimpath", "-ldflags", "-s -w", "-o", join(stage, "restaurante.exe"), "./go/cmd/restaurante"], {
   env: { ...process.env, GOOS: "windows", GOARCH: "amd64", CGO_ENABLED: "0" },
 });
 cpSync(join(root, "ui", "dist"), join(stage, "ui"), { recursive: true });
