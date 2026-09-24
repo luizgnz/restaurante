@@ -79,10 +79,14 @@ jobs:
           if (-not $setup) { throw 'No se generó Setup.exe.' }
           $setupLog = Join-Path $env:RUNNER_TEMP 'restaurante-setup.log'
           & $setup /VERYSILENT /SUPPRESSMSGBOXES /NORESTART "/LOG=$setupLog"
+          $setupExitCode = $LASTEXITCODE
           $installDir = Join-Path $env:ProgramFiles 'Restaurante'
           $dataDir = Join-Path $env:ProgramData 'Restaurante'
-          if ($LASTEXITCODE -ne 0) {
+          if ($setupExitCode -ne 0) {
+            Write-Host "Setup terminó con código $setupExitCode"
+            Get-ChildItem 'installer/windows/output' | Select-Object Name, Length | Format-Table
             if (Test-Path $setupLog) { Get-Content $setupLog | Select-Object -Last 100 }
+            Get-ChildItem $env:TEMP -Filter 'Setup Log*' -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_.FullName | Select-Object -Last 100 }
             Get-ChildItem (Join-Path $dataDir 'logs') -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_.FullName | Select-Object -Last 50 }
             throw 'La primera instalación completa falló.'
           }
