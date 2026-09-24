@@ -4610,6 +4610,30 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
   width: auto;
   height: 50px;
 }
+
+.login-marca__respaldo {
+  display: grid;
+  min-height: 50px;
+  align-content: center;
+  justify-items: center;
+  gap: 0.1rem;
+  text-align: center;
+}
+
+.login-marca__respaldo strong {
+  color: var(--foreground);
+  font-family: "Fraunces Variable", Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 560;
+  line-height: 1.1;
+}
+
+.login-marca__respaldo span {
+  color: var(--brand);
+  font-size: 0.57rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+}
 }
 
 /* --------------------------------------------------------------------------

@@ -12,6 +12,7 @@ type Props = {
 export function Login({ error, onEntrar }: Props) {
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
+  const [logoFallido, setLogoFallido] = useState(false);
 
   function enviar(e: FormEvent) {
     e.preventDefault();
@@ -23,7 +24,20 @@ export function Login({ error, onEntrar }: Props) {
       <Card className="w-full max-w-[380px]">
         <CardContent className="p-6 pt-6">
           <div className="login-marca">
-            <img src="/marcas/olla-horizontal.svg" alt="La Olla de Casa" width={230} height={48} />
+            {logoFallido ? (
+              <div className="login-marca__respaldo">
+                <strong>La Olla de Casa</strong>
+                <span>COCINA CASERA</span>
+              </div>
+            ) : (
+              <img
+                src="/marcas/olla-horizontal.svg"
+                alt="La Olla de Casa"
+                width={230}
+                height={48}
+                onError={() => setLogoFallido(true)}
+              />
+            )}
           </div>
           <p className="m-0 text-xs font-medium tracking-[0.1em] text-muted-foreground uppercase">
             Sistema Turno

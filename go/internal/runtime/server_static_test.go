@@ -10,9 +10,9 @@ import (
 	"github.com/luizgnz/restaurante/go/internal/config"
 )
 
-func TestStaticHandlerServesProductPhotosAndFonts(t *testing.T) {
+func TestStaticHandlerServesPublicAssets(t *testing.T) {
 	dir := t.TempDir()
-	for _, file := range []string{"index.html", "productos/menu-real/plato.jpg", "fonts/fuente.woff2"} {
+	for _, file := range []string{"index.html", "productos/menu-real/plato.jpg", "fonts/fuente.woff2", "marcas/olla-horizontal.svg"} {
 		path := filepath.Join(dir, file)
 		if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 			t.Fatal(err)
@@ -22,7 +22,7 @@ func TestStaticHandlerServesProductPhotosAndFonts(t *testing.T) {
 		}
 	}
 	handler := NewHandler(nil, dir, config.Defaults())
-	for _, path := range []string{"/productos/menu-real/plato.jpg", "/fonts/fuente.woff2"} {
+	for _, path := range []string{"/productos/menu-real/plato.jpg", "/fonts/fuente.woff2", "/marcas/olla-horizontal.svg"} {
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
 		if response.Code != http.StatusOK {

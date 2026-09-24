@@ -1283,6 +1283,7 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		isStatic := strings.HasPrefix(r.URL.Path, "/assets/") ||
 			strings.HasPrefix(r.URL.Path, "/productos/") ||
 			strings.HasPrefix(r.URL.Path, "/fonts/") ||
+			strings.HasPrefix(r.URL.Path, "/marcas/") ||
 			r.URL.Path == "/favicon.svg"
 		if r.URL.Path != "/" && !isStatic && r.URL.Path != "/index.html" {
 			http.NotFound(w, r)
