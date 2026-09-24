@@ -78,8 +78,8 @@ jobs:
           $setup = Get-ChildItem 'installer/windows/output/Restaurante-Setup-*-x64.exe' | Select-Object -First 1 -ExpandProperty FullName
           if (-not $setup) { throw 'No se generó Setup.exe.' }
           $setupLog = Join-Path $env:RUNNER_TEMP 'restaurante-setup.log'
-          & $setup /VERYSILENT /SUPPRESSMSGBOXES /NORESTART "/LOG=$setupLog"
-          $setupExitCode = $LASTEXITCODE
+          $setupProcess = Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/LOG=$setupLog") -PassThru -Wait
+          $setupExitCode = $setupProcess.ExitCode
           $installDir = Join-Path $env:ProgramFiles 'Restaurante'
           $dataDir = Join-Path $env:ProgramData 'Restaurante'
           if ($setupExitCode -ne 0) {
