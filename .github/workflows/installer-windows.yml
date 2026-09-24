@@ -72,6 +72,40 @@ jobs:
           } finally {
             Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
           }
+      - name: Instalar paquete completo y comprobar tarea local
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem 'installer/windows/output/Restaurante-Setup-*-x64.exe' | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $setup) { throw 'No se generó Setup.exe.' }
+          $setupLog = Join-Path $env:RUNNER_TEMP 'restaurante-setup.log'
+          & $setup /VERYSILENT /SUPPRESSMSGBOXES /NORESTART "/LOG=$setupLog"
+          $installDir = Join-Path $env:ProgramFiles 'Restaurante'
+          $dataDir = Join-Path $env:ProgramData 'Restaurante'
+          if ($LASTEXITCODE -ne 0) {
+            if (Test-Path $setupLog) { Get-Content $setupLog | Select-Object -Last 100 }
+            Get-ChildItem (Join-Path $dataDir 'logs') -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_.FullName | Select-Object -Last 50 }
+            throw 'La primera instalación completa falló.'
+          }
+          if (-not (Test-Path (Join-Path $installDir 'install-success.marker'))) {
+            throw 'La instalación no registró su finalización.'
+          }
+          if (-not (Test-Path (Join-Path $dataDir 'data/salon.sqlite'))) {
+            throw 'El instalador no creó la base de datos.'
+          }
+          if (Test-Path (Join-Path $dataDir 'backups/updates/active-backup.txt')) {
+            throw 'Una instalación inicial intentó respaldar una instalación anterior.'
+          }
+          if (-not (Get-ScheduledTask -TaskName 'Restaurante POS' -ErrorAction SilentlyContinue)) {
+            throw 'El instalador no registró la tarea de inicio.'
+          }
+          $health = Invoke-RestMethod -Uri 'http://127.0.0.1:8080/api/salud' -TimeoutSec 5
+          if ($health.ok -ne $true -or $health.runtime -ne 'go') {
+            throw 'El servidor instalado no está disponible.'
+          }
+          $page = Invoke-WebRequest -Uri 'http://127.0.0.1:8080/' -UseBasicParsing -TimeoutSec 5
+          if ($page.StatusCode -ne 200 -or $page.Content -notmatch '<html') {
+            throw 'La interfaz instalada no está disponible.'
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: Restaurante-Setup-${{ github.event_name == 'pull_request' && format('0.1.0-pr{0}', github.event.pull_request.number) || github.ref_name }}-x64
