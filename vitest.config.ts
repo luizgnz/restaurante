@@ -11,5 +11,6 @@ export default defineConfig({
   test: {
     include: ["test/**/*.test.{ts,tsx}"],
     environment: "node",
+    maxWorkers: process.platform === "win32" ? 2 : undefined,
   },
 });
