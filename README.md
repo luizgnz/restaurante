@@ -27,27 +27,78 @@ En macOS también puedes abrir `Iniciar Restaurante.command` con doble clic. El 
 
 ## Instalación para desarrollo
 
+La aplicación web funciona desde un navegador en Windows y macOS. El servidor Go, SQLite, las rutas de datos, los permisos, el inicio automático, el firewall y las impresoras usan recursos propios de cada sistema operativo.
+
 ### Requisitos
 
-- [Node.js 22 o superior](https://nodejs.org/)
+- Windows 10/11 de 64 bits o una versión de macOS compatible con Node.js y Go.
+- [Node.js 22 o superior](https://nodejs.org/en/download/) con npm.
 - [Go 1.25 o superior](https://go.dev/)
-- npm
-- Git
+- [Git](https://git-scm.com/install/)
+- PowerShell en Windows o Terminal en macOS.
 
-### Pasos
+Confirma las herramientas en una terminal nueva:
 
-En macOS, guarda el proyecto en una carpeta local como `~/Developer/Restaurante`, fuera de iCloud Drive, Escritorio/Documentos sincronizados y otros sincronizadores. La carpeta completa de trabajo —incluidos `.git`, `node_modules` y las compilaciones— debe permanecer local.
+```text
+git --version
+node --version
+npm --version
+go version
+```
+
+### Windows
+
+Instala Git, Node.js LTS y Go con sus instaladores oficiales y vuelve a abrir PowerShell para actualizar `PATH`. Descarga el proyecto en una carpeta local:
+
+```powershell
+New-Item -ItemType Directory -Force "$HOME\Developer" | Out-Null
+Set-Location "$HOME\Developer"
+git clone https://github.com/luizgnz/restaurante.git
+Set-Location .\restaurante
+```
+
+Configura datos de desarrollo separados y limita el servidor a este equipo:
+
+```powershell
+$env:RESTAURANTE_DATA_DIR = "$env:LOCALAPPDATA\RestauranteDev"
+New-Item -ItemType Directory -Force $env:RESTAURANTE_DATA_DIR | Out-Null
+'{"servidor_red_habilitado":false}' | Set-Content -Encoding ascii (Join-Path $env:RESTAURANTE_DATA_DIR 'config.json')
+npm ci
+npm start
+```
+
+`npm start` compila la interfaz y el servidor Go. Abre `http://127.0.0.1:8080` y detén el proceso con `Ctrl+C`. Los scripts de compilación y arranque también funcionan desde PowerShell y usan el nombre `.exe` en Windows.
+
+Si `npm ci` intenta compilar `better-sqlite3` y falla por falta de Python o herramientas C++, el servidor Go de producción no necesita ese módulo nativo. Para trabajar exclusivamente con ese runtime puedes reconstruir dependencias con `npm ci --ignore-scripts`; esto omite los scripts de instalación de todas las dependencias y puede afectar el backend Node histórico.
+
+### macOS
+
+Instala Xcode Command Line Tools cuando macOS los solicite. Puedes instalar Git, Node y Go desde sus paquetes oficiales o con Homebrew ya instalado:
+
+```bash
+brew install git node go
+```
+
+Guarda el proyecto en una carpeta local como `~/Developer/Restaurante`, fuera de iCloud Drive, Escritorio/Documentos sincronizados y otros sincronizadores. La carpeta completa de trabajo —incluidos `.git`, `node_modules` y las compilaciones— debe permanecer local.
 
 ```bash
 mkdir -p "$HOME/Developer"
 cd "$HOME/Developer"
 git clone https://github.com/luizgnz/restaurante.git
 cd restaurante
-npm ci
-npm start
 ```
 
 Estos pasos son para una instalación nueva. Si ya existe trabajo sin confirmar, copia y verifica el proyecto completo antes de cambiar de ubicación; clonar el remoto no recupera esos cambios. Conserva el original hasta comprobar la copia y no trabajes simultáneamente en ambas carpetas.
+
+Para una base aislada de desarrollo y acceso local solamente:
+
+```bash
+export RESTAURANTE_DATA_DIR="$HOME/Library/Application Support/RestauranteDev"
+mkdir -p "$RESTAURANTE_DATA_DIR"
+printf '{"servidor_red_habilitado":false}\n' > "$RESTAURANTE_DATA_DIR/config.json"
+npm ci
+npm start
+```
 
 Al iniciar, la terminal mostrará la dirección local del sistema. Ábrela en el navegador; normalmente será `http://127.0.0.1:8080` o el puerto configurado para la instalación.
 
@@ -85,7 +136,12 @@ npm test
 npm run test:go
 npm run build
 npm run build:go
+npm run licenses
 ```
+
+`npm test` limita Vitest a dos workers en Windows para evitar saturar el equipo. `npm run build` verifica TypeScript y compila la interfaz; `npm run build:go` compila el servidor en `dist/`.
+
+Para compartir la aplicación con tablets, habilita el acceso de red deliberadamente y revisa el firewall del equipo anfitrión.
 
 Un archivo marcado `dataless` por `ls -lO` todavía necesita recuperar su contenido; esto puede detener Git, TypeScript, Vite y las pruebas mientras esperan una lectura. **Mantener descargado** y **Descargar ahora** en Finder ayudan a recuperar archivos, pero no sustituyen trabajar fuera del directorio sincronizado. Antes de copiar un proyecto desde iCloud, comprueba que sus archivos se pueden leer y verifica el contenido de origen y destino.
 
@@ -95,9 +151,21 @@ El build comprueba los tipos del código y de las pruebas `.ts` y `.tsx`. Las pr
 
 ### Datos y respaldos
 
-En macOS, la base operativa está por defecto en `~/Library/Application Support/Restaurante/data/salon.sqlite`, fuera del proyecto. La variable `RESTAURANTE_DATA_DIR`, si está definida, cambia esa ubicación; tampoco debe apuntar a una carpeta sincronizada. Trasladar el código no traslada ni duplica la base. No inicies las dos copias de la aplicación para verificar una mudanza: prueba con datos temporales aislados.
+En macOS, la base operativa está por defecto en `~/Library/Application Support/Restaurante/data/salon.sqlite`; en Windows, en `%ProgramData%\Restaurante\data\salon.sqlite`. La variable `RESTAURANTE_DATA_DIR`, si está definida, cambia esa ubicación. No apuntes la base activa a iCloud, OneDrive u otro directorio sincronizado ni copies una base abierta junto a sus archivos WAL/SHM. Trasladar el código no traslada ni duplica la base; prueba las mudanzas con datos temporales aislados.
 
 Utiliza Git para el historial confirmado y un respaldo independiente, por ejemplo Time Machine, para proteger también el trabajo sin confirmar. Para SQLite, genera copias consistentes con las herramientas de respaldo de la aplicación; no sincronices la base activa ni sus archivos WAL/SHM. iCloud puede conservar documentos y copias de respaldo terminadas, pero no es la carpeta de ejecución del sistema. Estas recomendaciones no activan ni configuran respaldos automáticamente.
+
+### Catálogo real y restauración de prueba
+
+La migración `026_menu_real_restaurante` carga el menú normalizado del restaurante, sus recetas estimadas, existencias de demostración y fotos locales. Si encuentra una base operativa anterior, crea primero una copia `antes-menu-real-*.sqlite` dentro de la carpeta `data/backups`.
+
+Con la aplicación ejecutándose, el día de demostración puede restaurarse con:
+
+```bash
+npm run demo:restaurar
+```
+
+El comando respalda el estado actual, recrea las órdenes de ejemplo y devuelve el inventario a sus existencias iniciales de prueba. Para una operación real, esas cantidades deben reemplazarse por un conteo físico antes de abrir el restaurante. La fuente normalizada que genera la migración está en `scripts/generar-menu-real.mjs`; puede reconstruirse con `npm run menu:generar` después de modificarla de forma controlada.
 
 ## Capturas de la interfaz
 

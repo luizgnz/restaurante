@@ -39,6 +39,7 @@ export type AppConfig = {
   entrega_automatica_si_no_confirma: boolean;
   entrega_automatica_minutos: number;
   prioridad_para_llevar: "igual" | "prioritaria";
+  sugerir_empaque_para_llevar: boolean;
   pin_al_emitir_precuenta: boolean;
   pin_al_enviar_caja: boolean;
   tablet_cocina: boolean;
@@ -46,6 +47,9 @@ export type AppConfig = {
   precuenta_obligatoria_antes_de_caja: boolean;
   liberar_mesa_cuando: "al_enviar_a_caja" | "manual";
   bloqueo_inactividad_seg: number;
+  intentos_pin_maximos: number;
+  bloqueo_pin_segundos: number;
+  duracion_sesion_horas: number;
   nombre_local: string;
   logo_data: string | null;
   tipografia: TipografiaPos;
@@ -75,6 +79,7 @@ export function defaultConfig(): AppConfig {
     entrega_automatica_si_no_confirma: true,
     entrega_automatica_minutos: 30,
     prioridad_para_llevar: "igual",
+    sugerir_empaque_para_llevar: true,
     pin_al_emitir_precuenta: true,
     pin_al_enviar_caja: true,
     tablet_cocina: false,
@@ -82,6 +87,9 @@ export function defaultConfig(): AppConfig {
     precuenta_obligatoria_antes_de_caja: true,
     liberar_mesa_cuando: "al_enviar_a_caja",
     bloqueo_inactividad_seg: 60,
+    intentos_pin_maximos: 5,
+    bloqueo_pin_segundos: 60,
+    duracion_sesion_horas: 16,
     nombre_local: "Restaurante",
     logo_data: null,
     tipografia: "sans",

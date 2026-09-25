@@ -21,12 +21,13 @@ function insertProducto(
   categoriaId: number | null,
   tipo: string,
   enPos: number,
+  unidadBase: "unidad" | "g" | "ml" = "unidad",
 ): number {
   const info = db
     .prepare(
-      "INSERT INTO productos (nombre, precio_centavos, categoria_id, tipo_consumo, disponible_en_pos, activo) VALUES (?, ?, ?, ?, ?, 1)",
+      "INSERT INTO productos (nombre, precio_centavos, categoria_id, tipo_consumo, disponible_en_pos, activo, unidad_base, unidad_inventario) VALUES (?, ?, ?, ?, ?, 1, ?, ?)",
     )
-    .run(nombre, precio, categoriaId, tipo, enPos);
+    .run(nombre, precio, categoriaId, tipo, enPos, unidadBase, unidadBase);
   return Number(info.lastInsertRowid);
 }
 
@@ -43,9 +44,9 @@ export function seedCartaDemo(db: Database.Database): SeedIds {
   );
 
   const pan = insertProducto(db, "Pan", 0, null, "almacenable_unitario", 0);
-  const carne = insertProducto(db, "Carne g", 0, null, "almacenable_unitario", 0);
+  const carne = insertProducto(db, "Carne", 0, null, "almacenable_unitario", 0, "g");
   const queso = insertProducto(db, "Queso", 0, null, "almacenable_unitario", 0);
-  const lechuga = insertProducto(db, "Lechuga g", 0, null, "almacenable_unitario", 0);
+  const lechuga = insertProducto(db, "Lechuga", 0, null, "almacenable_unitario", 0, "g");
   const hamburguesa = insertProducto(db, "Hamburguesa", 8900, comida, "receta_kit", 1);
   const jugo = insertProducto(db, "Jugo", 2500, bebidas, "almacenable_unitario", 1);
   const agua = insertProducto(db, "Agua con gas", 1500, bebidas, "almacenable_unitario", 1);

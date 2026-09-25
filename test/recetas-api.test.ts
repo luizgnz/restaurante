@@ -34,7 +34,7 @@ describe("editor de recetas", () => {
     expect(actualizada.status).toBe(200);
     expect(((await actualizada.json()) as { receta: unknown[] }).receta).toEqual([
       expect.objectContaining({ ingredienteId: ids.pan, cantidad: 3, nombre: "Pan" }),
-      expect.objectContaining({ ingredienteId: ids.carne, cantidad: 120, nombre: "Carne g" }),
+      expect.objectContaining({ ingredienteId: ids.carne, cantidad: 120, nombre: "Carne" }),
     ]);
     db.close();
   });

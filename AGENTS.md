@@ -39,13 +39,15 @@ En macOS la app también se abre con doble clic en `Iniciar Restaurante.command`
 
 - Español para documentación, commits y comunicación.
 - Commits en minúsculas, sin punto final, con prefijo de tipo: `docs:`, `feat:`, `fix:`, `chore:` (mirar `git log` como referencia).
-- Rama por defecto y destino único de PRs: `main`. Está protegida: todo merge exige al menos una aprobación de otra cuenta y no se puede pushear directo.
+- Rama por defecto y destino único de PRs: `main`. Integrar únicamente mediante PR; no pushear directo. Luis puede autorizar el merge después de revisar el diff y las verificaciones. Respetar cualquier requisito adicional que GitHub aplique a la rama, incluida una aprobación de otra cuenta si está configurada allí.
 - Ramas de trabajo: crear una por tarea desde `main` y abrir el PR contra `main`. `feat/nucleo-pos-v1` queda solo como referencia histórica de la cadena #6–#12 ya integrada.
 - No commitear: `node_modules/`, builds (`ui/dist*`), bases de datos, `capturas/*.zip`, ni carpetas de trabajo local (`tmp/`, `output/`, `backups/`).
 
 ## Antes de dar un trabajo por terminado
 
 - `npm test`, `npm run test:go` y `npm run build` en verde.
+- Antes del merge, comprobar que el CI del commit final esté en verde, que el diff no incluya datos operativos, secretos ni artefactos generados, y que los riesgos o pruebas pendientes estén registrados en el PR y en `TAREAS_V2.md`. Un fallo conocido que pueda causar pérdida de datos o interrumpir la operación bloquea el merge.
+- Integrar código y publicar un instalador son decisiones distintas. No entregar el instalador Windows para uso operativo hasta probar instalación nueva, actualización con datos, recuperación ante fallo y arranque tras reiniciar Windows en el equipo objetivo.
 - Actualizar `TAREAS_V2.md` (lista viva) si el trabajo cierra pendientes o genera nuevos; `TAREAS.md` es historial cerrado.
 
 ## Equipo de producto y tecnología

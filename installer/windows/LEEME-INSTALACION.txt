@@ -1,0 +1,14 @@
+RESTAURANTE — INSTALACIÓN EN WINDOWS
+
+1. Extraiga todo el contenido de este ZIP en una carpeta local.
+2. No mueva ni ejecute únicamente el archivo .exe: los archivos .bin deben
+   permanecer en la misma carpeta y conservar sus nombres.
+3. Abra Restaurante-Setup-<versión>-x64.exe y acepte la solicitud de
+   administrador de Windows.
+
+Este paquete usa varios archivos para que el instalador no tenga que ejecutar
+su motor desde la carpeta temporal de Windows, que puede estar bloqueada por
+las políticas de Seguridad de Windows.
+
+Si Windows vuelve a mostrar “Acción bloqueada”, no desactive la protección:
+envíe la captura y la hora del aviso al soporte técnico.

@@ -67,6 +67,107 @@ type CancelResult struct {
 	TotalCents    int64   `json:"totalCentavos"`
 }
 
+type BulkCloseResult struct {
+	ClosedAccountIDs    []int64 `json:"cuentasCerradasIds"`
+	CancelledAccountIDs []int64 `json:"cuentasVaciasAnuladasIds"`
+	TotalCents          int64   `json:"totalCentavos"`
+}
+
+type BulkClosePlan struct {
+	detail   accounts.Detail
+	snapshot Snapshot
+}
+
+// PrepareBulkClose obtiene una instantánea consistente de las cuentas antes de
+// abrir la transacción de escritura. Esto evita pedir una segunda conexión a
+// SQLite mientras la primera está ocupada por la transacción.
+func PrepareBulkClose(ctx context.Context, db *sql.DB, journeyID int64) ([]BulkClosePlan, error) {
+	rows, err := db.QueryContext(ctx, `SELECT id FROM cuentas WHERE jornada_id = ? AND estado IN ('abierta','precuenta_emitida') ORDER BY id`, journeyID)
+	if err != nil {
+		return nil, err
+	}
+	ids := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	plans := make([]BulkClosePlan, 0, len(ids))
+	for _, id := range ids {
+		detail, err := accounts.Get(ctx, db, id)
+		if err != nil {
+			return nil, err
+		}
+		snapshot, err := snapshotFromDetail(ctx, db, detail)
+		if err != nil {
+			return nil, err
+		}
+		plans = append(plans, BulkClosePlan{detail: detail, snapshot: snapshot})
+	}
+	return plans, nil
+}
+
+// BulkCloseTx cierra en una sola transacción las cuentas administrativas que
+// quedaron abiertas al terminar el turno. No emite precuentas ni trabajos de
+// impresión. Las cuentas realmente vacías se anulan y quedan auditadas.
+func BulkCloseTx(ctx context.Context, tx *sql.Tx, plans []BulkClosePlan, employeeID int64, closedAt string) (BulkCloseResult, error) {
+	result := BulkCloseResult{ClosedAccountIDs: []int64{}, CancelledAccountIDs: []int64{}}
+	for _, plan := range plans {
+		if err := validateAccountState(ctx, tx, plan.detail.ID); err != nil {
+			return BulkCloseResult{}, err
+		}
+		seal, err := accountSeal(ctx, tx, plan.detail.ID)
+		if err != nil {
+			return BulkCloseResult{}, err
+		}
+		if seal != plan.snapshot.Seal {
+			return BulkCloseResult{}, &Error{"cuenta_desactualizada", "Una cuenta cambió durante el cierre; revisa el resumen y vuelve a intentar"}
+		}
+		if len(plan.snapshot.Orders) == 0 {
+			if err := releaseAllInventory(ctx, tx, plan.detail.ID); err != nil {
+				return BulkCloseResult{}, err
+			}
+			if _, err := tx.ExecContext(ctx, "UPDATE precuentas SET vigente = 0 WHERE cuenta_id = ?", plan.detail.ID); err != nil {
+				return BulkCloseResult{}, err
+			}
+			if _, err := tx.ExecContext(ctx, "UPDATE cuentas SET estado = 'cancelada', cerrada_en = ? WHERE id = ?", closedAt, plan.detail.ID); err != nil {
+				return BulkCloseResult{}, err
+			}
+			if _, err := tx.ExecContext(ctx, `INSERT INTO cancelaciones_cuentas
+				(cuenta_id, mesa_id, mesa_numero, empleado_id, motivo, total_centavos, ordenes, lineas_preparadas, lineas_liberadas, creada_en)
+				VALUES (?, ?, ?, ?, 'Cuenta vacía al cerrar turno', 0, 0, 0, 0, ?)`, plan.detail.ID, plan.detail.Table.ID, plan.detail.Table.Number, employeeID, closedAt); err != nil {
+				return BulkCloseResult{}, err
+			}
+			result.CancelledAccountIDs = append(result.CancelledAccountIDs, plan.detail.ID)
+			continue
+		}
+		if err := firmReserved(ctx, tx, plan.detail.ID); err != nil {
+			return BulkCloseResult{}, err
+		}
+		if _, err := tx.ExecContext(ctx, "UPDATE cuentas SET estado = 'en_caja', cerrada_en = ? WHERE id = ?", closedAt, plan.detail.ID); err != nil {
+			return BulkCloseResult{}, err
+		}
+		payload, err := json.Marshal(plan.snapshot)
+		if err != nil {
+			return BulkCloseResult{}, err
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT INTO caja_handoffs
+			(pedido_id, cuenta_id, precuenta_id, mesero_id, snapshot_json, creado_en)
+			VALUES (NULL, ?, NULL, ?, ?, ?)`, plan.detail.ID, employeeID, string(payload), closedAt); err != nil {
+			return BulkCloseResult{}, err
+		}
+		result.ClosedAccountIDs = append(result.ClosedAccountIDs, plan.detail.ID)
+		result.TotalCents += plan.snapshot.TotalCents
+	}
+	return result, nil
+}
+
 func EmitPrecount(ctx context.Context, db *sql.DB, accountID, employeeID int64, options Options) (PrecountResult, error) {
 	detail, err := accounts.Get(ctx, db, accountID)
 	if err != nil {

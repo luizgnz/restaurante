@@ -65,6 +65,7 @@ export function crearProducto(
     color?: string | null;
     foto_data?: string | null;
     receta?: LineaRecetaInput[];
+    unidad_base?: "unidad" | "g" | "ml";
   },
 ): { id: number } {
   const nombre = input.nombre.trim();
@@ -87,11 +88,15 @@ export function crearProducto(
   const rastrear = input.tipo_consumo === "receta_kit" ? Boolean(input.rastrear_inventario) : input.rastrear_inventario !== false;
   const tipo =
     input.tipo_consumo === "receta_kit" ? "receta_kit" : rastrear ? "almacenable_unitario" : "no_almacenable";
+  const unidadBase = rastrear ? input.unidad_base ?? "unidad" : "unidad";
+  if (!["unidad", "g", "ml"].includes(unidadBase)) {
+    throw new ProductoError("unidad_invalida", "La unidad base debe ser unidad, g o ml");
+  }
   return db.transaction(() => {
     const id = Number(
       db
         .prepare(
-          "INSERT INTO productos (nombre, precio_centavos, categoria_id, tipo_consumo, disponible_en_pos, activo, codigo, color, foto_data, rastrear_inventario) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?)",
+          "INSERT INTO productos (nombre, precio_centavos, categoria_id, tipo_consumo, disponible_en_pos, activo, codigo, color, foto_data, rastrear_inventario, unidad_base, unidad_inventario) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)",
         )
         .run(
           nombre,
@@ -103,6 +108,8 @@ export function crearProducto(
           color,
           foto,
           rastrear ? 1 : 0,
+          unidadBase,
+          unidadBase,
         ).lastInsertRowid,
     );
     if (rastrear || tipo === "almacenable_unitario") {
@@ -141,12 +148,14 @@ export function listarProductos(db: Database.Database): {
   rastrear_inventario: number;
   disponible_en_pos: number;
   activo: number;
+  unidad_base: "unidad" | "g" | "ml";
+  unidad_inventario: "unidad" | "g" | "kg" | "ml" | "l";
 }[] {
   return db
     .prepare(
-      "SELECT p.id, p.nombre, p.precio_centavos, p.tipo_consumo, EXISTS(SELECT 1 FROM stock s WHERE s.producto_id = p.id) AS rastrear_inventario, p.disponible_en_pos, p.activo FROM productos p WHERE p.activo = 1 ORDER BY p.nombre",
+      "SELECT p.id, p.nombre, p.precio_centavos, p.tipo_consumo, EXISTS(SELECT 1 FROM stock s WHERE s.producto_id = p.id) AS rastrear_inventario, p.disponible_en_pos, p.activo, p.unidad_base, p.unidad_inventario FROM productos p WHERE p.activo = 1 ORDER BY p.nombre",
     )
-    .all() as { id: number; nombre: string; precio_centavos: number; tipo_consumo: string; rastrear_inventario: number; disponible_en_pos: number; activo: number }[];
+    .all() as { id: number; nombre: string; precio_centavos: number; tipo_consumo: string; rastrear_inventario: number; disponible_en_pos: number; activo: number; unidad_base: "unidad" | "g" | "ml"; unidad_inventario: "unidad" | "g" | "kg" | "ml" | "l" }[];
 }
 
 export function armableDeProducto(db: Database.Database, productoId: number): number {

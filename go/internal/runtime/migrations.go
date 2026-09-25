@@ -7,8 +7,10 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -18,7 +20,7 @@ func OpenAndMigrate(ctx context.Context, databasePath, migrationsDir string) (*s
 		return nil, fmt.Errorf("crear directorio de datos: %w", err)
 	}
 
-	dsn := (&url.URL{Scheme: "file", Path: databasePath}).String() + "?_foreign_keys=on&_busy_timeout=5000&_pragma=journal_mode(WAL)"
+	dsn := sqliteFileDSN(databasePath, runtime.GOOS == "windows")
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("abrir SQLite: %w", err)
@@ -27,11 +29,76 @@ func OpenAndMigrate(ctx context.Context, databasePath, migrationsDir string) (*s
 		db.Close()
 		return nil, fmt.Errorf("configurar SQLite: %w", err)
 	}
+	if err := backupBeforeCatalogMigration(ctx, db, databasePath, migrationsDir); err != nil {
+		db.Close()
+		return nil, err
+	}
 	if err := Migrate(ctx, db, migrationsDir); err != nil {
 		db.Close()
 		return nil, err
 	}
 	return db, nil
+}
+
+func sqliteFileDSN(databasePath string, windows bool) string {
+	path := databasePath
+	if windows {
+		// SQLite espera file:///C:/...; las barras invertidas de Windows no
+		// forman una URI de archivo válida y terminan escapadas como %5C.
+		path = strings.ReplaceAll(path, `\`, "/")
+		if len(path) >= 2 && path[1] == ':' {
+			path = "/" + path
+		}
+	}
+	return (&url.URL{Scheme: "file", Path: path}).String() + "?_foreign_keys=on&_busy_timeout=5000&_pragma=journal_mode(WAL)"
+}
+
+// backupBeforeCatalogMigration protege una base operativa antes de sustituir
+// el catálogo. Una instalación nueva no genera una copia vacía y la marca de
+// schema_migrations impide repetir respaldos en cada arranque.
+func backupBeforeCatalogMigration(ctx context.Context, db *sql.DB, databasePath, migrationsDir string) error {
+	const migrationID = "026_menu_real_restaurante"
+	if _, err := os.Stat(filepath.Join(migrationsDir, migrationID+".sql")); err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("revisar migración de catálogo: %w", err)
+	}
+	var migrationTable int
+	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='schema_migrations'").Scan(&migrationTable); err != nil {
+		return fmt.Errorf("revisar historial de migraciones: %w", err)
+	}
+	if migrationTable == 0 {
+		return nil
+	}
+	var applied int
+	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM schema_migrations WHERE id=?", migrationID).Scan(&applied); err != nil {
+		return fmt.Errorf("revisar migración de catálogo: %w", err)
+	}
+	if applied > 0 {
+		return nil
+	}
+	var operationalTables int
+	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN ('productos','ordenes','cuentas')").Scan(&operationalTables); err != nil {
+		return fmt.Errorf("revisar base operativa: %w", err)
+	}
+	if operationalTables == 0 {
+		return nil
+	}
+	backupDir := filepath.Join(filepath.Dir(databasePath), "backups")
+	if err := os.MkdirAll(backupDir, 0o750); err != nil {
+		return fmt.Errorf("crear carpeta de respaldo de catálogo: %w", err)
+	}
+	stamp := time.Now().UTC().Format("20060102T150405.000000000Z")
+	destination := filepath.Join(backupDir, "antes-menu-real-"+stamp+".sqlite")
+	if _, err := db.ExecContext(ctx, "PRAGMA wal_checkpoint(FULL)"); err != nil {
+		return fmt.Errorf("preparar respaldo de catálogo: %w", err)
+	}
+	escaped := strings.ReplaceAll(destination, "'", "''")
+	if _, err := db.ExecContext(ctx, "VACUUM INTO '"+escaped+"'"); err != nil {
+		return fmt.Errorf("respaldar base antes del catálogo real: %w", err)
+	}
+	return nil
 }
 
 // Migrate aplica los mismos archivos SQL versionados que usa el backend

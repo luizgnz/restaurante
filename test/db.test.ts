@@ -323,7 +323,7 @@ describe("db", () => {
     expect(nombres).toContain("Comida");
     expect(nombres).toContain("Bebida");
     expect(nombres).not.toContain("Principales");
-    expect(nombres).not.toContain("Bebidas");
+    expect(nombres).toContain("Bebidas"); // 026 incorpora la categoría plural del menú real.
     expect((db.prepare("SELECT nombre FROM categorias_pos WHERE id = ?").get(principalId) as { nombre: string }).nombre).toBe(
       "Comida",
     );
@@ -336,7 +336,7 @@ describe("db", () => {
     // Idempotencia: correrla de nuevo no duplica categorías.
     db.prepare("DELETE FROM schema_migrations WHERE id = '013_categorias_comida_bebida'").run();
     migrate(db);
-    expect((db.prepare("SELECT count(*) AS c FROM categorias_pos").get() as { c: number }).c).toBe(2);
+    expect((db.prepare("SELECT count(*) AS c FROM categorias_pos WHERE nombre IN ('Comida', 'Bebida')").get() as { c: number }).c).toBe(2);
     db.close();
   });
 });

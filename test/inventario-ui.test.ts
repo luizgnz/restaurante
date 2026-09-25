@@ -17,12 +17,17 @@ const material: MaterialInventarioUi = {
   reservado: 3,
   disponible: 17,
   ultimaEntradaEn: null,
+  umbralPocoStock: null,
+  unidadBase: "unidad",
+  unidadInventario: "unidad",
 };
 
 const acciones = {
   onRecargar: async () => undefined,
   onRegistrarEntrada: async () => undefined,
   onRegistrarPerdida: async () => undefined,
+  onConfigurarUmbral: async () => undefined,
+  onConfigurarUnidad: async () => undefined,
 };
 
 describe("pantalla de inventario", () => {
@@ -50,15 +55,15 @@ describe("pantalla de inventario", () => {
   });
 
   it("presenta la unidad entre paréntesis sin conservarla como parte del nombre", () => {
-    expect(presentarUnidadMaterial("Carne g")).toEqual({ nombre: "Carne", unidad: "Grs." });
-    expect(presentarUnidadMaterial("Arroz kg")).toEqual({ nombre: "Arroz", unidad: "kg" });
-    expect(presentarUnidadMaterial("Pan")).toEqual({ nombre: "Pan", unidad: "Uds." });
+    expect(presentarUnidadMaterial("Carne", "g")).toEqual({ nombre: "Carne", unidad: "gr" });
+    expect(presentarUnidadMaterial("Arroz", "kg")).toEqual({ nombre: "Arroz", unidad: "kg" });
+    expect(presentarUnidadMaterial("Pan", "unidad")).toEqual({ nombre: "Pan", unidad: "Uds." });
 
     const html = renderToStaticMarkup(
-      createElement(Inventario, { materiales: [{ ...material, nombre: "Carne g" }], puedeIngresar: true, ...acciones }),
+      createElement(Inventario, { materiales: [{ ...material, nombre: "Carne", unidadBase: "g", unidadInventario: "g" }], puedeIngresar: true, ...acciones }),
     );
     expect(html).toContain("Carne</strong><span");
-    expect(html).toContain("(Grs.)");
+    expect(html).toContain("(gr)");
     expect(html).not.toContain(">Carne g<");
   });
 
@@ -95,6 +100,7 @@ describe("pantalla de inventario", () => {
     expect(estadoInventario(sinStock).texto).toBe("Sin stock");
     expect(estadoInventario(pocoStock).texto).toBe("Poco stock");
     expect(estadoInventario(disponible).texto).toBe("Disponible");
+    expect(estadoInventario({ ...disponible, umbralPocoStock: 8 }).texto).toBe("Poco stock");
     expect(ordenarMateriales([disponible, pocoStock, sinStock], { columna: "estado", direccion: "asc" }).map((item) => item.nombre)).toEqual([
       "Agotado",
       "Escaso",

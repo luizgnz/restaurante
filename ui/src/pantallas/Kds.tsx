@@ -96,6 +96,13 @@ type ModalIncidencia = {
   tipo: "rechazo" | "sugerencia";
 };
 
+export const MOTIVOS_COCINA = [
+  "Falta ingrediente",
+  "No se puede terminar",
+  "Preparación incorrecta",
+  "Otro",
+] as const;
+
 function cantidad(linea: LineaKdsUi): string {
   if (linea.delta == null) return `${linea.cantidad}`;
   return `${linea.delta > 0 ? "+" : ""}${linea.delta}`;
@@ -179,13 +186,14 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onC
       });
     }, 6000);
   }, [tarjetas]);
-  const [motivo, setMotivo] = useState("");
+  const [motivo, setMotivo] = useState<(typeof MOTIVOS_COCINA)[number]>(MOTIVOS_COCINA[0]);
+  const [detalleMotivo, setDetalleMotivo] = useState("");
   const [propuesta, setPropuesta] = useState("");
   const [productoReemplazoId, setProductoReemplazoId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [cancelando, setCancelando] = useState<LineaKdsUi | null>(null);
-  const [motivoCancelacion, setMotivoCancelacion] = useState("Ingrediente no disponible");
+  const [motivoCancelacion, setMotivoCancelacion] = useState<(typeof MOTIVOS_COCINA)[number]>(MOTIVOS_COCINA[0]);
   const [detalleCancelacion, setDetalleCancelacion] = useState("");
   const [mostrarListas, setMostrarListas] = useState(false);
   // Tablero operativo: las listas salen del flujo principal y se consultan
@@ -211,7 +219,8 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onC
       objetivo: linea ? linea.nombre : tarjeta.referencia,
       tipo,
     });
-    setMotivo("");
+    setMotivo(MOTIVOS_COCINA[0]);
+    setDetalleMotivo("");
     setPropuesta("");
     setProductoReemplazoId(null);
     setError("");
@@ -239,7 +248,7 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onC
         comandaLineaId: modal.comandaLineaId,
         tipo: modal.tipo,
         alcance: modal.alcance,
-        motivo: motivo.trim(),
+        motivo: [motivo, detalleMotivo.trim()].filter(Boolean).join(": "),
         propuesta: modal.tipo === "sugerencia"
           ? modal.alcance === "linea"
             ? `Reemplazar por ${productos.find((producto) => producto.id === productoReemplazoId)?.nombre ?? "otro producto"}${propuesta.trim() ? `. ${propuesta.trim()}` : ""}`
@@ -307,7 +316,10 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onC
             <span className="page-eyebrow">{modal.alcance === "orden" ? "Orden completa" : "Producto"}</span>
             <h2>{modal.tipo === "sugerencia" ? "Sugerir un cambio" : "Marcar como no disponible"}</h2>
             <p><strong>{modal.objetivo}</strong></p>
-            <label>Motivo<Textarea autoFocus rows={3} value={motivo} onChange={(event) => setMotivo(event.target.value)} placeholder="Ej.: no queda aguacate" /></label>
+            <label>Motivo<Select autoFocus value={motivo} onChange={(event) => setMotivo(event.target.value as (typeof MOTIVOS_COCINA)[number])}>
+              {MOTIVOS_COCINA.map((opcion) => <option key={opcion}>{opcion}</option>)}
+            </Select></label>
+            <label><span>Detalle <small>(opcional)</small></span><Textarea rows={2} value={detalleMotivo} onChange={(event) => setDetalleMotivo(event.target.value)} /></label>
             {modal.tipo === "sugerencia" && modal.alcance === "linea" ? <>
               <label>Producto de reemplazo<Select value={productoReemplazoId ?? ""} onChange={(event) => setProductoReemplazoId(Number(event.target.value) || null)}>
                 <option value="">Selecciona un producto</option>
@@ -359,7 +371,7 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onC
                         <ArrowRightLeft size={16} aria-hidden="true" /> Proponer reemplazo
                       </Button>
                       {linea.etapa !== "por_preparar" ? (
-                        <Button type="button" size="sm" variant="outline" onClick={() => { setCancelando(linea); setSeleccionadaId(null); setMotivoCancelacion("Ingrediente no disponible"); setDetalleCancelacion(""); setError(""); }}>
+                        <Button type="button" size="sm" variant="outline" onClick={() => { setCancelando(linea); setSeleccionadaId(null); setMotivoCancelacion(MOTIVOS_COCINA[0]); setDetalleCancelacion(""); setError(""); }}>
                           <Trash2 size={16} aria-hidden="true" /> Cancelar y devolver stock
                         </Button>
                       ) : (
@@ -414,12 +426,8 @@ export function Kds({ tarjetas, cargando, onCambiarEtapa, onCrearIncidencia, onC
             <span className="page-eyebrow">Acción de Cocina</span>
             <h2>Cancelar {cancelando.nombre}</h2>
             <p>La receta completa volverá al inventario y la acción quedará registrada.</p>
-            <label>Motivo<Select value={motivoCancelacion} onChange={(event) => setMotivoCancelacion(event.target.value)}>
-              <option>Ingrediente no disponible</option>
-              <option>No se puede terminar</option>
-              <option>Preparación incorrecta</option>
-              <option>Solicitud del cliente</option>
-              <option>Otro</option>
+            <label>Motivo<Select value={motivoCancelacion} onChange={(event) => setMotivoCancelacion(event.target.value as (typeof MOTIVOS_COCINA)[number])}>
+              {MOTIVOS_COCINA.map((opcion) => <option key={opcion}>{opcion}</option>)}
             </Select></label>
             <label><span>Detalle <small>(opcional)</small></span><Textarea rows={2} value={detalleCancelacion} onChange={(event) => setDetalleCancelacion(event.target.value)} /></label>
             {error ? <Alerta>{error}</Alerta> : null}

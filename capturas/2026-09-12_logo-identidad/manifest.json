@@ -1,0 +1,46 @@
+{
+  "fecha": "2026-09-12",
+  "rama": "codex/seguridad-local",
+  "commit_base": "32b8974",
+  "cambios_sin_commit": true,
+  "servidor": "http://127.0.0.1:8080/",
+  "pantalla": "Opciones · Identidad",
+  "objetivo": "Validar selección, recorte cuadrado, optimización y presencia consistente del nombre del restaurante",
+  "capturas": [
+    {
+      "archivo": "opciones-logo-390.png",
+      "viewport": "390x844",
+      "resultado": "nombre visible en encabezado compacto; selector y ayuda legibles sin alterar la barra inferior"
+    },
+    {
+      "archivo": "editor-logo-390.png",
+      "viewport": "390x844",
+      "resultado": "editor cuadrado con arrastre, zoom y acciones completas dentro del viewport"
+    },
+    {
+      "archivo": "logo-y-nombre-390.png",
+      "viewport": "390x844",
+      "resultado": "logo procesado y nombre conviven en el encabezado; carga y eliminación persisten tras recargar"
+    },
+    {
+      "archivo": "opciones-seguridad-390.png",
+      "viewport": "390x844",
+      "resultado": "navegación interna horizontal y fija lleva a Seguridad sin crear otra pantalla"
+    },
+    {
+      "archivo": "empaque-sugerido-390.png",
+      "viewport": "390x844",
+      "resultado": "dos porciones sugieren dos empaques; una bebida no se cuenta y la cantidad admite ajuste hasta cero"
+    },
+    {
+      "archivo": "opciones-logo-768.png",
+      "viewport": "768x1024",
+      "resultado": "identidad y apariencia distribuidas en dos columnas sin solapes"
+    },
+    {
+      "archivo": "opciones-logo-1280.png",
+      "viewport": "1280x900",
+      "resultado": "encabezado, selector y paneles conservan jerarquía y márgenes de escritorio"
+    }
+  ]
+}

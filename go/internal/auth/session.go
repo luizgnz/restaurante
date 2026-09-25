@@ -131,28 +131,9 @@ func hasRole(user User, role string) bool {
 // Open comprueba las mismas contraseñas Argon2id generadas por Node y crea un
 // token opaco, almacenando solo su hash en SQLite.
 func Open(ctx context.Context, db *sql.DB, username, password string) (string, Session, error) {
-	username = strings.ToLower(strings.TrimSpace(username))
-	if username == "" || password == "" {
-		return "", Session{}, ErrCredentials
-	}
-
-	var user User
-	var passwordHash string
-	err := db.QueryRowContext(ctx, `SELECT id, nombre, derecho, password_hash
-		FROM empleados WHERE activo = 1 AND usuario = ?`, username).Scan(&user.ID, &user.Nombre, &user.Derecho, &passwordHash)
-	if err == sql.ErrNoRows || passwordHash == "" {
-		return "", Session{}, ErrCredentials
-	}
+	user, err := VerifyCredentialsForRoles(ctx, db, username, password)
 	if err != nil {
-		return "", Session{}, fmt.Errorf("buscar usuario: %w", err)
-	}
-	match, err := verifyArgon2ID(password, passwordHash)
-	if err != nil || !match {
-		return "", Session{}, ErrCredentials
-	}
-	user.Roles, err = rolesFor(ctx, db, user.ID)
-	if err != nil {
-		return "", Session{}, fmt.Errorf("leer roles: %w", err)
+		return "", Session{}, err
 	}
 
 	if err := ensurePOSSession(ctx, db, user.ID); err != nil {
@@ -173,6 +154,42 @@ func Open(ctx context.Context, db *sql.DB, username, password string) (string, S
 		return "", Session{}, fmt.Errorf("identificar sesión: %w", err)
 	}
 	return token, Session{ID: id, AbiertaEn: openedAt, Usuario: user}, nil
+}
+
+// VerifyCredentialsForRoles reautentica una operación sensible sin abrir una
+// segunda sesión. Si se indican roles, exige que el usuario tenga al menos uno.
+func VerifyCredentialsForRoles(ctx context.Context, db *sql.DB, username, password string, allowed ...string) (User, error) {
+	username = strings.ToLower(strings.TrimSpace(username))
+	if username == "" || password == "" {
+		return User{}, ErrCredentials
+	}
+	var user User
+	var passwordHash string
+	err := db.QueryRowContext(ctx, `SELECT id, nombre, derecho, password_hash
+		FROM empleados WHERE activo = 1 AND usuario = ?`, username).Scan(&user.ID, &user.Nombre, &user.Derecho, &passwordHash)
+	if err == sql.ErrNoRows || passwordHash == "" {
+		return User{}, ErrCredentials
+	}
+	if err != nil {
+		return User{}, fmt.Errorf("buscar usuario: %w", err)
+	}
+	match, err := verifyArgon2ID(password, passwordHash)
+	if err != nil || !match {
+		return User{}, ErrCredentials
+	}
+	user.Roles, err = rolesFor(ctx, db, user.ID)
+	if err != nil {
+		return User{}, fmt.Errorf("leer roles: %w", err)
+	}
+	if len(allowed) == 0 {
+		return user, nil
+	}
+	for _, role := range allowed {
+		if hasRole(user, role) {
+			return user, nil
+		}
+	}
+	return User{}, ErrForbidden
 }
 
 // verifyArgon2ID entiende el formato PHC que ya emite el paquete `argon2` de
@@ -248,6 +265,36 @@ func ByToken(ctx context.Context, db *sql.DB, token string) (*Session, error) {
 	}
 	session.Usuario.Roles = roles
 	return &session, nil
+}
+
+// Expire cierra en el servidor una sesión que superó la duración configurada.
+// La comparación usa el mismo formato UTC fijo con el que se guarda abierta_en.
+func Expire(ctx context.Context, db *sql.DB, token string, maxAge time.Duration) (bool, error) {
+	if token == "" || maxAge <= 0 {
+		return false, nil
+	}
+	cutoff := time.Now().UTC().Add(-maxAge).Format("2006-01-02T15:04:05.000Z")
+	var openedAt string
+	err := db.QueryRowContext(ctx, `SELECT abierta_en FROM sesiones_usuario
+		WHERE token_hash = ? AND cerrada_en IS NULL`, tokenHash(token)).Scan(&openedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if openedAt > cutoff {
+		return false, nil
+	}
+	result, err := db.ExecContext(ctx, `UPDATE sesiones_usuario
+		SET cerrada_en = ?
+		WHERE token_hash = ? AND cerrada_en IS NULL AND abierta_en <= ?`,
+		timestamp(), tokenHash(token), cutoff)
+	if err != nil {
+		return false, err
+	}
+	rows, err := result.RowsAffected()
+	return rows > 0, err
 }
 
 func Close(ctx context.Context, db *sql.DB, token string) error {

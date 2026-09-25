@@ -316,7 +316,9 @@ export function Pedidos({
           <DialogContent className="inventario-modal mesero-eliminar-modal w-[min(440px,calc(100vw-1.5rem))] p-[1.4rem]">
             <span className="page-eyebrow">Confirmación del mesero</span>
             <h2>{eliminando.tipo === "sugerencia" ? "Rechazar el cambio sugerido" : "Confirmar que viste el aviso"}</h2>
-            <p>Esto responde a Cocina, pero no cancela productos. Si el producto ya empezó, Cocina decide si lo cancela y devuelve el stock.</p>
+            <p>{eliminando.tipo === "sugerencia"
+              ? "Se registrará que el cliente no aceptó el reemplazo y se eliminará el producto original. Si era el único producto, la orden quedará anulada."
+              : "Se confirmará el aviso de Cocina y se eliminará el producto que no puede prepararse."}</p>
             <label>PIN del mesero<Input type="password" inputMode="numeric" autoComplete="off" value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 12))} /></label>
             {error ? <Alerta>{error}</Alerta> : null}
             <div className="inventario-modal__acciones">

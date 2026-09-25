@@ -95,6 +95,58 @@ func TestKitchenCanCancelStartedProductAndWaiterGetsUpdate(t *testing.T) {
 	}
 }
 
+func TestResolvingIncidentRestartsReadyDeliveryClock(t *testing.T) {
+	db := incidentDB(t)
+	seedIncident(t, db)
+	sent, err := orders.Send(context.Background(), db, orders.NewInput{
+		TableID: 907, Key: "incident-clock", Lines: []orders.Line{
+			{ProductID: 920, Quantity: 1},
+			{ProductID: 921, Quantity: 1},
+		},
+	}, 903, orders.SendOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows, err := db.Query("SELECT id FROM comanda_lineas WHERE comanda_id = ? ORDER BY id", sent.CommandID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var lineIDs []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			t.Fatal(err)
+		}
+		lineIDs = append(lineIDs, id)
+	}
+	if err := rows.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if len(lineIDs) != 2 {
+		t.Fatalf("se esperaban dos líneas, llegaron %v", lineIDs)
+	}
+	if _, err := db.Exec("UPDATE comanda_lineas SET etapa = 'listo', etapa_actualizada_en = '2026-01-01T00:00:00.000Z' WHERE comanda_id = ?", sent.CommandID); err != nil {
+		t.Fatal(err)
+	}
+	incident, err := incidents.Create(context.Background(), db, incidents.CreateInput{
+		CommandID: sent.CommandID, CommandLineID: &lineIDs[0], Type: "rechazo", Scope: "linea",
+		Reason: "Falta ingrediente",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := incidents.Reject(context.Background(), db, incident.ID, 903, "reserva_al_enviar_firme_al_enviar_caja"); err != nil {
+		t.Fatal(err)
+	}
+	var stage, updatedAt string
+	if err := db.QueryRow("SELECT etapa, etapa_actualizada_en FROM comanda_lineas WHERE id = ?", lineIDs[1]).Scan(&stage, &updatedAt); err != nil {
+		t.Fatal(err)
+	}
+	if stage != "listo" || updatedAt == "2026-01-01T00:00:00.000Z" {
+		t.Fatalf("el reloj de la línea lista no se reinició: etapa=%s fecha=%s", stage, updatedAt)
+	}
+}
+
 func incidentDB(t *testing.T) *sql.DB {
 	t.Helper()
 	migrations, err := filepath.Abs(filepath.Join("..", "..", "..", "src", "db", "migrations"))

@@ -18,6 +18,220 @@
   font-display: swap;
 }
 
+@layer components {
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .settings-field-label {
+    color: var(--foreground);
+    font-size: 0.88rem;
+    font-weight: 720;
+  }
+
+  .logo-selector {
+    display: grid;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .logo-selector__preview {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.9rem;
+    background: var(--background);
+  }
+
+  .logo-selector__preview > img,
+  .logo-selector__preview > span {
+    display: grid;
+    flex: 0 0 64px;
+    width: 64px;
+    height: 64px;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    background: var(--card);
+    color: var(--muted-foreground);
+    object-fit: contain;
+  }
+
+  .logo-selector__preview > div {
+    display: grid;
+    min-width: 0;
+    gap: 0.2rem;
+  }
+
+  .logo-selector__preview strong,
+  .logo-selector__preview small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .logo-selector__preview small,
+  .logo-selector__help,
+  .logo-editor__archivo {
+    color: var(--muted-foreground);
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .logo-selector__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .logo-selector__help,
+  .logo-editor__archivo {
+    margin: 0;
+  }
+
+  .logo-editor-dialog {
+    width: min(460px, calc(100% - 1.5rem));
+  }
+
+  .logo-editor__marco {
+    position: relative;
+    width: min(320px, 100%);
+    aspect-ratio: 1;
+    margin-inline: auto;
+    overflow: clip;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: var(--muted);
+    box-shadow: inset 0 0 0 1px var(--card);
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .logo-editor__marco:active {
+    cursor: grabbing;
+  }
+
+  .logo-editor__marco > img {
+    position: absolute;
+    max-width: none;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .logo-editor__guia {
+    position: absolute;
+    inset: 0.65rem;
+    border: 1px solid var(--card);
+    border-radius: 0.7rem;
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 35%, transparent);
+    pointer-events: none;
+  }
+
+  .logo-editor__mover {
+    position: absolute;
+    inset-inline-start: 50%;
+    inset-block-end: 0.75rem;
+    display: inline-flex;
+    min-height: 32px;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--card) 92%, transparent);
+    color: var(--foreground);
+    font-size: 0.72rem;
+    font-weight: 700;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .logo-editor__zoom {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 0.6rem;
+  }
+
+  .logo-editor__zoom label {
+    display: grid;
+    gap: 0.35rem;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .logo-editor__zoom input[type="range"] {
+    width: 100%;
+    min-height: var(--control-h-sm);
+    margin: 0;
+    accent-color: var(--brand);
+  }
+
+  .logo-editor__archivo {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    text-align: center;
+  }
+
+  .settings-feedback.is-error {
+    color: var(--destructive);
+  }
+
+  .pos-odoo__nombre {
+    display: block;
+    min-width: 0;
+    max-width: min(54vw, 34rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pos-mobile-brand {
+    display: none;
+  }
+
+  @media (max-width: 419px) {
+    .pos-odoo__marca {
+      gap: 0.35rem;
+      font-size: 1rem;
+    }
+
+    .pos-odoo__logo {
+      width: 32px;
+      height: 32px;
+    }
+
+    .pos-odoo__nombre {
+      max-width: 42vw;
+    }
+
+    .logo-selector__preview > img,
+    .logo-selector__preview > span {
+      flex-basis: 54px;
+      width: 54px;
+      height: 54px;
+    }
+  }
+}
+
 /* Wordmark y títulos de página · Fraunces (SIL OFL 1.1, archivo y licencia en
    ui/public/fonts/). Fuente variable autoalojada: "Snell Roundhand" solo
    existía en macOS y caía en una cursiva aleatoria en Windows/Android.
@@ -204,24 +418,6 @@ nav {
   min-height: 100%;
   display: flex;
   flex-direction: column;
-}
-.pos-odoo__marca {
-  flex: 1;
-  text-align: center;
-  font-weight: 700;
-  font-size: 1.15rem;
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-.pos-odoo__logo {
-  height: 40px;
-  width: 40px;
-  object-fit: contain;
-  border-radius: 6px;
-  background: var(--card);
 }
 .pos-odoo__iconos {
   display: flex;
@@ -981,29 +1177,6 @@ textarea::placeholder {
   padding: clamp(0.85rem, 2vw, 1.75rem);
 }
 
-.pos-nav {
-  min-height: 70px;
-  gap: 0.35rem;
-  padding: 0.7rem clamp(0.85rem, 2.5vw, 2rem);
-  border-bottom: 1px solid rgb(216 227 222 / 0.85);
-  background: rgb(255 255 255 / 0.88);
-  box-shadow: 0 7px 24px rgb(30 64 54 / 0.07);
-}
-
-.pos-odoo__marca {
-  justify-content: flex-start;
-  margin-inline: auto;
-  color: var(--foreground);
-  font-size: 1rem;
-  letter-spacing: -0.015em;
-}
-
-.pos-odoo__logo {
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--border);
-  border-radius: 0.7rem;
-}
 
 .pos-odoo__panel {
   min-width: 220px;
@@ -1086,13 +1259,6 @@ main > [role="alert"] {
 }
 
 @media (max-width: 767px) {
-  .pos-nav {
-    min-height: calc(70px + env(safe-area-inset-bottom));
-    padding: 0.45rem 0.5rem calc(0.4rem + env(safe-area-inset-bottom));
-    background: rgb(255 255 255 / 0.96);
-    box-shadow: 0 -8px 28px rgb(29 73 58 / 0.1);
-  }
-
   .pos-nav__item,
   .pos-nav .icono {
     min-height: 54px;
@@ -1209,21 +1375,6 @@ textarea:focus {
   margin-inline: auto;
   padding: clamp(0.75rem, 2vw, 1.5rem);
 }
-.pos-nav {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  display: flex;
-  min-height: 72px;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem clamp(0.75rem, 2vw, 1.5rem);
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in oklab, var(--card) 92%, transparent);
-  color: var(--foreground);
-  box-shadow: 0 8px 28px rgb(67 48 29 / 0.06);
-  backdrop-filter: blur(16px);
-}
 .pos-nav__item {
   display: inline-flex;
   align-items: center;
@@ -1235,9 +1386,6 @@ textarea:focus {
 .pos-nav__item.is-on {
   background: var(--accent);
   color: var(--accent-foreground);
-}
-.pos-odoo__marca {
-  color: var(--foreground);
 }
 button.icono {
   background: var(--secondary);
@@ -1588,16 +1736,6 @@ button.icono {
 @media (max-width: 767px) {
   .pos-odoo > main {
     padding: 0.85rem 0.75rem calc(6rem + env(safe-area-inset-bottom));
-  }
-  .pos-nav {
-    position: fixed;
-    inset: auto 0 0;
-    min-height: calc(66px + env(safe-area-inset-bottom));
-    align-items: flex-start;
-    justify-content: space-around;
-    padding: 0.45rem 0.4rem calc(0.35rem + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--border);
-    border-bottom: 0;
   }
   .pos-nav__item,
   .pos-nav .icono {
@@ -2434,10 +2572,11 @@ button.icono {
 }
 .backend-jornada__acciones {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  grid-column: 2;
-  grid-row: 1;
+  grid-column: 1 / -1;
+  grid-row: auto;
   gap: 0.65rem;
 }
 .backend-odoo__atajos {
@@ -2467,6 +2606,103 @@ button.icono {
   margin: 0.25rem 0 0;
   color: var(--muted-foreground);
   font-size: 0.85rem;
+}
+.reportes-periodo,
+.reporte-card {
+  padding: 1.2rem;
+}
+.reportes-periodo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem 1.25rem;
+}
+.reportes-periodo__titulo,
+.reporte-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  text-align: left;
+}
+.reportes-periodo__titulo > svg {
+  color: var(--primary);
+}
+.reportes-periodo__titulo p,
+.reporte-card p,
+.reporte-card small {
+  margin: 0.25rem 0 0;
+  color: var(--muted-foreground);
+}
+.reportes-periodo__atajos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.reportes-periodo__fechas {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 220px));
+  gap: 0.75rem;
+}
+.reportes-periodo__fechas label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.reportes-periodo__error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--destructive);
+  font-size: 0.82rem;
+}
+.reportes-lista {
+  display: grid;
+  gap: 1rem;
+}
+.reporte-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 132px;
+}
+.reporte-card__icono {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  place-items: center;
+  border-radius: 1rem;
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.reporte-card small {
+  display: block;
+  font-size: 0.75rem;
+}
+@media (max-width: 700px) {
+  .reportes-periodo {
+    grid-template-columns: 1fr;
+  }
+  .reportes-periodo__atajos {
+    justify-content: flex-start;
+  }
+  .reportes-periodo__fechas {
+    grid-template-columns: 1fr 1fr;
+  }
+  .reporte-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .reporte-card > a {
+    grid-column: 1 / -1;
+  }
+
+  .reportes-periodo__titulo h2,
+  .reportes-periodo__titulo p,
+  .reporte-card h2,
+  .reporte-card p,
+  .reporte-card small {
+    text-align: left;
+  }
 }
 .categorias-layout {
   display: grid;
@@ -2613,6 +2849,17 @@ button.icono {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
+.settings-security-limits {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+.settings-security-limits label { min-width: 0; }
 .printer-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2858,8 +3105,6 @@ button.icono {
   }
   .backend-jornada__acciones {
     justify-content: flex-start;
-    grid-column: auto;
-    grid-row: auto;
   }
 }
 
@@ -3014,6 +3259,7 @@ button.icono {
     font-size: 0.75rem;
   }
   .security-grid,
+  .settings-security-limits,
   .printer-list,
   .printer-grid,
   .user-editor__fields,
@@ -3213,10 +3459,17 @@ textarea:focus {
 }
 
 .pos-nav {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
   min-height: 68px;
+  align-items: center;
   gap: 0.4rem;
-  border-color: color-mix(in oklab, var(--border) 86%, transparent);
+  padding: 0.65rem clamp(0.75rem, 2vw, 1.5rem);
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 86%, transparent);
   background: rgb(255 255 255 / 0.9);
+  color: var(--foreground);
   box-shadow: var(--shadow-lifted);
   backdrop-filter: blur(18px) saturate(1.2);
 }
@@ -3244,9 +3497,27 @@ textarea:focus {
 }
 
 .pos-odoo__marca {
+  display: flex;
+  flex: 1;
+  min-height: 48px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-inline: auto;
   color: var(--foreground);
   font-size: 0.96rem;
+  font-weight: 700;
   letter-spacing: -0.015em;
+  text-align: center;
+}
+
+.pos-odoo__logo {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--card);
+  object-fit: contain;
 }
 
 button.icono {
@@ -3357,10 +3628,15 @@ button.icono:focus-visible {
   }
 
   .pos-nav {
+    position: fixed;
+    inset: auto 0 0;
     min-height: calc(66px + env(safe-area-inset-bottom));
+    align-items: flex-start;
+    justify-content: space-around;
     gap: 0.18rem;
     padding: 0.4rem 0.42rem calc(0.34rem + env(safe-area-inset-bottom));
     border-top: 1px solid var(--border);
+    border-bottom: 0;
     background: rgb(255 255 255 / 0.97);
     box-shadow: 0 -8px 28px rgb(16 18 22 / 0.1);
   }
@@ -4334,6 +4610,30 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
   width: auto;
   height: 50px;
 }
+
+.login-marca__respaldo {
+  display: grid;
+  min-height: 50px;
+  align-content: center;
+  justify-items: center;
+  gap: 0.1rem;
+  text-align: center;
+}
+
+.login-marca__respaldo strong {
+  color: var(--foreground);
+  font-family: "Fraunces Variable", Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 560;
+  line-height: 1.1;
+}
+
+.login-marca__respaldo span {
+  color: var(--brand);
+  font-size: 0.57rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+}
 }
 
 /* --------------------------------------------------------------------------
@@ -5019,5 +5319,111 @@ button.constructor-orden__abrir-resumen {
   .ui-v2 .inventario-fila > :last-child {
     justify-self: center;
     text-align: center;
+  }
+}
+
+/* Identidad móvil: la navegación operativa conserva sus cuatro botones abajo,
+   mientras la marca permanece visible en una franja superior compacta. */
+.constructor-empaque {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+
+.constructor-empaque > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.constructor-empaque small {
+  color: var(--muted-foreground);
+  line-height: 1.35;
+}
+
+.constructor-empaque__cantidad {
+  display: grid;
+  grid-template-columns: auto minmax(2rem, auto) auto;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.constructor-empaque__cantidad strong {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 767px) {
+  .pos-odoo.ui-v2 > main {
+    padding-top: 4.65rem;
+  }
+
+  .ui-v2 .pos-mobile-brand {
+    position: fixed;
+    z-index: 49;
+    inset: 0 0 auto;
+    display: flex;
+    min-height: 56px;
+    align-items: center;
+    justify-content: center;
+    padding: max(0.55rem, env(safe-area-inset-top)) 3.75rem 0.55rem;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in oklab, var(--card) 96%, transparent);
+    box-shadow: 0 5px 18px rgb(44 34 22 / 0.07);
+    backdrop-filter: blur(16px);
+  }
+
+  .ui-v2 .pos-mobile-brand .pos-odoo__marca {
+    display: flex;
+    min-height: 36px;
+    margin: 0;
+    justify-content: center;
+    font-size: 1.12rem;
+    text-align: center;
+  }
+
+  .ui-v2 .pos-mobile-brand .pos-odoo__logo {
+    width: 30px;
+    height: 30px;
+  }
+
+  .ui-v2 .pos-mobile-brand .pos-odoo__nombre {
+    max-width: calc(100vw - 8rem);
+  }
+
+  .opciones-page .settings-nav {
+    top: 56px;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 0.25rem;
+    overflow-x: auto;
+    scroll-snap-type: inline proximity;
+  }
+
+  .opciones-page .settings-nav a {
+    flex: 0 0 auto;
+    min-width: max-content;
+    gap: 0.4rem;
+    padding-inline: 0.65rem;
+    scroll-snap-align: start;
+  }
+
+  .opciones-page .settings-nav a span {
+    display: inline;
+  }
+
+  .constructor-empaque {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .constructor-empaque > :last-child {
+    grid-column: 1 / -1;
+    justify-self: stretch;
   }
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/luizgnz/restaurante/go/internal/kds"
 	"github.com/luizgnz/restaurante/go/internal/orders"
 	"github.com/luizgnz/restaurante/go/internal/printing"
+	"github.com/luizgnz/restaurante/go/internal/reports"
 	"github.com/luizgnz/restaurante/go/internal/salon"
 )
 
@@ -39,6 +40,7 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		dataDir = dataDirs[0]
 	}
 	mux := http.NewServeMux()
+	pinSecurity := newPINGuard()
 	mux.HandleFunc("GET /api/salud", func(w http.ResponseWriter, r *http.Request) {
 		if err := db.PingContext(r.Context()); err != nil {
 			http.Error(w, "base de datos no disponible", http.StatusServiceUnavailable)
@@ -78,7 +80,7 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 			writeError(w, http.StatusInternalServerError, "sesion_no_disponible", "No se pudo abrir la sesión")
 			return
 		}
-		http.SetCookie(w, &http.Cookie{Name: auth.CookieName, Value: token, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 12 * 60 * 60})
+		http.SetCookie(w, &http.Cookie{Name: auth.CookieName, Value: token, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: configState.Load().DuracionSesionHoras * 60 * 60})
 		writeJSON(w, http.StatusOK, map[string]any{"abierta": true, "usuario": session.Usuario, "administrador": session.Usuario})
 	})
 	mux.HandleFunc("POST /api/sesion/cerrar", func(w http.ResponseWriter, r *http.Request) {
@@ -122,7 +124,7 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 			return
 		}
 		var patch map[string]json.RawMessage
-		if !decodeJSON(w, r, &patch, 1<<20) {
+		if !decodeJSON(w, r, &patch, 2<<20) {
 			return
 		}
 		updated, err := applyConfigPatch(*configState.Load(), patch)
@@ -192,7 +194,7 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		}
 	})
 	mux.HandleFunc("GET /api/jornadas/actual", func(w http.ResponseWriter, r *http.Request) {
-		if !requireRole(w, r, db, "administrador") {
+		if !requireRole(w, r, db, "encargado_turno") {
 			return
 		}
 		state, err := journey.Current(r.Context(), db)
@@ -205,12 +207,18 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		if !ok {
 			return
 		}
-		if !userHasAnyRole(session.Usuario, "administrador") {
-			writeError(w, http.StatusForbidden, "sin_derecho", "Solo Administración puede abrir la jornada")
+		if !userHasAnyRole(session.Usuario, "administrador", "encargado_turno") {
+			writeError(w, http.StatusForbidden, "sin_derecho", "Solo Administración o el encargado de turno pueden abrir la jornada")
+			return
+		}
+		var input struct {
+			TurnoPlantillaID int64 `json:"turnoPlantillaId"`
+		}
+		if r.ContentLength != 0 && !decodeJSON(w, r, &input, 16<<10) {
 			return
 		}
 		employeeID := session.Usuario.ID
-		item, err := journey.Open(r.Context(), db, &employeeID)
+		item, err := journey.OpenWithTemplate(r.Context(), db, &employeeID, input.TurnoPlantillaID)
 		if writeJourneyError(w, err, "jornada_no_disponible") {
 			return
 		}
@@ -224,12 +232,126 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		if !ok {
 			return
 		}
-		if !userHasAnyRole(session.Usuario, "administrador") {
-			writeError(w, http.StatusForbidden, "sin_derecho", "Solo Administración puede cerrar la jornada")
+		if !userHasAnyRole(session.Usuario, "administrador", "encargado_turno") {
+			writeError(w, http.StatusForbidden, "sin_derecho", "Solo Administración o el encargado de turno pueden cerrar la jornada")
 			return
 		}
 		employeeID := session.Usuario.ID
 		result, err := journey.Close(r.Context(), db, &employeeID, dataDir)
+		if !writeJourneyError(w, err, "jornada_no_disponible") {
+			writeJSON(w, http.StatusOK, result)
+		}
+	})
+	mux.HandleFunc("GET /api/jornadas/turnos", func(w http.ResponseWriter, r *http.Request) {
+		session, ok := requireSession(w, r, db)
+		if !ok {
+			return
+		}
+		if !userHasAnyRole(session.Usuario, "administrador", "encargado_turno") {
+			writeError(w, http.StatusForbidden, "sin_derecho", "Sin derecho para consultar los turnos")
+			return
+		}
+		items, err := journey.ListTemplates(r.Context(), db, userHasAnyRole(session.Usuario, "administrador"))
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "turnos_no_disponibles", "No se pudieron consultar los turnos")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"turnos": items})
+	})
+	mux.HandleFunc("POST /api/jornadas/turnos", func(w http.ResponseWriter, r *http.Request) {
+		if !requireRole(w, r, db, "administrador") {
+			return
+		}
+		var input journey.Template
+		if !decodeJSON(w, r, &input, 16<<10) {
+			return
+		}
+		item, err := journey.SaveTemplate(r.Context(), db, input)
+		if !writeJourneyError(w, err, "turno_no_disponible") {
+			writeJSON(w, http.StatusCreated, map[string]any{"turno": item})
+		}
+	})
+	mux.HandleFunc("PUT /api/jornadas/turnos/{id}", func(w http.ResponseWriter, r *http.Request) {
+		if !requireRole(w, r, db, "administrador") {
+			return
+		}
+		id, ok := routeID(w, r)
+		if !ok {
+			return
+		}
+		var input journey.Template
+		if !decodeJSON(w, r, &input, 16<<10) {
+			return
+		}
+		input.ID = id
+		item, err := journey.SaveTemplate(r.Context(), db, input)
+		if !writeJourneyError(w, err, "turno_no_disponible") {
+			writeJSON(w, http.StatusOK, map[string]any{"turno": item})
+		}
+	})
+	mux.HandleFunc("POST /api/jornadas/listos/entregar", func(w http.ResponseWriter, r *http.Request) {
+		session, ok := requireSession(w, r, db)
+		if !ok {
+			return
+		}
+		if !userHasAnyRole(session.Usuario, "administrador", "encargado_turno") {
+			writeError(w, http.StatusForbidden, "sin_derecho", "Sin derecho para confirmar las entregas pendientes")
+			return
+		}
+		state, err := journey.Current(r.Context(), db)
+		if err != nil {
+			writeJourneyError(w, err, "jornada_no_disponible")
+			return
+		}
+		if state.Jornada == nil {
+			writeError(w, http.StatusConflict, "jornada_cerrada", "No hay una jornada operativa abierta")
+			return
+		}
+		count, err := journey.MarkAllReadyDelivered(r.Context(), db, state.Jornada.ID, session.Usuario.ID)
+		if !writeJourneyError(w, err, "entregas_no_disponibles") {
+			writeJSON(w, http.StatusOK, map[string]any{"ordenesEntregadas": count})
+		}
+	})
+	mux.HandleFunc("POST /api/jornadas/cerrar-masivo", func(w http.ResponseWriter, r *http.Request) {
+		session, ok := requireSession(w, r, db)
+		if !ok {
+			return
+		}
+		if !userHasAnyRole(session.Usuario, "administrador", "encargado_turno") {
+			writeError(w, http.StatusForbidden, "sin_derecho", "Sin derecho para cerrar el turno")
+			return
+		}
+		var input struct {
+			Usuario  string  `json:"usuario"`
+			Password string  `json:"password"`
+			CierreEn *string `json:"cierreEn"`
+		}
+		if !decodeJSON(w, r, &input, 16<<10) {
+			return
+		}
+		actor, err := auth.VerifyCredentialsForRoles(r.Context(), db, input.Usuario, input.Password, "administrador", "encargado_turno")
+		if errors.Is(err, auth.ErrCredentials) {
+			writeError(w, http.StatusUnauthorized, "credenciales_invalidas", "Usuario o contraseña incorrectos")
+			return
+		}
+		if errors.Is(err, auth.ErrForbidden) {
+			writeError(w, http.StatusForbidden, "sin_derecho", "Ese usuario no puede cerrar el turno")
+			return
+		}
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "autorizacion_no_disponible", "No se pudo validar la autorización")
+			return
+		}
+		var effective *time.Time
+		if input.CierreEn != nil && strings.TrimSpace(*input.CierreEn) != "" {
+			parsed, parseErr := time.Parse(time.RFC3339, strings.TrimSpace(*input.CierreEn))
+			if parseErr != nil {
+				writeError(w, http.StatusBadRequest, "hora_cierre_invalida", "La hora de cierre no es válida")
+				return
+			}
+			effective = &parsed
+		}
+		result, err := journey.CloseBulk(r.Context(), db, actor.ID, dataDir, effective)
 		if !writeJourneyError(w, err, "jornada_no_disponible") {
 			writeJSON(w, http.StatusOK, result)
 		}
@@ -252,6 +374,46 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		if !writeJourneyError(w, err, "jornada_no_disponible") {
 			writeJSON(w, http.StatusOK, map[string]any{"jornadaId": result.JornadaID, "cuentas": result.Cuentas, "respaldoRuta": result.RespaldoRuta, "estado": state})
 		}
+	})
+	mux.HandleFunc("GET /api/reportes/ventas.pdf", func(w http.ResponseWriter, r *http.Request) {
+		if !requireRole(w, r, db, "encargado_turno") {
+			return
+		}
+		period, err := reports.ParsePeriod(r.URL.Query().Get("desde"), r.URL.Query().Get("hasta"))
+		if writeReportError(w, err) {
+			return
+		}
+		data, err := reports.Sales(r.Context(), db, period)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "reporte_no_disponible", "No se pudo preparar el reporte de ventas")
+			return
+		}
+		content, err := reports.SalesPDF(configState.Load().NombreLocal, period, data)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "reporte_no_disponible", "No se pudo generar el reporte de ventas")
+			return
+		}
+		writePDF(w, "reporte-ventas-"+period.From+"-"+period.To+".pdf", content)
+	})
+	mux.HandleFunc("GET /api/reportes/inventario.pdf", func(w http.ResponseWriter, r *http.Request) {
+		if !requireRole(w, r, db, "encargado_turno", "inventario") {
+			return
+		}
+		period, err := reports.ParsePeriod(r.URL.Query().Get("desde"), r.URL.Query().Get("hasta"))
+		if writeReportError(w, err) {
+			return
+		}
+		data, err := reports.Inventory(r.Context(), db, period)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "reporte_no_disponible", "No se pudo preparar el reporte de inventario")
+			return
+		}
+		content, err := reports.InventoryPDF(configState.Load().NombreLocal, period, data)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "reporte_no_disponible", "No se pudo generar el reporte de inventario")
+			return
+		}
+		writePDF(w, "reporte-inventario-"+period.From+"-"+period.To+".pdf", content)
 	})
 	mux.HandleFunc("GET /api/inventario", func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := requireSession(w, r, db); !ok {
@@ -276,7 +438,13 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		if !ok {
 			return
 		}
+		if !requirePINAttempt(w, r, pinSecurity) {
+			return
+		}
 		result, err := inventory.RegisterEntry(r.Context(), db, id, amount, pin)
+		if finishPINAttempt(w, r, pinSecurity, *configState.Load(), err) {
+			return
+		}
 		if !writeInventoryError(w, err) {
 			writeJSON(w, http.StatusCreated, result)
 		}
@@ -293,9 +461,75 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		if !ok {
 			return
 		}
+		if !requirePINAttempt(w, r, pinSecurity) {
+			return
+		}
 		result, err := inventory.RegisterLoss(r.Context(), db, id, amount, reason, pin)
+		if finishPINAttempt(w, r, pinSecurity, *configState.Load(), err) {
+			return
+		}
 		if !writeInventoryError(w, err) {
 			writeJSON(w, http.StatusCreated, result)
+		}
+	})
+	mux.HandleFunc("PATCH /api/inventario/{id}/umbral", func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := requireSession(w, r, db); !ok {
+			return
+		}
+		id, ok := routeID(w, r)
+		if !ok {
+			return
+		}
+		var input struct {
+			Umbral *int64 `json:"umbral"`
+			PIN    string `json:"pin"`
+		}
+		if !decodeJSON(w, r, &input, 16<<10) {
+			return
+		}
+		if strings.TrimSpace(input.PIN) == "" {
+			writeError(w, http.StatusBadRequest, "pin_invalido", "Hace falta el PIN de administrador")
+			return
+		}
+		if !requirePINAttempt(w, r, pinSecurity) {
+			return
+		}
+		material, err := inventory.SetLowStockThreshold(r.Context(), db, id, input.Umbral, input.PIN)
+		if finishPINAttempt(w, r, pinSecurity, *configState.Load(), err) {
+			return
+		}
+		if !writeInventoryError(w, err) {
+			writeJSON(w, http.StatusOK, map[string]any{"material": material})
+		}
+	})
+	mux.HandleFunc("PATCH /api/inventario/{id}/unidad", func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := requireSession(w, r, db); !ok {
+			return
+		}
+		id, ok := routeID(w, r)
+		if !ok {
+			return
+		}
+		var input struct {
+			Unidad string `json:"unidad"`
+			PIN    string `json:"pin"`
+		}
+		if !decodeJSON(w, r, &input, 16<<10) {
+			return
+		}
+		if strings.TrimSpace(input.PIN) == "" {
+			writeError(w, http.StatusBadRequest, "pin_invalido", "Hace falta el PIN de administrador")
+			return
+		}
+		if !requirePINAttempt(w, r, pinSecurity) {
+			return
+		}
+		material, err := inventory.SetInventoryUnit(r.Context(), db, id, strings.ToLower(strings.TrimSpace(input.Unidad)), input.PIN)
+		if finishPINAttempt(w, r, pinSecurity, *configState.Load(), err) {
+			return
+		}
+		if !writeInventoryError(w, err) {
+			writeJSON(w, http.StatusOK, map[string]any{"material": material})
 		}
 	})
 	mux.HandleFunc("GET /api/mesas", func(w http.ResponseWriter, r *http.Request) {
@@ -650,7 +884,7 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		if !ok {
 			return
 		}
-		employeeID, ok := actionSigner(w, r, db, session, pin, configState.Load().PINAlEmitirPrecuenta, "mesero", "encargado_turno", "caja")
+		employeeID, ok := actionSigner(w, r, db, session, pin, configState.Load().PINAlEmitirPrecuenta, pinSecurity, *configState.Load(), "mesero", "encargado_turno", "caja")
 		if !ok {
 			return
 		}
@@ -691,7 +925,7 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		if configState.Load().EnviarCajaRequiereAvanzado {
 			roles = []string{"caja"}
 		}
-		employeeID, ok := actionSigner(w, r, db, session, pin, configState.Load().PINAlEnviarCaja, roles...)
+		employeeID, ok := actionSigner(w, r, db, session, pin, configState.Load().PINAlEnviarCaja, pinSecurity, *configState.Load(), roles...)
 		if !ok {
 			return
 		}
@@ -713,7 +947,7 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		if !ok {
 			return
 		}
-		employeeID, ok := actionSigner(w, r, db, session, pin, true, "encargado_turno")
+		employeeID, ok := actionSigner(w, r, db, session, pin, true, pinSecurity, *configState.Load(), "encargado_turno")
 		if !ok {
 			return
 		}
@@ -742,7 +976,7 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		if !ok {
 			return
 		}
-		employeeID, ok := orderSigner(w, r, db, session, input.PIN, configState.Load().PINHabilitado)
+		employeeID, ok := orderSigner(w, r, db, session, input.PIN, configState.Load().PINHabilitado, pinSecurity, *configState.Load())
 		if !ok {
 			return
 		}
@@ -769,7 +1003,7 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		if !ok {
 			return
 		}
-		employeeID, ok := orderSigner(w, r, db, session, input.PIN, configState.Load().PINHabilitado)
+		employeeID, ok := orderSigner(w, r, db, session, input.PIN, configState.Load().PINHabilitado, pinSecurity, *configState.Load())
 		if !ok {
 			return
 		}
@@ -820,7 +1054,7 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		if !ok {
 			return
 		}
-		employeeID, ok := orderSigner(w, r, db, session, input.PIN, configState.Load().PINHabilitado)
+		employeeID, ok := orderSigner(w, r, db, session, input.PIN, configState.Load().PINHabilitado, pinSecurity, *configState.Load())
 		if !ok {
 			return
 		}
@@ -848,7 +1082,7 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		if !ok {
 			return
 		}
-		employeeID, ok := orderSigner(w, r, db, session, input.PIN, configState.Load().PINHabilitado)
+		employeeID, ok := orderSigner(w, r, db, session, input.PIN, configState.Load().PINHabilitado, pinSecurity, *configState.Load())
 		if !ok {
 			return
 		}
@@ -954,7 +1188,7 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		if !ok {
 			return
 		}
-		employeeID, ok := actionSigner(w, r, db, session, pin, true, "mesero", "encargado_turno")
+		employeeID, ok := actionSigner(w, r, db, session, pin, true, pinSecurity, *configState.Load(), "mesero", "encargado_turno")
 		if !ok {
 			return
 		}
@@ -977,7 +1211,7 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		if !ok {
 			return
 		}
-		employeeID, ok := actionSigner(w, r, db, session, pin, true, "mesero", "encargado_turno")
+		employeeID, ok := actionSigner(w, r, db, session, pin, true, pinSecurity, *configState.Load(), "mesero", "encargado_turno")
 		if !ok {
 			return
 		}
@@ -1046,7 +1280,12 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 	index := filepath.Join(uiDir, "index.html")
 	static := http.FileServer(http.Dir(uiDir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" && !strings.HasPrefix(r.URL.Path, "/assets/") && r.URL.Path != "/index.html" {
+		isStatic := strings.HasPrefix(r.URL.Path, "/assets/") ||
+			strings.HasPrefix(r.URL.Path, "/productos/") ||
+			strings.HasPrefix(r.URL.Path, "/fonts/") ||
+			strings.HasPrefix(r.URL.Path, "/marcas/") ||
+			r.URL.Path == "/favicon.svg"
+		if r.URL.Path != "/" && !isStatic && r.URL.Path != "/index.html" {
 			http.NotFound(w, r)
 			return
 		}
@@ -1061,7 +1300,22 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		}
 		static.ServeHTTP(w, r)
 	})
-	return mux
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			token := sessionToken(r)
+			if token != "" {
+				expired, err := auth.Expire(r.Context(), db, token, time.Duration(configState.Load().DuracionSesionHoras)*time.Hour)
+				if err != nil {
+					writeError(w, http.StatusInternalServerError, "sesion_no_disponible", "No se pudo comprobar la sesión")
+					return
+				}
+				if expired {
+					deleteSessionCookie(w)
+				}
+			}
+		}
+		mux.ServeHTTP(w, r)
+	})
 }
 
 type configPatchError struct{ Code, Message string }
@@ -1082,6 +1336,7 @@ func publicConfig(value config.App) map[string]any {
 		"entrega_automatica_si_no_confirma":   value.EntregaAutomaticaSiNoConfirma,
 		"entrega_automatica_minutos":          value.EntregaAutomaticaMinutos,
 		"prioridad_para_llevar":               value.PrioridadParaLlevar,
+		"sugerir_empaque_para_llevar":         value.SugerirEmpaqueParaLlevar,
 		"pin_al_emitir_precuenta":             value.PINAlEmitirPrecuenta,
 		"pin_al_enviar_caja":                  value.PINAlEnviarCaja,
 		"precuenta_obligatoria_antes_de_caja": value.PrecuentaObligatoriaAntesCaja,
@@ -1092,6 +1347,9 @@ func publicConfig(value config.App) map[string]any {
 		"plantilla_boleta":                    value.PlantillaBoleta,
 		"servidor_red_habilitado":             value.ServidorRedHabilitado,
 		"nombre_servidor":                     value.NombreServidor,
+		"intentos_pin_maximos":                value.IntentosPINMaximos,
+		"bloqueo_pin_segundos":                value.BloqueoPINSegundos,
+		"duracion_sesion_horas":               value.DuracionSesionHoras,
 	}
 }
 
@@ -1101,11 +1359,12 @@ func applyConfigPatch(current config.App, patch map[string]json.RawMessage) (con
 		"tamano_ui": true, "pin_habilitado": true, "confirmar_comanda": true,
 		"auditoria_anulaciones": true, "justificacion_anulacion": true,
 		"devolver_insumos_preparados": true, "entrega_automatica_si_no_confirma": true,
-		"entrega_automatica_minutos": true, "prioridad_para_llevar": true,
+		"entrega_automatica_minutos": true, "prioridad_para_llevar": true, "sugerir_empaque_para_llevar": true,
 		"pin_al_emitir_precuenta": true, "pin_al_enviar_caja": true,
 		"precuenta_obligatoria_antes_de_caja": true, "enviar_a_caja_requiere_avanzado": true,
 		"impresora_comanda": true, "impresora_boleta": true, "plantilla_comanda": true,
 		"plantilla_boleta": true, "servidor_red_habilitado": true, "nombre_servidor": true,
+		"intentos_pin_maximos": true, "bloqueo_pin_segundos": true, "duracion_sesion_horas": true,
 	}
 	filtered := map[string]json.RawMessage{}
 	for key, raw := range patch {
@@ -1132,6 +1391,15 @@ func applyConfigPatch(current config.App, patch map[string]json.RawMessage) (con
 	}
 	if current.PrioridadParaLlevar != "igual" && current.PrioridadParaLlevar != "prioritaria" {
 		return config.App{}, &configPatchError{"prioridad_invalida", "La prioridad para llevar no es válida"}
+	}
+	if current.IntentosPINMaximos < 3 || current.IntentosPINMaximos > 10 {
+		return config.App{}, &configPatchError{"intentos_pin_invalidos", "Los intentos de PIN deben estar entre 3 y 10"}
+	}
+	if current.BloqueoPINSegundos < 15 || current.BloqueoPINSegundos > 300 {
+		return config.App{}, &configPatchError{"bloqueo_pin_invalido", "La pausa del PIN debe estar entre 15 y 300 segundos"}
+	}
+	if current.DuracionSesionHoras < 4 || current.DuracionSesionHoras > 24 {
+		return config.App{}, &configPatchError{"duracion_sesion_invalida", "La sesión debe durar entre 4 y 24 horas"}
 	}
 	if err := validatePrinter(&current.ImpresoraComanda); err != nil {
 		return config.App{}, err
@@ -1183,15 +1451,19 @@ func normalizeTemplate(template config.Template, fallback string) config.Templat
 func validateLogo(value string) *configPatchError {
 	marker := ";base64,"
 	index := strings.Index(value, marker)
-	if !strings.HasPrefix(value, "data:image/") || index < 0 {
+	if index < 0 {
 		return &configPatchError{"logo_invalido", "El logo no es una imagen válida"}
+	}
+	mime := value[:index]
+	if mime != "data:image/png" && mime != "data:image/jpeg" && mime != "data:image/webp" {
+		return &configPatchError{"logo_formato_invalido", "El logo debe ser PNG, JPEG o WebP"}
 	}
 	decoded, err := base64.StdEncoding.DecodeString(value[index+len(marker):])
 	if err != nil {
 		return &configPatchError{"logo_invalido", "El logo no es una imagen válida"}
 	}
-	if len(decoded) > 400*1024 {
-		return &configPatchError{"logo_grande", "El logo supera 400 KB"}
+	if len(decoded) > 1024*1024 {
+		return &configPatchError{"logo_grande", "El logo procesado supera 1 MB; vuelve a recortarlo"}
 	}
 	return nil
 }
@@ -1224,6 +1496,27 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 
 func writeError(w http.ResponseWriter, status int, code, message string) {
 	writeJSON(w, status, map[string]string{"error": message, "codigo": code})
+}
+
+func writePDF(w http.ResponseWriter, filename string, content []byte) {
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`"`)
+	w.Header().Set("Content-Length", strconv.Itoa(len(content)))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(content)
+}
+
+func writeReportError(w http.ResponseWriter, err error) bool {
+	if err == nil {
+		return false
+	}
+	var domain *reports.Error
+	if errors.As(err, &domain) {
+		writeError(w, http.StatusBadRequest, domain.Code, domain.Message)
+		return true
+	}
+	writeError(w, http.StatusInternalServerError, "reporte_no_disponible", "No se pudo generar el reporte")
+	return true
 }
 
 func writeCatalogError(w http.ResponseWriter, err error, fallbackCode string) bool {
@@ -1392,18 +1685,27 @@ func orderSigner(
 	session *auth.Session,
 	pin *string,
 	pinEnabled bool,
+	guard *pinGuard,
+	settings config.App,
 ) (int64, bool) {
 	if pinEnabled || pin != nil {
 		if pin == nil {
 			writeError(w, http.StatusBadRequest, "pin_invalido", "Hace falta el PIN del mesero")
 			return 0, false
 		}
+		if !requirePINAttempt(w, r, guard) {
+			return 0, false
+		}
 		user, err := auth.VerifyPINForRoles(r.Context(), db, *pin, "mesero", "encargado_turno")
 		if err == auth.ErrInvalidPIN {
+			if registerPINFailure(w, r, guard, settings.IntentosPINMaximos, settings.BloqueoPINSegundos) {
+				return 0, false
+			}
 			writeError(w, http.StatusBadRequest, "pin_invalido", "PIN incorrecto")
 			return 0, false
 		}
 		if err == auth.ErrForbidden {
+			guard.succeed(pinClientKey(r))
 			writeError(w, http.StatusForbidden, "sin_derecho", "Sin derecho para enviar órdenes")
 			return 0, false
 		}
@@ -1411,6 +1713,7 @@ func orderSigner(
 			writeError(w, http.StatusInternalServerError, "orden_no_disponible", "No se pudo validar el PIN")
 			return 0, false
 		}
+		guard.succeed(pinClientKey(r))
 		return user.ID, true
 	}
 	if userHasAnyRole(session.Usuario, "mesero", "encargado_turno") {
@@ -1427,6 +1730,8 @@ func actionSigner(
 	session *auth.Session,
 	pin *string,
 	requirePIN bool,
+	guard *pinGuard,
+	settings config.App,
 	roles ...string,
 ) (int64, bool) {
 	if requirePIN || pin != nil {
@@ -1434,12 +1739,19 @@ func actionSigner(
 			writeError(w, http.StatusBadRequest, "pin_invalido", "Hace falta el PIN del responsable")
 			return 0, false
 		}
+		if !requirePINAttempt(w, r, guard) {
+			return 0, false
+		}
 		user, err := auth.VerifyPINForRoles(r.Context(), db, *pin, roles...)
 		if err == auth.ErrInvalidPIN {
+			if registerPINFailure(w, r, guard, settings.IntentosPINMaximos, settings.BloqueoPINSegundos) {
+				return 0, false
+			}
 			writeError(w, http.StatusBadRequest, "pin_invalido", "PIN incorrecto")
 			return 0, false
 		}
 		if err == auth.ErrForbidden {
+			guard.succeed(pinClientKey(r))
 			writeError(w, http.StatusForbidden, "sin_derecho", "Sin derecho para esta acción")
 			return 0, false
 		}
@@ -1447,6 +1759,7 @@ func actionSigner(
 			writeError(w, http.StatusInternalServerError, "autorizacion_no_disponible", "No se pudo validar la autorización")
 			return 0, false
 		}
+		guard.succeed(pinClientKey(r))
 		return user.ID, true
 	}
 	if userHasAnyRole(session.Usuario, roles...) {
@@ -1639,6 +1952,12 @@ func writeInventoryError(w http.ResponseWriter, err error) bool {
 		writeError(w, http.StatusBadRequest, "cantidad_invalida", "La cantidad debe ser mayor que cero")
 	case inventory.ErrInvalidReason:
 		writeError(w, http.StatusBadRequest, "motivo_invalido", "Selecciona un motivo válido para la pérdida")
+	case inventory.ErrInvalidThreshold:
+		writeError(w, http.StatusBadRequest, "umbral_invalido", "El umbral debe ser un número entero entre 0 y 1.000.000")
+	case inventory.ErrInvalidUnit:
+		writeError(w, http.StatusBadRequest, "unidad_invalida", "La unidad no es compatible con este material")
+	case inventory.ErrThresholdUnit:
+		writeError(w, http.StatusConflict, "umbral_incompatible", "Cambia o elimina el umbral individual antes de usar esa unidad")
 	case inventory.ErrNotFound:
 		writeError(w, http.StatusNotFound, "material_inexistente", "El material no existe o no controla inventario")
 	case inventory.ErrInsufficient:

@@ -101,7 +101,7 @@ function SubirImagen({ children, onImagen }: { children: string; onImagen: (data
 }
 
 export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDescartar }: Props) {
-  const [pisos, setPisos] = useState<PisoDraft[]>(() => (pisosIni.length ? pisosIni.map((p) => ({ ...p })) : [{ id: 0, nombre: "Salón" }]));
+  const [pisos, setPisos] = useState<PisoDraft[]>(() => (pisosIni.length ? pisosIni.map((p) => ({ ...p })) : [{ id: 0, nombre: "Salón principal" }]));
   const [mesas, setMesas] = useState<MesaDraft[]>(() => mesasIni.map((m) => ({ ...m })));
   const [quitar, setQuitar] = useState<number[]>([]);
   const [quitarPisos, setQuitarPisos] = useState<number[]>([]);
@@ -171,10 +171,10 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
     const nombres = new Map<string, string>();
     for (const p of pisos) {
       const nombre = p.nombre.trim();
-      if (!nombre) return "Cada piso necesita un nombre";
+      if (!nombre) return "Cada área necesita un nombre";
       const clave = nombre.toLocaleLowerCase("es");
       const previo = nombres.get(clave);
-      if (previo) return `Ya hay un piso llamado ${previo}`;
+      if (previo) return `Ya hay un área llamada ${previo}`;
       nombres.set(clave, nombre);
     }
     const numeros = new Set<number>();
@@ -214,7 +214,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
 
   function addPiso() {
     const id = siguienteId();
-    setPisos((p) => [...p, { id, nombre: nombrePisoLibre(`Piso ${pisos.length + 1}`) }]);
+    setPisos((p) => [...p, { id, nombre: nombrePisoLibre(`Área ${pisos.length + 1}`) }]);
     setPisoId(id);
     setSel(null);
     setAviso("");
@@ -242,7 +242,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
 
   function eliminarPiso() {
     if (pisos.length <= 1) {
-      setAviso("Tiene que quedar al menos un piso");
+      setAviso("Tiene que quedar al menos un área");
       return;
     }
     const resto = pisos.filter((p) => p.id !== pisoId);
@@ -336,11 +336,11 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
   return (
     <section className="page-shell salon-odoo editor-page">
       <div className="page-header editor-page__titulo">
-        <div><span className="page-eyebrow">Diseño del salón</span><h1>Editar mapa</h1><p>Organiza pisos y mesas para que coincidan con el espacio real.</p></div>
+        <div><span className="page-eyebrow">Diseño del salón</span><h1>Editar mapa</h1><p>Organiza áreas y mesas para que coincidan con el espacio real.</p></div>
       </div>
       <header className="salon-odoo__pisos">
         <div className="salon-odoo__pisos-izq" />
-        <div className="salon-odoo__pisos-centro" role="tablist" aria-label="Pisos">
+        <div className="salon-odoo__pisos-centro" role="tablist" aria-label="Áreas">
           {pisos.map((p) => (
             <Button
               key={p.id}
@@ -393,8 +393,8 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
 
       <div className="editor-grupos">
         <fieldset className="editor-grupo" disabled={Boolean(seleccion)}>
-          <legend>Opciones de piso</legend>
-          <Campo icono={<Type size={20} aria-hidden="true" />} titulo="Nombre del piso">
+          <legend>Opciones del área</legend>
+          <Campo icono={<Type size={20} aria-hidden="true" />} titulo="Nombre del área">
             <Input
               className="editor-campo__nombre"
               size={16}
@@ -403,7 +403,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
               onChange={(e) => patchPiso({ nombre: e.target.value })}
             />
           </Campo>
-          <Campo icono={<Palette size={20} aria-hidden="true" />} titulo="Color de fondo del piso">
+          <Campo icono={<Palette size={20} aria-hidden="true" />} titulo="Color de fondo del área">
             <Input
               className="editor-campo__color"
               type="color"
@@ -415,7 +415,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
             Nueva mesa
           </Boton>
           <Boton icono={<Layers size={20} aria-hidden="true" />} onClick={addPiso}>
-            Nuevo piso
+            Nueva área
           </Boton>
           <Button
             type="button"
@@ -438,20 +438,20 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
             Quitar imagen
           </Boton>
           <Boton icono={<CopyPlus size={20} aria-hidden="true" />} onClick={duplicarPiso}>
-            Duplicar piso
+            Duplicar área
           </Boton>
           <Boton
             icono={<Trash2 size={20} aria-hidden="true" />}
             onClick={() => {
               if (pisos.length <= 1) {
-                setAviso("Tiene que quedar al menos un piso");
+                setAviso("Tiene que quedar al menos un área");
                 return;
               }
               setConfirmarQuitar({ tipo: "piso" });
             }}
             peligro
           >
-            Eliminar piso
+            Eliminar área
           </Boton>
         </fieldset>
 
@@ -571,9 +571,9 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
       {confirmarQuitar ? (
         confirmarQuitar.tipo === "piso" ? (
           <ConfirmarDialog
-            titulo={`¿Eliminar el piso ${piso?.nombre ?? ""}?`}
-            descripcion="Se quitan también las mesas de este piso. Los cambios se aplican al guardar."
-            confirmarTexto="Sí, eliminar piso"
+            titulo={`¿Eliminar el área ${piso?.nombre ?? ""}?`}
+            descripcion="Se quitan también las mesas de esta área. Los cambios se aplican al guardar."
+            confirmarTexto="Sí, eliminar área"
             peligro
             onConfirmar={() => {
               eliminarPiso();
