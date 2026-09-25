@@ -141,7 +141,7 @@ npm run licenses
 
 `npm test` limita Vitest a dos workers en Windows para evitar saturar el equipo. `npm run build` verifica TypeScript y compila la interfaz; `npm run build:go` compila el servidor en `dist/`.
 
-Credenciales iniciales de desarrollo: usuario `admin`, contraseña `admin`. Cámbialas antes de habilitar el acceso desde la red local. Para compartir la aplicación con tablets, habilita el acceso de red deliberadamente y revisa el firewall del equipo anfitrión.
+Para compartir la aplicación con tablets, habilita el acceso de red deliberadamente y revisa el firewall del equipo anfitrión.
 
 Un archivo marcado `dataless` por `ls -lO` todavía necesita recuperar su contenido; esto puede detener Git, TypeScript, Vite y las pruebas mientras esperan una lectura. **Mantener descargado** y **Descargar ahora** en Finder ayudan a recuperar archivos, pero no sustituyen trabajar fuera del directorio sincronizado. Antes de copiar un proyecto desde iCloud, comprueba que sus archivos se pueden leer y verifica el contenido de origen y destino.
 

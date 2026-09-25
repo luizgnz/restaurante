@@ -43,6 +43,8 @@ El paquete se recompiló desde la rama de la PR con `npm run build:windows`, usa
 
 `installer/windows/output/Restaurante-Setup-0.1.0-windows-pass2-x64.exe`
 
+El paquete es multifichero: para ejecutarlo hay que conservar junto al `.exe` los archivos `Restaurante-Setup-0.1.0-windows-pass2-x64-0.bin` y `Restaurante-Setup-0.1.0-windows-pass2-x64-1.bin` generados en la misma carpeta.
+
 SHA-256: `2D84267BBB3A29BB4270E1B1A0B186B9CC4B6AF6821A6799D7DD28AD01AF1B0B`.
 
 La validación se realizó después del intento inicial fallido. Antes de instalar, el ejecutable no estaba en `Program Files` y el puerto 8080 estaba libre; se usó la base de prueba que ya existía, por lo que esta revalidación no representa una base de datos vacía. El registro de Inno Setup confirmó:
