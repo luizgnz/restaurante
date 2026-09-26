@@ -59,6 +59,15 @@ Get-NetFirewallRule -DisplayName 'Restaurante POS (LAN, TCP 8080)' -ErrorAction 
 
 Si el servidor obtiene la IP por DHCP, la dirección puede cambiar aunque Restaurante siga escuchando en el puerto 8080. Para mantenerla estable, cree una **reserva DHCP en el router o servidor DHCP** para la tarjeta de red de este equipo; anote la IP reservada y use `http://IP_RESERVADA:8080` en los otros dispositivos. Cada router tiene su propia interfaz de configuración. Si se opta por una IP manual en Windows, coordine una dirección excluida del rango DHCP y configure también puerta de enlace y DNS; no copie `192.168.1.85` a otra red. Si cambia de Wi-Fi a Ethernet, la reserva de la tarjeta anterior no se transfiere automáticamente.
 
+**Comprobación de red durante la instalación en cada servidor:**
+
+1. Anote la IP, máscara o longitud de prefijo, puerta de enlace, DNS, tarjeta de red activa y rango DHCP de esa red. No presuponga que la IP de otro local o equipo servirá aquí.
+2. Para una dirección estable, prefiera reservar una IP en el router para la dirección MAC de la tarjeta activa y deje Windows en DHCP. Si administra la IP desde Windows, vaya a **Configuración → Red e Internet → Wi-Fi o Ethernet → asignación de IP → Editar → Manual → IPv4**. Use una dirección de esa red que el DHCP no entregue, con máscara, puerta de enlace y DNS correctos. Coordine estos valores con quien administra la red antes de aplicarlos.
+3. Después de configurar la red, compruebe que el servidor responde en `http://localhost:8080/api/salud`. Cambie las contraseñas y PIN iniciales, active **Opciones → Red local** y, si se trata de una red de confianza, use el perfil de Windows **Privado**. La casilla opcional del instalador crea solo la regla entrante descrita arriba; si no se marcó, configure la regla antes de intentar acceso remoto.
+4. Reinicie Windows o la conexión de red y confirme que la IP prevista se mantiene. Desde otro dispositivo autorizado en la misma red, abra `http://IP_DEL_SERVIDOR:8080`, pruebe **Mesas** y **Nueva orden**, y guarde esa dirección en los clientes. Si se cambia de red o de tarjeta, revise la reserva y las direcciones guardadas.
+
+El instalador no modifica el direccionamiento de Windows. La regla de firewall no contiene una IP local fija: se aplica al ejecutable, puerto, subred remota y perfil indicados, incluso cuando cambia la IP local del servidor.
+
 `/api/salud` debe responder con `ok: true` y `runtime: go`. Si funciona en `127.0.0.1` pero falla desde otro equipo, compruebe la IP actual del servidor, que ambos equipos estén en la misma red y que el firewall permita únicamente los dispositivos autorizados. La IP puede cambiar después de reiniciar el router o Windows. Si carga la página por IP pero no abren Mesas o «Nueva orden», confirme que se instaló una versión que incluya la corrección de `crypto.randomUUID` para HTTP por IP; revise también la consola del navegador.
 
 La actualización conserva la base y crea un respaldo antes de sustituir archivos. El desinstalador conserva datos y respaldos. Copie la base **con el servidor detenido** o utilice los respaldos verificados; no elimine `salon.sqlite` para solucionar un problema de acceso.
@@ -81,3 +90,4 @@ Cambie ambas contraseñas y PIN antes de permitir acceso a la red del restaurant
 3. Si la página carga pero una acción no responde, registre la dirección usada (`localhost` o IP), la hora, el botón y el error de la consola del navegador. Compruebe que el JavaScript instalado pertenece al mismo paquete que el servidor.
 4. Si el fallo apareció después de actualizar, conserve la base y los registros; revise el respaldo previo en `backups\updates` antes de intentar otra instalación.
 5. Para soporte externo, comparta la versión instalada, el estado de la tarea y los errores pertinentes de los registros. Quite datos personales y cookies de sesión antes de enviarlos.
+
