@@ -111,7 +111,7 @@ Contraseña: admin
 
 > Cambia estas credenciales antes de exponer el sistema en una red compartida o utilizarlo fuera de un entorno de prueba.
 
-Para instalación y diagnóstico en Windows, consulta [Soporte Windows](docs/SOPORTE_WINDOWS.md): tareas `Restaurante POS` y `Restaurante POS - Reiniciar`, archivo `C:\ProgramData\Restaurante\config.json`, botón de reinicio en Opciones, registros, red local y cuentas iniciales.
+Para instalación y diagnóstico en Windows, consulta [Soporte Windows](docs/SOPORTE_WINDOWS.md): tareas `Restaurante POS` y `Restaurante POS - Reiniciar`, archivo `C:\ProgramData\Restaurante\config.json`, botón de reinicio en Opciones, registros, acceso LAN, reserva DHCP y cuentas iniciales. El instalador ofrece una regla opcional de firewall solo para TCP 8080, ejecutable Restaurante, subred local y perfil Privado; se inicia desmarcada.
 
 ### Desarrollo
 

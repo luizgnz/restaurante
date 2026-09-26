@@ -1,9 +1,20 @@
 param(
   [Parameter(Mandatory = $true)][string]$InstallDir,
-  [Parameter(Mandatory = $true)][string]$DataDir
+  [Parameter(Mandatory = $true)][string]$DataDir,
+  [switch]$SkipRunningServerCheck
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $SkipRunningServerCheck) {
+  $deadline = (Get-Date).AddSeconds(30)
+  while (Get-Process -Name 'restaurante' -ErrorAction SilentlyContinue) {
+    if ((Get-Date) -ge $deadline) {
+      throw 'Restaurante sigue en ejecución. No se copiará SQLite mientras el servidor pueda escribir en la base.'
+    }
+    Start-Sleep -Milliseconds 250
+  }
+}
+
 $updateRoot = Join-Path $DataDir 'backups\updates'
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $point = Join-Path $updateRoot $stamp

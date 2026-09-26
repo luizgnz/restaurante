@@ -5,6 +5,25 @@ RESTAURANTE — INSTALACIÓN EN WINDOWS
    permanecer en la misma carpeta y conservar sus nombres.
 3. Abra Restaurante-Setup-<versión>-x64.exe y acepte la solicitud de
    administrador de Windows.
+4. En el equipo servidor, anote la IP, máscara, puerta de enlace y DNS de
+   la red donde funcionará Restaurante. Para mantener la IP estable, reserve
+   esa dirección en el router para la tarjeta Wi-Fi o Ethernet del servidor;
+   deje Windows configurado para obtener la IP automáticamente. Si necesita
+   configurar IPv4 manualmente en Windows, use una dirección de esa red
+   excluida del rango DHCP y configure también máscara, puerta de enlace y
+   DNS. No copie la IP de otro equipo. Este paso se hace en cada instalación
+   con los datos de su red; el instalador no cambia la configuración de red.
+5. Cambie las contraseñas y PIN iniciales antes de permitir acceso LAN.
+   En Opciones > Red local, active el acceso desde otros equipos. Si la red
+   del restaurante es de confianza, configure su perfil como Privado. La
+   casilla opcional del instalador crea una regla entrante solo para
+   restaurante.exe, TCP 8080, subred local y perfil Privado. Viene desmarcada
+   y no asigna IP fija ni abre otros puertos.
+6. Tras reiniciar el servidor, confirme que conserva la IP y abra
+   http://localhost:8080 en él. Desde otro equipo autorizado de la misma
+   red, abra http://IP_DEL_SERVIDOR:8080 y pruebe Mesas y Nueva orden.
+   Guarde esa dirección en los clientes. Si la IP cambia, actualice allí
+   la dirección; Restaurante detecta automáticamente la IP del servidor.
 
 Este paquete usa varios archivos para que el instalador no tenga que ejecutar
 su motor desde la carpeta temporal de Windows, que puede estar bloqueada por

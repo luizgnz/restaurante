@@ -1,6 +1,7 @@
 param(
   [Parameter(Mandatory = $true)][string]$InstallDir,
-  [Parameter(Mandatory = $true)][string]$DataDir
+  [Parameter(Mandatory = $true)][string]$DataDir,
+  [switch]$SkipTaskStart
 )
 
 $ErrorActionPreference = 'Stop'
@@ -45,6 +46,23 @@ if (-not (Test-Path -LiteralPath $databaseBackup)) {
   throw 'El respaldo no contiene la base de datos.'
 }
 
+if (-not $SkipTaskStart) {
+  $task = Get-ScheduledTask -TaskName 'Restaurante POS' -ErrorAction SilentlyContinue
+  if (-not $task) {
+    throw 'La tarea Restaurante POS no está disponible para detener y recuperar la instalación.'
+  }
+  if ($task.State -eq 'Running') {
+    Stop-ScheduledTask -TaskName 'Restaurante POS' -ErrorAction Stop
+  }
+  $deadline = (Get-Date).AddSeconds(30)
+  while (Get-Process -Name 'restaurante' -ErrorAction SilentlyContinue) {
+    if ((Get-Date) -ge $deadline) {
+      throw 'Restaurante sigue en ejecución. No se restaurará SQLite mientras el servidor pueda escribir en la base.'
+    }
+    Start-Sleep -Milliseconds 250
+  }
+}
+
 # La copia debe reflejar exactamente la versión anterior. Un archivo nuevo,
 # como una migración fallida, impediría que el servidor restaurado arrancara.
 # /IS fuerza la copia incluso si tamaño y fecha coinciden pero el contenido no.
@@ -70,8 +88,24 @@ foreach ($suffix in @('-wal', '-shm')) {
   }
 }
 
-if (Get-ScheduledTask -TaskName 'Restaurante POS' -ErrorAction SilentlyContinue) {
+if (-not $SkipTaskStart) {
   Start-ScheduledTask -TaskName 'Restaurante POS'
+  $ready = $false
+  for ($attempt = 0; $attempt -lt 30; $attempt++) {
+    Start-Sleep -Seconds 1
+    try {
+      $health = Invoke-RestMethod -Uri 'http://127.0.0.1:8080/api/salud' -TimeoutSec 2
+      if ($health.ok -eq $true -and $health.runtime -eq 'go') {
+        $ready = $true
+        break
+      }
+    } catch {
+      # La versión restaurada puede estar iniciando.
+    }
+  }
+  if (-not $ready) {
+    throw 'La versión restaurada no volvió a responder en 127.0.0.1:8080.'
+  }
 }
 
 Write-Output $point

@@ -451,7 +451,7 @@ export function ConstructorOrden({
                 )}
                 <span className="carta__contenido">
                   <strong>{producto.nombre}</strong>
-                  {producto.codigo ? <span>{producto.codigo}</span> : null}
+                  {producto.codigo && !producto.codigo.startsWith("menu-real:") ? <span>{producto.codigo}</span> : null}
                   {producto.configurable ? <Badge>Personalizable</Badge> : null}
                   {producto.disponible === false ? <Badge variant="secondary">Agotado</Badge> : null}
                   <span className="carta__precio">{dinero(producto.precio_centavos)}</span>
@@ -582,9 +582,12 @@ export function ConstructorOrden({
               ) : null}
             </label>
           )}
+          {lineasPersistibles(lineasUi).length > 0 || borrador.indicaciones.trim() ? (
+            <p className="m-0 text-xs text-muted-foreground">Al volver, el borrador seguirá guardado en este navegador.</p>
+          ) : null}
           <div className="constructor-orden__acciones">
             <Button type="button" variant="outline" onClick={onCancelar}>
-              Cancelar
+              Volver
             </Button>
             <Button
               type="button"
