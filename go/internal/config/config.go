@@ -160,7 +160,27 @@ func Save(dataDir string, value App) error {
 		return err
 	}
 	bytes = append(bytes, '\n')
-	return os.WriteFile(filepath.Join(dataDir, "config.json"), bytes, 0o600)
+	tmp, err := os.CreateTemp(dataDir, ".config-*.tmp")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp.Name())
+	if err := tmp.Chmod(0o600); err != nil {
+		tmp.Close()
+		return err
+	}
+	if _, err := tmp.Write(bytes); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), filepath.Join(dataDir, "config.json"))
 }
 
 // EnsureFile materializa la configuración inicial sin sobrescribir ajustes existentes.

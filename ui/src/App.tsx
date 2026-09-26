@@ -79,6 +79,7 @@ function vistaInicial(roles: RolClave[]): { vista: Vista; ordenTab: "mesero" | "
 export function App() {
   const propuestaMesas = new URLSearchParams(window.location.search).get("propuesta-mesas");
   const [sesion, setSesion] = useState<Sesion | null>(null);
+  const [errorSesionInicial, setErrorSesionInicial] = useState("");
   const [vista, setVista] = useState<Vista>("plano");
   const [ordenTab, setOrdenTab] = useState<"mesero" | "cocina">("mesero");
   const [mesas, setMesas] = useState<Mesa[]>([]);
@@ -142,10 +143,31 @@ export function App() {
   const [errorModal, setErrorModal] = useState("");
   const [carga, setCarga] = useState({ plano: true, kds: true, cuentas: true, inventario: true });
   const envioEnCurso = useRef(false);
+  const consultaSesionId = useRef(0);
+  const configSaveQueue = useRef<Promise<void>>(Promise.resolve());
+  const configSaveVersion = useRef(0);
+  const configSaveError = useRef<unknown>(null);
   const { modalActivo, abrirModal, cerrarModal } = useModalCoordinator();
 
+  function establecerSesion(actual: Sesion) {
+    const usuarioActual = actual.usuario ?? actual.administrador;
+    if (actual.abierta && usuarioActual) {
+      const inicial = vistaInicial(usuarioActual.roles ?? (["administrador"] as RolClave[]));
+      setVista(inicial.vista);
+      setOrdenTab(inicial.ordenTab);
+    }
+    setSesion(actual);
+  }
+
   async function cargarSesion() {
-    setSesion(await api<Sesion>("/api/sesion"));
+    const consultaId = ++consultaSesionId.current;
+    setErrorSesionInicial("");
+    try {
+      const actual = await api<Sesion>("/api/sesion");
+      if (consultaId === consultaSesionId.current) establecerSesion(actual);
+    } catch (e) {
+      if (consultaId === consultaSesionId.current) setErrorSesionInicial(mensajeError(e));
+    }
   }
   async function cargarPlano() {
     setCarga((c) => ({ ...c, plano: true }));
@@ -255,7 +277,25 @@ export function App() {
   }
 
   async function guardarOpciones(patch: Partial<OpcionesValores>) {
-    aplicarConfig(await api<OpcionesValores>("/api/config", { method: "POST", body: JSON.stringify(patch) }));
+    aplicarConfig(patch);
+    const version = ++configSaveVersion.current;
+    const save = configSaveQueue.current.then(() =>
+      api<OpcionesValores>("/api/config", { method: "POST", body: JSON.stringify(patch) }),
+    );
+    configSaveQueue.current = save.then(() => undefined, () => undefined);
+    try {
+      const persisted = await save;
+      if (version === configSaveVersion.current) {
+        configSaveError.current = null;
+        aplicarConfig(persisted);
+      }
+    } catch (error) {
+      if (version === configSaveVersion.current) {
+        configSaveError.current = error;
+        await cargarConfig();
+      }
+      throw error;
+    }
   }
 
   useEffect(() => {
@@ -268,16 +308,8 @@ export function App() {
   }, [vista, contextoOrden?.tipo, cuentaActual?.id]);
 
   useEffect(() => {
-    cargarSesion().catch((e) => setError(mensajeError(e)));
+    void cargarSesion();
   }, []);
-
-  useEffect(() => {
-    const usuarioActual = sesion?.usuario ?? sesion?.administrador;
-    if (!sesion?.abierta || !usuarioActual) return;
-    const inicial = vistaInicial(usuarioActual.roles ?? (["administrador"] as RolClave[]));
-    setVista(inicial.vista);
-    setOrdenTab(inicial.ordenTab);
-  }, [sesion?.abierta, sesion?.usuario?.id, sesion?.administrador?.id]);
 
   useEffect(() => {
     const usuarioActual = sesion?.usuario ?? sesion?.administrador;
@@ -615,13 +647,30 @@ export function App() {
     await ejecutarAccionModal(() => resolverPin(pin), setErrorModal);
   }
 
-  if (!sesion?.abierta) {
+  if (sesion === null) {
+    return (
+      <main className="flex min-h-svh items-center justify-center bg-background p-6">
+        {errorSesionInicial ? (
+          <div className="flex max-w-sm flex-col items-center gap-4 text-center">
+            <p role="alert">No se pudo comprobar la sesión. {errorSesionInicial}</p>
+            <Button onClick={() => void cargarSesion()}>Reintentar</Button>
+          </div>
+        ) : (
+          <p role="status" aria-live="polite" className="text-sm text-muted-foreground">Preparando el sistema…</p>
+        )}
+      </main>
+    );
+  }
+
+  if (!sesion.abierta) {
     return (
       <Login
         error={error}
         onEntrar={(creds) =>
           conError(async () => {
-            setSesion(await api<Sesion>("/api/sesion/abrir", { method: "POST", body: JSON.stringify(creds) }));
+            const actual = await api<Sesion>("/api/sesion/abrir", { method: "POST", body: JSON.stringify(creds) });
+            ++consultaSesionId.current;
+            establecerSesion(actual);
           })
         }
       />
@@ -1180,6 +1229,10 @@ export function App() {
               duracion_sesion_horas: duracionSesionHoras,
             }}
             onCambiar={(patch) => conError(() => guardarOpciones(patch))}
+            onAntesReiniciar={async () => {
+              await configSaveQueue.current;
+              if (configSaveError.current) throw configSaveError.current;
+            }}
           />
         ) : null}
       </main>

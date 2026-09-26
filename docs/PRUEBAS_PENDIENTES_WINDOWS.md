@@ -2,6 +2,8 @@
 
 Estado al 26 de septiembre de 2026. Esta lista distingue la evidencia obtenida en este Windows de los límites que todavía quedan. El historial está en [la revisión de instalación](REVISION_INSTALACION_STACK_2026-09-25.md).
 
+La compilación de la PR #24 incorpora la PR #23 y corrige dimensiones, destello del login y confirmación del reinicio. **`0.1.0-pr24-e8e7c9e` ya está instalada en este Windows por petición de Luis:** actualización y botón de reinicio aprobados, 139 productos conservados, configuración original recuperada y copia del respaldo real restaurada y validada de forma aislada. También se corrigió el desbordamiento de la ruta de Windows en Opciones a 320 px. Ver [la prueba instalada](PRUEBA_INSTALADA_PR24_2026-09-26.md). Queda reiniciar Windows para comprobar el arranque automático de esta compilación exacta. Las pruebas históricas detalladas abajo corresponden a `pass15` de la PR #23; el paquete y vuelta atrás están en [la guía](PAQUETE_PRUEBA_2026-09-26.md).
+
 ## Comprobado en este equipo
 
 - Instalación desde cero, actualización repetida con datos y desinstalación seguida de reinstalación. La categoría de control conservó el ID 9.

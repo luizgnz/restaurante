@@ -380,6 +380,8 @@ html[data-tamano="compacto"] {
 }
 html[data-tamano="grande"] {
   font-size: 18.4px;
+  --control-h: 48px;
+  --control-h-sm: 42px;
 }
 html[data-tipografia="serif"] {
   font-family: Georgia, "Times New Roman", serif;
@@ -1258,7 +1260,7 @@ main > [role="alert"] {
   box-shadow: 0 28px 80px rgb(18 36 30 / 0.25);
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
   .pos-nav__item,
   .pos-nav .icono {
     min-height: 54px;
@@ -1279,7 +1281,7 @@ main > [role="alert"] {
     padding: 0.65rem;
   }
 
-  .mesa-odoo {
+  .plano-mapa--operativo .mesa-odoo--operativa {
     /* Solo la altura: el radio lo decide la forma de la mesa
        (.mesa-odoo--round / --square). Antes un `border-radius !important`
        aquí volvía cuadradas las mesas redondas en pantalla chica. */
@@ -1733,7 +1735,7 @@ button.icono {
   display: none;
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
   .pos-odoo > main {
     padding: 0.85rem 0.75rem calc(6rem + env(safe-area-inset-bottom));
   }
@@ -2048,7 +2050,7 @@ button.icono {
   gap: 0.45rem;
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
   .pos-nav__badge {
     position: absolute;
     top: 0.15rem;
@@ -2510,7 +2512,7 @@ button.icono {
   line-height: 1.35;
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
   .ui-v2 .pedidos-grid {
     grid-template-columns: 1fr;
   }
@@ -3071,6 +3073,7 @@ button.icono {
   flex-direction: column;
   gap: 0.45rem;
 }
+.network-settings code { overflow-wrap: anywhere; }
 .network-addresses code {
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--border);
@@ -3108,7 +3111,7 @@ button.icono {
   }
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
   .page-header {
     align-items: stretch;
     flex-direction: column;
@@ -3383,7 +3386,7 @@ body,
 
 body {
   min-width: 320px;
-  font-size: 15px;
+  font-size: 1rem;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -3622,7 +3625,7 @@ button.icono:focus-visible {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
   .pos-odoo > main {
     padding: 0.75rem 0.7rem calc(5.75rem + env(safe-area-inset-bottom));
   }
@@ -3682,7 +3685,7 @@ button.icono:focus-visible {
     border-radius: 1.05rem;
   }
 
-  .mesa-odoo {
+  .plano-mapa--operativo .mesa-odoo--operativa {
     /* Solo la altura: el radio lo decide la forma de la mesa
        (.mesa-odoo--round / --square). Antes un `border-radius !important`
        aquí volvía cuadradas las mesas redondas en pantalla chica. */
@@ -3816,6 +3819,46 @@ button.icono:focus-visible {
   background-size: 24px 24px, 24px 24px, auto;
   box-shadow: none;
   overflow: hidden;
+}
+
+.editor-mesas-fuera {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--warning, var(--border));
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.editor-mesas-fuera p {
+  margin: 0;
+}
+
+.editor-mapa-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.editor-mapa-viewport .plano-mapa {
+  width: 100%;
+}
+
+.editor-mapa-ayuda {
+  display: none;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+}
+
+@media (width < 768px) {
+  .editor-mapa-viewport .plano-mapa {
+    min-width: 560px;
+  }
+
+  .editor-mapa-ayuda {
+    display: block;
+  }
 }
 
 
@@ -4039,7 +4082,7 @@ button.icono:focus-visible {
 .ui-v2 .plano-mapa {
   min-height: clamp(30rem, calc(100svh - 205px), 58rem);
 }
-.ui-v2 .mesa-odoo {
+.ui-v2 .plano-mapa--operativo .mesa-odoo--operativa {
   max-width: 160px;
   max-height: 160px;
   transition:
@@ -4282,7 +4325,7 @@ button.icono:focus-visible {
   gap: 0.35rem;
   font-size: 0.76rem;
 }
-@media (max-width: 767px) {
+@media (width < 768px) {
   .ui-v2 .constructor-orden__catalogo {
     display: block;
   }
@@ -4304,7 +4347,7 @@ button.icono:focus-visible {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     max-height: none;
   }
-  .ui-v2 .plano-mapa {
+  .ui-v2 .plano-mapa--operativo {
     min-height: 0;
   }
   .ui-v2 .inventario-herramientas {
@@ -4423,7 +4466,8 @@ button.icono:focus-visible {
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-button.tabla-ordenes__fila {
+button.tabla-ordenes__fila,
+.pedidos-page .tabla-ordenes__fila:not(.tabla-ordenes__fila--cabecera) {
   width: 100%;
   padding: 0.7rem 0.9rem;
   border: 1px solid var(--border);
@@ -4433,8 +4477,9 @@ button.tabla-ordenes__fila {
   text-align: left;
   font: inherit;
 }
-button.tabla-ordenes__fila:hover { background: var(--muted); }
-button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(--warning) 55%, var(--border)); }
+button.tabla-ordenes__fila:hover,
+.pedidos-page .tabla-ordenes__fila:not(.tabla-ordenes__fila--cabecera):hover { background: var(--muted); }
+.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(--warning) 55%, var(--border)); }
 .tabla-ordenes__orden {
   display: flex;
   flex-direction: column;
@@ -4585,17 +4630,36 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
   .tabla-ordenes__fila > :nth-child(2) { display: none; }
 }
 
-/* La pantalla Órdenes (mesero) usa la misma tabla con una columna más:
-   el estado de la cuenta (En pedido / Precuenta emitida). */
+/* La entrega tiene espacio propio, fuera del resumen truncado. */
 .pedidos-page .tabla-ordenes__fila {
-  grid-template-columns: max-content auto auto minmax(0, 1fr);
+  grid-template-columns: max-content auto auto minmax(0, 1fr) 44px;
+}
+.tabla-ordenes__abrir {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-block-size: 44px;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  white-space: normal;
+}
+.tabla-ordenes__abrir:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+.tabla-ordenes__confirmar {
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  padding: 0;
 }
 @media (max-width: 719px) {
   .pedidos-page .tabla-ordenes__fila {
-    grid-template-columns: minmax(6.6rem, 0.9fr) auto minmax(0, 1.5fr);
+    grid-template-columns: minmax(5rem, 0.9fr) auto minmax(0, 1.5fr) 44px;
     gap: 0 0.65rem;
   }
-  .pedidos-page button.tabla-ordenes__fila { padding-inline: 0.75rem; }
+  .pedidos-page .tabla-ordenes__fila:not(.tabla-ordenes__fila--cabecera) { padding-inline: 0.75rem; }
 }
 
 /* -- Marca del local en la pantalla de acceso (ui/public/marcas/olla-horizontal.svg) -- */
@@ -4650,7 +4714,7 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
    para que ninguna regla base posterior (`.mesa-odoo { position: absolute }`)
    pueda devolver las mesas operativas al posicionamiento absoluto.
    -------------------------------------------------------------------------- */
-@media (max-width: 767px) {
+@media (width < 768px) {
   .plano-mapa--operativo {
     position: static;
     display: grid;
@@ -4661,7 +4725,7 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
     padding: 0.75rem;
     overflow: visible;
   }
-  .plano-mapa--operativo .mesa-odoo--operativa {
+  .ui-v2 .plano-mapa--operativo .mesa-odoo--operativa {
     position: static;
     inset: auto;
     /* Anulan el width/height inline que trae el plano espacial. */
@@ -4751,7 +4815,7 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
     row-gap: 0.6rem;
   }
 }
-@media (max-width: 767px) {
+@media (width < 768px) {
   .ui-v2 .pos-odoo__panel-duplicado-movil {
     display: none;
   }
@@ -4961,7 +5025,7 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
 .ui-v2 .salon-odoo--solo .salon-odoo__nueva--v3 span {
   display: inline;
 }
-@media (max-width: 767px) {
+@media (width < 768px) {
   .ui-v2 .salon-odoo__cabecera,
   .ui-v2 .salon-odoo--solo .salon-odoo__cabecera {
     grid-template-columns: 46px minmax(0, 1fr) 46px;
@@ -5003,6 +5067,9 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
   }
 }
 @media (min-width: 768px) {
+  .ui-v2 .plano-mapa--operativo {
+    min-height: var(--plano-altura-auto);
+  }
   .ui-v2 .plano-mapa--auto {
     flex: none;
     height: var(--plano-altura-auto);
@@ -5194,7 +5261,7 @@ button.constructor-orden__abrir-resumen {
   background: var(--card);
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
   .ordenes-vistas__toggle button {
     width: 44px;
     padding-inline: 0;
@@ -5358,9 +5425,13 @@ button.constructor-orden__abrir-resumen {
   font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
+  .ui-v2 .pos-nav__identity {
+    display: none;
+  }
+
   .pos-odoo.ui-v2 > main {
-    padding-top: 4.65rem;
+    padding-top: calc(4.65rem + env(safe-area-inset-top));
   }
 
   .ui-v2 .pos-mobile-brand {
@@ -5397,7 +5468,7 @@ button.constructor-orden__abrir-resumen {
   }
 
   .opciones-page .settings-nav {
-    top: 56px;
+    top: calc(56px + env(safe-area-inset-top));
     display: flex;
     flex-wrap: nowrap;
     justify-content: flex-start;
@@ -5418,6 +5489,27 @@ button.constructor-orden__abrir-resumen {
     display: inline;
   }
 
+  .opciones-page input.visually-hidden[type="file"] {
+    width: 1px;
+    height: 1px;
+    min-height: 1px;
+    margin: -1px;
+    padding: 0;
+  }
+
+  .ui-v2 .pos-nav .icono {
+    min-width: 48px;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea,
+  .opciones-page .form-odoo__tarjeta input:not([type="checkbox"]),
+  .opciones-page .form-odoo__tarjeta select,
+  .opciones-page .form-odoo__tarjeta textarea {
+    font-size: max(16px, 1rem);
+  }
+
   .constructor-empaque {
     grid-template-columns: minmax(0, 1fr) auto;
   }
@@ -5425,5 +5517,11 @@ button.constructor-orden__abrir-resumen {
   .constructor-empaque > :last-child {
     grid-column: 1 / -1;
     justify-self: stretch;
+  }
+}
+
+@media (width < 360px) {
+  .ui-v2 .inventario-resumen {
+    grid-template-columns: 1fr;
   }
 }

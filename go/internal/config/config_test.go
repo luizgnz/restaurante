@@ -53,3 +53,24 @@ func TestEnsureFileCreatesDefaultsWithoutOverwritingExistingConfig(t *testing.T)
 		t.Fatalf("configuración existente alterada: %q, %v", bytes, err)
 	}
 }
+
+func TestSaveReplacesExistingConfigAndLeavesReadableJSON(t *testing.T) {
+	dir := t.TempDir()
+	first := Defaults()
+	first.NombreLocal = "Primero"
+	if err := Save(dir, first); err != nil {
+		t.Fatal(err)
+	}
+	second := Defaults()
+	second.NombreLocal = "Segundo"
+	if err := Save(dir, second); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := Load(dir)
+	if err != nil || loaded.NombreLocal != "Segundo" {
+		t.Fatalf("configuración reemplazada inválida: %q, %v", loaded.NombreLocal, err)
+	}
+	if leftovers, err := filepath.Glob(filepath.Join(dir, ".config-*.tmp")); err != nil || len(leftovers) != 0 {
+		t.Fatalf("archivos temporales pendientes: %v, %v", leftovers, err)
+	}
+}

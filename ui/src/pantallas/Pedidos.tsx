@@ -4,6 +4,7 @@ import {
   ArrowRightLeft,
   BellRing,
   Clock,
+  Check,
   LoaderCircle,
   ReceiptText,
 } from "lucide-react";
@@ -108,7 +109,21 @@ export function Pedidos({
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [abriendoId, setAbriendoId] = useState<number | null>(null);
+  const [entregandoId, setEntregandoId] = useState<number | null>(null);
   const [soloIncidencias, setSoloIncidencias] = useState(false);
+
+  async function entregarOrden(ordenId: number) {
+    if (entregandoId != null) return;
+    setEntregandoId(ordenId);
+    setError("");
+    try {
+      await onEntregar(ordenId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setEntregandoId(null);
+    }
+  }
 
   async function abrirOrden(cuentaId: number, ordenId: number) {
     if (abriendoId != null) return;
@@ -218,6 +233,7 @@ export function Pedidos({
           <span role="columnheader">Espera</span>
           <span role="columnheader">Estado</span>
           <span role="columnheader">Productos</span>
+          <span role="columnheader"><span className="sr-only">Confirmar entrega</span></span>
         </div>
         {cargando && cuentas.length === 0 ? (
           <div aria-hidden="true">
@@ -231,27 +247,46 @@ export function Pedidos({
             const bloqueada = pendientes.length > 0;
             return (
               <Fragment key={orden.id}>
-                <button
-                  type="button"
+                <div
                   role="row"
                   className={`tabla-ordenes__fila tactil${bloqueada ? " is-bloqueada" : ""}`}
-                  aria-label={`Abrir Orden #${orden.id} de ${cuenta.tipoServicio === "para_llevar" ? `Para llevar #${cuenta.numeroServicio}` : `la Mesa #${cuenta.mesa}`}`}
                   aria-busy={abriendoId === orden.id}
-                  disabled={abriendoId != null}
                   onClick={() => abrirOrden(cuenta.id, orden.id)}
                 >
                   <span role="cell" className="tabla-ordenes__orden">
+                    <button
+                      type="button"
+                      className="tabla-ordenes__abrir"
+                      aria-label={`Abrir Orden #${orden.id} de ${cuenta.tipoServicio === "para_llevar" ? `Para llevar #${cuenta.numeroServicio}` : `la Mesa #${cuenta.mesa}`}`}
+                      disabled={abriendoId != null}
+                    >
                     <strong>Orden #{orden.id}</strong>
                     <span className="tabla-ordenes__mesa">{cuenta.tipoServicio === "para_llevar" ? `Para llevar #${cuenta.numeroServicio}${cuenta.clienteNombre ? ` · ${cuenta.clienteNombre}` : ""}` : `Mesa #${cuenta.mesa}`}</span>
+                    </button>
                     {bloqueada ? <Badge variant="danger">Cocina esperando respuesta</Badge> : null}
                   </span>
                   <span role="cell"><span className="chip-espera" title="Minutos de espera"><Clock size={12} aria-hidden="true" />{espera}</span></span>
                   <span role="cell"><Badge variant={tonoEtapaOrden(orden.etapa)}>{etiquetaEtapaOrden(orden.etapa)}</Badge></span>
                   <span role="cell" className="tabla-ordenes__descripcion">
                     {abriendoId === orden.id ? <span className="tabla-ordenes__abriendo"><LoaderCircle size={14} aria-hidden="true" /> Abriendo…</span> : describirOrden(orden)}
-                    {orden.etapa === "listo" ? <Button type="button" size="sm" onClick={(event) => { event.stopPropagation(); onEntregar(orden.id); }}>{cuenta.tipoServicio === "para_llevar" ? "Retirado" : "Entregado"}</Button> : null}
                   </span>
-                </button>
+                  <span role="cell" className="tabla-ordenes__entrega">
+                    {orden.etapa === "listo" ? (
+                      <Button
+                        type="button"
+                        size="icon"
+                        className="tabla-ordenes__confirmar"
+                        aria-label={`Marcar Orden #${orden.id} como ${cuenta.tipoServicio === "para_llevar" ? "retirada" : "entregada"}`}
+                        title={cuenta.tipoServicio === "para_llevar" ? "Marcar como retirado" : "Marcar como entregado"}
+                        disabled={entregandoId != null}
+                        aria-busy={entregandoId === orden.id}
+                        onClick={(event) => { event.stopPropagation(); void entregarOrden(orden.id); }}
+                      >
+                        {entregandoId === orden.id ? <LoaderCircle size={20} aria-hidden="true" /> : <Check size={20} aria-hidden="true" />}
+                      </Button>
+                    ) : null}
+                  </span>
+                </div>
                 {pendientes.map((incidencia) => (
                   <div className={`mesero-incidencia is-${incidencia.tipo}`} key={incidencia.id}>
                     {incidencia.tipo === "sugerencia" ? <ArrowRightLeft size={18} aria-hidden="true" /> : <AlertTriangle size={18} aria-hidden="true" />}

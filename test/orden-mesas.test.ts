@@ -33,4 +33,26 @@ describe("ordenar mesas", () => {
     const claves = new Set(mesas.map((m) => `${m.pos_x}:${m.pos_y}`));
     expect(claves.size).toBe(24);
   });
+
+  it("Auto reduce columnas en un lienzo estrecho y deja espacio entre mesas", () => {
+    for (const cantidad of [10, 24]) {
+      const ancho = 280;
+      const mesas = ordenarMesas(Array.from({ length: cantidad }, (_, i) => ({ numero: i + 1 })), ancho);
+      const columnas = columnasPara(cantidad, ancho);
+      const alto = Math.max(560, 40 + Math.ceil(cantidad / columnas) * 120);
+      expect(columnas).toBe(2);
+      const rects = mesas.map((m) => ({
+        x: m.pos_x / 100 * ancho, y: m.pos_y / 100 * alto,
+        ancho: m.ancho, alto: m.alto,
+      }));
+      for (const [i, rect] of rects.entries()) {
+        expect(rect.x).toBeGreaterThanOrEqual(0);
+        expect(rect.x + rect.ancho).toBeLessThanOrEqual(ancho - 8);
+        expect(rect.y + rect.alto).toBeLessThanOrEqual(alto - 8);
+        expect(rects.every((other, j) => i === j ||
+          rect.x + rect.ancho <= other.x || other.x + other.ancho <= rect.x ||
+          rect.y + rect.alto <= other.y || other.y + other.alto <= rect.y)).toBe(true);
+      }
+    }
+  });
 });

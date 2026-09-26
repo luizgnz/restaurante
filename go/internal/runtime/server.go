@@ -11,9 +11,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/luizgnz/restaurante/go/internal/accounts"
 	"github.com/luizgnz/restaurante/go/internal/auth"
 	"github.com/luizgnz/restaurante/go/internal/billing"
@@ -43,6 +45,8 @@ func NewHandlerWithRestart(db *sql.DB, uiDir string, appConfig config.App, dataD
 
 func newHandler(db *sql.DB, uiDir string, appConfig config.App, restart func() error, dataDirs ...string) http.Handler {
 	var configState atomic.Pointer[config.App]
+	var configMu sync.Mutex
+	idArranque := uuid.NewString()
 	configState.Store(&appConfig)
 	dataDir := ""
 	if len(dataDirs) > 0 {
@@ -56,7 +60,7 @@ func newHandler(db *sql.DB, uiDir string, appConfig config.App, restart func() e
 			return
 		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		json.NewEncoder(w).Encode(map[string]any{"ok": true, "runtime": "go"})
+		json.NewEncoder(w).Encode(map[string]any{"ok": true, "runtime": "go", "idArranque": idArranque})
 	})
 	mux.HandleFunc("GET /api/sesion", func(w http.ResponseWriter, r *http.Request) {
 		session, err := auth.ByToken(r.Context(), db, sessionToken(r))
@@ -136,6 +140,8 @@ func newHandler(db *sql.DB, uiDir string, appConfig config.App, restart func() e
 		if !decodeJSON(w, r, &patch, 2<<20) {
 			return
 		}
+		configMu.Lock()
+		defer configMu.Unlock()
 		updated, err := applyConfigPatch(*configState.Load(), patch)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, err.Code, err.Message)
@@ -790,6 +796,7 @@ func newHandler(db *sql.DB, uiDir string, appConfig config.App, restart func() e
 			"habilitado": current.ServidorRedHabilitado, "nombre": current.NombreServidor,
 			"puerto": port, "urls": printing.NetworkURLs(port, current.ServidorRedHabilitado, localIPv4()),
 			"salud": "operativo", "requiereReinicio": false, "reinicioDisponible": restart != nil,
+			"idArranque": idArranque,
 		})
 	})
 	mux.HandleFunc("POST /api/red/reiniciar", func(w http.ResponseWriter, r *http.Request) {
@@ -800,6 +807,8 @@ func newHandler(db *sql.DB, uiDir string, appConfig config.App, restart func() e
 			writeError(w, http.StatusServiceUnavailable, "reinicio_no_disponible", "El reinicio desde Opciones no está configurado en este equipo")
 			return
 		}
+		configMu.Lock()
+		defer configMu.Unlock()
 		if err := restart(); err != nil {
 			writeError(w, http.StatusInternalServerError, "reinicio_fallido", "No se pudo solicitar el reinicio; revise la tarea de Windows")
 			return
