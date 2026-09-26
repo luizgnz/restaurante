@@ -362,6 +362,7 @@ export function Inventario({
             const estadoMaterial = estadoInventario(material);
             const presentacion = presentarUnidadMaterial(material.nombre, material.unidadInventario);
             const nombreConUnidad = `${presentacion.nombre} (${presentacion.unidad})`;
+            const codigoVisible = material.codigo && !material.codigo.startsWith("menu-real:") ? material.codigo : null;
             return (
               <div className="inventario-fila" role="row" key={material.id}>
                 <span className="inventario-material" role="cell" data-label="Material">
@@ -376,7 +377,7 @@ export function Inventario({
                         <strong>{presentacion.nombre}</strong>
                         <span className="inventario-material__unidad">({presentacion.unidad})</span>
                       </span>
-                      {material.codigo ? <small>{material.codigo}</small> : null}
+                      {codigoVisible ? <small>{codigoVisible}</small> : null}
                     </button>
                   ) : (
                     <>
@@ -384,7 +385,7 @@ export function Inventario({
                         <strong>{presentacion.nombre}</strong>
                         <span className="inventario-material__unidad">({presentacion.unidad})</span>
                       </span>
-                      {material.codigo ? <small>{material.codigo}</small> : null}
+                      {codigoVisible ? <small>{codigoVisible}</small> : null}
                     </>
                   )}
                 </span>

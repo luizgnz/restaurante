@@ -451,7 +451,7 @@ export function ConstructorOrden({
                 )}
                 <span className="carta__contenido">
                   <strong>{producto.nombre}</strong>
-                  {producto.codigo ? <span>{producto.codigo}</span> : null}
+                  {producto.codigo && !producto.codigo.startsWith("menu-real:") ? <span>{producto.codigo}</span> : null}
                   {producto.configurable ? <Badge>Personalizable</Badge> : null}
                   {producto.disponible === false ? <Badge variant="secondary">Agotado</Badge> : null}
                   <span className="carta__precio">{dinero(producto.precio_centavos)}</span>
