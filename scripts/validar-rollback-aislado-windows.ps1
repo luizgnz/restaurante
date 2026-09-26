@@ -42,7 +42,8 @@ try {
   $indexHash = (Get-FileHash -LiteralPath $index -Algorithm SHA256).Hash
 
   $prepare = Join-Path $repo 'installer\windows\prepare-update.ps1'
-  & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $prepare -InstallDir $app -DataDir $data | Out-Null
+  # El servidor instalado puede estar activo; el respaldo aislado usa otra base.
+  & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $prepare -InstallDir $app -DataDir $data -SkipRunningServerCheck | Out-Null
   if ($LASTEXITCODE -ne 0) { throw 'No se pudo crear el respaldo aislado.' }
 
   Set-Content -LiteralPath (Join-Path $migrations $migrationApplied) -Value 'CREATE TABLE ci_rollback_probe (id INTEGER PRIMARY KEY);' -Encoding utf8

@@ -20,12 +20,12 @@ El instalador se distribuye como un ZIP que contiene `Restaurante-Setup-<versió
 
 ## Comportamiento
 
-1. Si existe una instalación anterior, detiene la tarea local y copia la aplicación y `salon.sqlite` a `C:\ProgramData\Restaurante\backups\updates\<fecha-hora>`.
+1. Si existe una instalación anterior, detiene la tarea local, espera a que salga `restaurante.exe` y copia la aplicación y `salon.sqlite` a `C:\ProgramData\Restaurante\backups\updates\<fecha-hora>`. Si el servidor sigue activo después de 30 segundos, aborta antes de copiar la base.
 2. Conserva únicamente los tres puntos automáticos de actualización más recientes. No elimina respaldos manuales ni de jornada.
 3. Instala la aplicación en `C:\Program Files\Restaurante` y mantiene datos y configuración en `C:\ProgramData\Restaurante`.
 4. Ejecuta `restaurante.exe -verify-install`, que abre SQLite, aplica migraciones, asegura el catálogo inicial y comprueba la base y la interfaz antes de activar la versión. En la primera instalación crea `salon.sqlite`; no intenta restaurar una base inexistente.
 5. Registra **`Restaurante POS`** como tarea de inicio y **`Restaurante POS - Reiniciar`** como tarea bajo demanda, ambas con descripción y bajo la cuenta del sistema; espera hasta que `/api/salud` responda. Se encuentran en **Programador de tareas → Biblioteca del Programador de tareas**, no en `services.msc`. Solo entonces ofrece «Abrir Restaurante».
-6. Si falla la validación o el arranque durante una actualización, restaura la aplicación y la base anteriores. La restauración quita archivos exclusivos de la actualización fallida y archivos WAL/SHM obsoletos. Si Setup se cancela después de detener la tarea, intenta reanudar la versión anterior. En una primera instalación informa el error y deja los registros para diagnóstico.
+6. Si falla la validación o el arranque durante una actualización, detiene la tarea, espera la salida del proceso y restaura la aplicación y la base anteriores. La restauración quita archivos exclusivos de la actualización fallida y archivos WAL/SHM obsoletos, reinicia la tarea y comprueba `/api/salud`. Si Setup se cancela después de detener la tarea, intenta reanudar la versión anterior. En una primera instalación informa el error y deja los registros para diagnóstico.
 7. Opcionalmente, si se marca la casilla de acceso LAN (desmarcada al inicio), añade una regla entrante de firewall limitada a `restaurante.exe`, TCP 8080, `LocalSubnet` y perfil Privado. La IP asignada al servidor no forma parte de la regla. El desinstalador elimina la regla creada por Restaurante.
 8. El desinstalador elimina la aplicación y las tareas, pero conserva base, configuración y respaldos.
 
@@ -44,4 +44,4 @@ La guía [Soporte Windows](../../docs/SOPORTE_WINDOWS.md) indica cómo ubicar y 
 - Confirmar restauración de aplicación y SQLite, arranque tras reiniciar Windows y acceso desde otro dispositivo de la red local.
 - Firmar el ejecutable antes de entregarlo a un restaurante.
 
-La instalación inicial, las actualizaciones con datos, la reanudación tras una cancelación causada por McAfee y el reinicio solicitado desde Opciones se comprobaron en Windows 11 el 2026-09-25. La restauración se probó de forma aislada; aún falta forzar un fallo real del instalador y verificar el paquete en el otro equipo Windows y desde otro dispositivo de su red. Ver `docs/REVISION_INSTALACION_STACK_2026-09-25.md`.
+La instalación inicial, las actualizaciones con datos, la reanudación tras una cancelación causada por McAfee y el reinicio solicitado desde Opciones se comprobaron en Windows 11. La espera del proceso antes del respaldo pasó en una actualización repetida con `pass13`; la restauración se probó de forma aislada. Aún falta forzar un fallo real del instalador y verificar el paquete en el otro equipo Windows y desde otro dispositivo de su red. Ver `docs/REVISION_INSTALACION_STACK_2026-09-25.md`.
