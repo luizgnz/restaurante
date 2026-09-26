@@ -23,7 +23,7 @@ Tras el cambio del instalador pasaron `npm test` (**520/520 en 86 archivos**), `
 
 ## Evidencia de recuperación en este Windows
 
-Luis confirmó que **los productos son reales**; cantidades, recetas y pedidos de esta instalación son de prueba. Antes de ejecutar los Setups, se copiaron fuera de `ProgramData` los 83 archivos de un respaldo previo y todos coincidieron por SHA-256. Una instantánea consistente de SQLite pasó `PRAGMA integrity_check`, conservó el dato de control ID 9 y tuvo SHA-256 `6A1698C1DAD298437F83E33545E6D244468090E4F88843C8B24B45BCE689BEA7`. Todo quedó en `%USERPROFILE%\Documents\Restaurante-rollback-preflight-20260926` de este equipo.
+Luis confirmó que **los productos son reales**; cantidades, recetas y pedidos de esta instalación son de prueba. Antes de ejecutar los Setups, se copiaron fuera de `ProgramData` los 83 archivos de un respaldo previo y todos coincidieron por SHA-256. Una instantánea consistente de SQLite pasó `PRAGMA integrity_check` y conservó el dato de control ID 9. Las seis instantáneas antes y después de los ensayos tuvieron el mismo SHA-256; el valor y los archivos con productos reales quedaron solo en `%USERPROFILE%\Documents\Restaurante-rollback-preflight-20260926` de este equipo, junto a `sha256-evidencia.json`.
 
 | Ensayo | Salida de Setup | Resultado comprobado |
 | --- | --- | --- |
