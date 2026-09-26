@@ -26,7 +26,7 @@ type App struct {
 	EntregaAutomaticaSiNoConfirma bool     `json:"entrega_automatica_si_no_confirma"`
 	EntregaAutomaticaMinutos      int      `json:"entrega_automatica_minutos"`
 	PrioridadParaLlevar           string   `json:"prioridad_para_llevar"`
-	SugerirEmpaqueParaLlevar     bool     `json:"sugerir_empaque_para_llevar"`
+	SugerirEmpaqueParaLlevar      bool     `json:"sugerir_empaque_para_llevar"`
 	DevolverInsumosPreparados     bool     `json:"devolver_insumos_preparados"`
 	PINAlEmitirPrecuenta          bool     `json:"pin_al_emitir_precuenta"`
 	PINAlEnviarCaja               bool     `json:"pin_al_enviar_caja"`
@@ -75,7 +75,7 @@ func Defaults() App {
 		EntregaAutomaticaSiNoConfirma: true,
 		EntregaAutomaticaMinutos:      30,
 		PrioridadParaLlevar:           "igual",
-		SugerirEmpaqueParaLlevar:     true,
+		SugerirEmpaqueParaLlevar:      true,
 		DevolverInsumosPreparados:     true,
 		PINAlEmitirPrecuenta:          true,
 		PINAlEnviarCaja:               true,
@@ -161,4 +161,13 @@ func Save(dataDir string, value App) error {
 	}
 	bytes = append(bytes, '\n')
 	return os.WriteFile(filepath.Join(dataDir, "config.json"), bytes, 0o600)
+}
+
+// EnsureFile materializa la configuración inicial sin sobrescribir ajustes existentes.
+func EnsureFile(dataDir string, value App) error {
+	_, err := os.Stat(filepath.Join(dataDir, "config.json"))
+	if errors.Is(err, os.ErrNotExist) {
+		return Save(dataDir, value)
+	}
+	return err
 }
