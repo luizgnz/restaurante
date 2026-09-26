@@ -14,6 +14,7 @@ DefaultGroupName=Restaurante
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin
+UsePreviousTasks=no
 OutputDir=output
 OutputBaseFilename=Restaurante-Setup-{#MyAppVersion}-x64
 Compression=lzma2/max
@@ -39,6 +40,10 @@ Source: "{#StageDir}\migrations\*"; DestDir: "{app}\migrations"; Flags: ignoreve
 Source: "rollback-update.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
 Source: "register-task.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
 Source: "restart-task.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
+Source: "firewall-lan.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
+
+[Tasks]
+Name: "lanfirewall"; Description: "Permitir TCP 8080 a la red local privada (cambie las credenciales iniciales al terminar)"; GroupDescription: "Acceso desde otros equipos:"; Flags: unchecked
 
 [Dirs]
 Name: "{commonappdata}\Restaurante\data"; Permissions: users-modify
@@ -52,6 +57,7 @@ Name: "{autodesktop}\Restaurante"; Filename: "http://127.0.0.1:8080/"
 Filename: "http://127.0.0.1:8080/"; Description: "Abrir Restaurante"; Flags: shellexec nowait postinstall skipifsilent
 
 [UninstallRun]
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ""{app}\installer\firewall-lan.ps1"" -Mode Remove"; Flags: runhidden waituntilterminated skipifdoesntexist; RunOnceId: "RemoveLanFirewall"
 Filename: "{sys}\schtasks.exe"; Parameters: "/End /TN ""Restaurante POS - Reiniciar"""; Flags: runhidden waituntilterminated; RunOnceId: "StopRestartTask"
 Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /F /TN ""Restaurante POS - Reiniciar"""; Flags: runhidden waituntilterminated; RunOnceId: "DeleteRestartTask"
 Filename: "{sys}\schtasks.exe"; Parameters: "/End /TN ""Restaurante POS"""; Flags: runhidden waituntilterminated; RunOnceId: "StopTask"
@@ -117,7 +123,7 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;
-  VerifyOK, StartedOK, RollbackOK: Boolean;
+  VerifyOK, StartedOK, RollbackOK, FirewallOK: Boolean;
   LogPath, Failure: String;
 begin
   if CurStep = ssPostInstall then begin
@@ -163,6 +169,12 @@ begin
     if not SaveStringToFile(ExpandConstant('{app}\install-success.marker'), 'ok', False) then
       RaiseException('No se pudo guardar la confirmación de instalación.');
     RestoreTaskOnExit := False;
+    if WizardIsTaskSelected('lanfirewall') then begin
+      FirewallOK := RunPowerShell('firewall-lan.ps1', '-Mode Install -InstallDir "' + ExpandConstant('{app}') + '"');
+      Log('Restaurante: regla LAN privada TCP 8080 = ' + IntToStr(Ord(FirewallOK)));
+      if not FirewallOK and not WizardSilent then
+        MsgBox('Restaurante se instaló, pero Windows no pudo crear la regla opcional de firewall. Revise el registro de Setup y la política de red.', mbError, MB_OK);
+    end;
   end;
 end;
 

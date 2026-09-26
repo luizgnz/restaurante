@@ -24,7 +24,8 @@ El instalador se distribuye como un ZIP que contiene `Restaurante-Setup-<versió
 4. Ejecuta `restaurante.exe -verify-install`, que abre SQLite, aplica migraciones, asegura el catálogo inicial y comprueba la base y la interfaz antes de activar la versión. En la primera instalación crea `salon.sqlite`; no intenta restaurar una base inexistente.
 5. Registra **`Restaurante POS`** como tarea de inicio y **`Restaurante POS - Reiniciar`** como tarea bajo demanda, ambas con descripción y bajo la cuenta del sistema; espera hasta que `/api/salud` responda. Se encuentran en **Programador de tareas → Biblioteca del Programador de tareas**, no en `services.msc`. Solo entonces ofrece «Abrir Restaurante».
 6. Si falla la validación o el arranque durante una actualización, restaura la aplicación y la base anteriores. La restauración quita archivos exclusivos de la actualización fallida y archivos WAL/SHM obsoletos. Si Setup se cancela después de detener la tarea, intenta reanudar la versión anterior. En una primera instalación informa el error y deja los registros para diagnóstico.
-7. El desinstalador elimina la aplicación y la tarea, pero conserva base, configuración y respaldos.
+7. Opcionalmente, si se marca la casilla de acceso LAN (desmarcada al inicio), añade una regla entrante de firewall limitada a `restaurante.exe`, TCP 8080, `LocalSubnet` y perfil Privado. La IP asignada al servidor no forma parte de la regla. El desinstalador elimina la regla creada por Restaurante.
+8. El desinstalador elimina la aplicación y las tareas, pero conserva base, configuración y respaldos.
 
 El instalador detiene por sí mismo la tarea antes de actualizar. No solicita cerrar aplicaciones ajenas que estén examinando los archivos, como `McAfee Framework Host`; se comprobó que esta configuración permite actualizar en el Windows de prueba sin afectar la base.
 
@@ -32,7 +33,7 @@ Los scripts de respaldo, restauración y registro de la tarea se ejecutan desde 
 
 Para diagnosticar un fallo, revise `C:\ProgramData\Restaurante\logs\install.log`, `server.log`, `install-task.log` y `restart.log`. La configuración persistente está en `C:\ProgramData\Restaurante\config.json`; el puerto del instalador es 8080. El flujo `instalador-windows` ejecuta el binario compilado en un Windows limpio con datos temporales y comprueba SQLite, la API de salud y la página inicial.
 
-La guía [Soporte Windows](../../docs/SOPORTE_WINDOWS.md) indica cómo ubicar y reiniciar la tarea, comprobar la aplicación, guardar registros y gestionar usuarios.
+La guía [Soporte Windows](../../docs/SOPORTE_WINDOWS.md) indica cómo ubicar y reiniciar la tarea, comprobar la aplicación, reservar la IP mediante DHCP, revisar el firewall, guardar registros y gestionar usuarios. En una red marcada como Pública la regla opcional no se activa. Cambie las credenciales iniciales antes de utilizar el acceso LAN.
 
 ## Verificación real obligatoria antes de publicar
 

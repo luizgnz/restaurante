@@ -5,6 +5,11 @@ RESTAURANTE — INSTALACIÓN EN WINDOWS
    permanecer en la misma carpeta y conservar sus nombres.
 3. Abra Restaurante-Setup-<versión>-x64.exe y acepte la solicitud de
    administrador de Windows.
+4. La casilla opcional de firewall solo permite Restaurante por TCP 8080
+   desde la red local cuando Windows la clasifica como Privada. No asigna
+   una IP fija al servidor. Cambie las credenciales iniciales al terminar.
+5. Para mantener estable la dirección, reserve la IP del servidor en el
+   router según la guía docs/SOPORTE_WINDOWS.md del proyecto.
 
 Este paquete usa varios archivos para que el instalador no tenga que ejecutar
 su motor desde la carpeta temporal de Windows, que puede estar bloqueada por

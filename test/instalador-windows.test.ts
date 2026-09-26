@@ -77,7 +77,7 @@ describe("instalador Windows", () => {
       execFileSync("powershell.exe", [
         "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
         join(process.cwd(), "installer", "windows", "rollback-update.ps1"),
-        "-InstallDir", install, "-DataDir", data,
+        "-InstallDir", install, "-DataDir", data, "-SkipTaskStart",
       ], { timeout: 30_000 });
 
       expect(readFileSync(join(install, "restaurante.exe"), "utf8")).toBe("OLD");

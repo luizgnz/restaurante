@@ -1,6 +1,7 @@
 param(
   [Parameter(Mandatory = $true)][string]$InstallDir,
-  [Parameter(Mandatory = $true)][string]$DataDir
+  [Parameter(Mandatory = $true)][string]$DataDir,
+  [switch]$SkipTaskStart
 )
 
 $ErrorActionPreference = 'Stop'
@@ -70,7 +71,7 @@ foreach ($suffix in @('-wal', '-shm')) {
   }
 }
 
-if (Get-ScheduledTask -TaskName 'Restaurante POS' -ErrorAction SilentlyContinue) {
+if (-not $SkipTaskStart -and (Get-ScheduledTask -TaskName 'Restaurante POS' -ErrorAction SilentlyContinue)) {
   Start-ScheduledTask -TaskName 'Restaurante POS'
 }
 
