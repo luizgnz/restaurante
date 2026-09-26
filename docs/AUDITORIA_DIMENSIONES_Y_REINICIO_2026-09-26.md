@@ -22,6 +22,7 @@ Base: `origin/main` en `47a61f0`. Trabajo en `codex/auditoria-responsive`, dentr
 | P2 | Opciones a 320 px tenía 2 px de desplazamiento horizontal: el campo de archivo oculto heredaba ancho completo. | El campo oculto conserva 1 × 1 px; el ancho de documento volvió a 320 px. |
 | P1 | `config.json` se sobrescribía directamente: un corte durante el reinicio podía dejar JSON truncado e impedir el siguiente arranque. Los cambios rápidos podían llegar fuera de orden. | Escritura temporal, sincronización y reemplazo; el frontend envía los cambios en secuencia y espera los pendientes antes de reiniciar; el backend serializa guardados y reinicio. |
 | P2 | La UI trataba cualquier respuesta saludable posterior como reinicio exitoso, aunque fuera el proceso anterior. | Cada instancia publica un identificador de arranque. La UI recarga únicamente cuando detecta otro identificador. El script espera a que la tarea se detenga antes de iniciarla. |
+| P1 | Al refrescar una sesión vigente aparecía brevemente el login: `null` significaba tanto «consultando» como «sin sesión». | El login se muestra solo tras confirmar una sesión cerrada. Durante la consulta aparece un estado neutro; si falla, ofrece reintentar. La vista inicial del rol se fija antes de mostrar la sesión. |
 
 El botón **Opciones → Red local → Reiniciar Restaurante** ya existía en la base auditada, restringido a administradores. La revisión previa en este Windows documentó un reinicio real con cambio de PID, salud recuperada y dato SQLite conservado en `docs/REVISION_INSTALACION_STACK_2026-09-25.md`. Los cambios de esta rama aún no están instalados ni probados mediante la tarea programada real.
 
@@ -29,7 +30,8 @@ El botón **Opciones → Red local → Reiniciar Restaurante** ya existía en la
 
 - Navegador local: el error de la marca se reprodujo a 390 px y desapareció tras el cambio. Se inspeccionaron también 767 y 768 px; a 767 px el plano usa la cuadrícula móvil y no presenta desplazamiento horizontal. Opciones, Órdenes, Inventario y Editar mapa se recorrieron a 390 px sin desbordamiento horizontal; Opciones también se comprobó a 320 px. En el editor móvil la mesa conserva 96 × 96 px y ya no tiene un máximo CSS de 160 px.
 - A 1280 px, la medida de mesa pasó de aproximadamente 101 × 101 a 139 × 139 px, sin intersecciones entre las diez mesas iniciales. Las posiciones personalizadas muy juntas limitan la escala.
-- `npm test`: 86 archivos y 522 pruebas aprobadas tras instalar las dependencias del worktree. `npm run test:go`, `npm run build` y `npm run licenses` también pasaron. Las pruebas focales del plano pasaron.
+- `npm test`: 87 archivos y 525 pruebas aprobadas tras instalar las dependencias del worktree. `npm run test:go`, `npm run build` y `npm run licenses` también pasaron. Las pruebas focales del plano y de la sesión inicial pasaron.
+- La recarga autenticada se comprobó en el navegador contra la base aislada. Tres pruebas de interfaz cubren la espera, la sesión cerrada y el error de conexión; durante la espera no se renderiza el login.
 - Quedan por validar en un iPhone físico el área segura y el enfoque de campos, así como el reinicio de la nueva compilación instalada en Windows. Las capturas históricas no prueban esta rama.
 
 ## Seguimiento
