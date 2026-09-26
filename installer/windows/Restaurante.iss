@@ -67,6 +67,12 @@ Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /F /TN ""Restaurante POS"""
 var
   HadPreviousInstall: Boolean;
   RestoreTaskOnExit: Boolean;
+  InstallFailureExitCode: Integer;
+
+function GetCustomSetupExitCode: Integer;
+begin
+  Result := InstallFailureExitCode;
+end;
 
 function PreviousInstallExists: Boolean;
 var
@@ -123,7 +129,7 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;
-  VerifyOK, StartedOK, RollbackOK, FirewallOK: Boolean;
+  VerifyOK, StartedOK, MarkerOK, RollbackOK, FirewallOK: Boolean;
   LogPath, Failure: String;
 begin
   if CurStep = ssPostInstall then begin
@@ -140,17 +146,25 @@ begin
         '" -DataDir "' + ExpandConstant('{commonappdata}\Restaurante') + '"');
     if VerifyOK then
       Log('Restaurante: tarea y servidor disponibles = ' + IntToStr(Ord(StartedOK)));
-    if not VerifyOK or not StartedOK then begin
+    MarkerOK := False;
+    if StartedOK then
+      MarkerOK := SaveStringToFile(ExpandConstant('{app}\install-success.marker'), 'ok', False);
+    if not VerifyOK or not StartedOK or not MarkerOK then begin
       if not VerifyOK then
         Failure := 'No se pudo validar la base de datos y los archivos instalados.'
+      else if not StartedOK then
+        Failure := 'El servidor no inició o no respondió en 127.0.0.1:8080.'
       else
-        Failure := 'El servidor no inició o no respondió en 127.0.0.1:8080.';
+        Failure := 'No se pudo guardar la confirmación de instalación.';
       RollbackOK := True;
       if HadPreviousInstall then
         RollbackOK := RunPowerShell('rollback-update.ps1', '-InstallDir "' + ExpandConstant('{app}') +
           '" -DataDir "' + ExpandConstant('{commonappdata}\Restaurante') + '"');
-      if HadPreviousInstall and not RollbackOK then
+      if HadPreviousInstall then
         RestoreTaskOnExit := False;
+      InstallFailureExitCode := 20;
+      if HadPreviousInstall and not RollbackOK then
+        InstallFailureExitCode := 21;
       if not HadPreviousInstall then begin
         Exec(ExpandConstant('{sys}\schtasks.exe'), '/End /TN "Restaurante POS"',
           '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
@@ -166,8 +180,6 @@ begin
         Failure := Failure + ' Era una primera instalación: no había una base anterior que restaurar.';
       RaiseException(Failure + ' Revise ' + LogPath + ' y el registro de Setup.');
     end;
-    if not SaveStringToFile(ExpandConstant('{app}\install-success.marker'), 'ok', False) then
-      RaiseException('No se pudo guardar la confirmación de instalación.');
     RestoreTaskOnExit := False;
     if WizardIsTaskSelected('lanfirewall') then begin
       FirewallOK := RunPowerShell('firewall-lan.ps1', '-Mode Install -InstallDir "' + ExpandConstant('{app}') + '"');

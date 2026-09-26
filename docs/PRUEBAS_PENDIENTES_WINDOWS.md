@@ -1,6 +1,6 @@
 # Pruebas pendientes del instalador Windows
 
-Estado al 26 de septiembre de 2026. Esta lista distingue las comprobaciones observadas en el Windows de desarrollo de las que aún necesitan evidencia. El historial y los resultados están en [la revisión de instalación](REVISION_INSTALACION_STACK_2026-09-25.md).
+Estado al 26 de septiembre de 2026. Esta lista distingue la evidencia obtenida en este Windows de los límites que todavía quedan. El historial está en [la revisión de instalación](REVISION_INSTALACION_STACK_2026-09-25.md).
 
 ## Comprobado en este equipo
 
@@ -8,26 +8,30 @@ Estado al 26 de septiembre de 2026. Esta lista distingue las comprobaciones obse
 - Arranque después de reiniciar Windows, reinicio desde Opciones y recuperación del servidor tras cancelar una actualización por un archivo ocupado por McAfee.
 - Salud de Go y botones de Mesa 1, Nueva orden e Inventario por `localhost` y por la IP del propio servidor en pestañas nuevas del navegador integrado.
 - Creación y retirada de la regla opcional de firewall para `restaurante.exe`, TCP 8080, `LocalSubnet` y perfil Privado. El respaldo SQLite real pasó `PRAGMA integrity_check`.
-- Restauración **aislada** de archivos y SQLite después de una migración fallida. Esta prueba no ejecutó la secuencia de error del instalador Inno Setup.
+- Restauración aislada de archivos y SQLite y, posteriormente, **restauración integral dentro de Inno Setup** con archivos y migración de prueba. Se forzó un fallo tras validar la versión nueva y otro después de arrancarla.
 
-En la revisión de esta nota se repitieron `npm test` (**520/520 en 86 archivos**), `npm run test:go` y `npm run build`, todos correctos. El servidor instalado respondió `{"ok":true,"runtime":"go"}` en `127.0.0.1:8080/api/salud`. Estas verificaciones no sustituyen las pruebas pendientes de Setup ni modificaron los datos instalados.
+Tras el cambio del instalador pasaron `npm test` (**520/520 en 86 archivos**), `npm run test:go` y `npm run build:windows` (incluye TypeScript, Vite, Go e Inno Setup 6.7.3). El servidor instalado respondió `{"ok":true,"runtime":"go"}` en `127.0.0.1:8080/api/salud`.
 
 ## Falta comprobar
 
 | Prueba | Motivo y alcance | Evidencia necesaria |
 | --- | --- | --- |
-| **Actualización fallida con restauración integral de Inno Setup** | El ejecutor de Codex rechazó antes de iniciar PowerShell la preparación de un Setup de fallo controlado (`blocked by policy`). No se conoce la regla exacta. Es la prueba que falta para autorizar el instalador para operación. | Registro completo de Setup y `install.log`; confirmar que se recuperan la versión anterior, el hash o contenido de SQLite y de la interfaz, el dato de control, la tarea `Restaurante POS` y `/api/salud`, también tras reiniciar Windows. Registrar explícitamente si falla la restauración. |
-| Restaurar una **copia temporal** del respaldo real `20260926-015237` | Otro comando de Codex fue rechazado antes de ejecutarse. El respaldo solo se leyó para verificar integridad y el dato ID 9; no se modificó la instalación. | Resultado de `rollback-update.ps1` sobre rutas temporales, hashes antes/después, `restaurante.exe -verify-install` y registro de cualquier error. No usar la base activa como destino de esta prueba. |
+| Arranque tras reiniciar Windows con `pass15` | El reinicio anterior correspondía a una versión previa; `pass15` se instaló y arrancó sano, pero aún no se ha reiniciado este Windows desde entonces. | Tras reiniciar: tarea `Restaurante POS` activa, `/api/salud` correcto, interfaz disponible y mismo dato ID 9. |
+| Clics con ratón en Edge con `pass15` | El control automatizado de Edge se detuvo porque no pudo verificar la URL activa. La página y `/api/salud` respondieron 200 en `192.168.1.85:8080` desde el servidor, pero esto no comprueba los botones en Edge. | En este Windows, abrir una pestaña nueva por `localhost:8080` y otra por `192.168.1.85:8080`; comprobar con ratón Mesa 1, Nueva orden, Órdenes e Inventario sin enviar pedidos reales. |
 | Navegador y acceso desde otro equipo | Luis excluyó de esta revisión local el Windows de la captura y la prueba desde un segundo dispositivo. La IP `192.168.1.85` se probó desde el propio servidor; ello no demuestra que el firewall o la red permitan conexiones entrantes. | En una red de confianza: IP actual del servidor, perfil de red, regla aplicable, navegador y versión, inicio de sesión, Mesa 1, Nueva orden, Órdenes e Inventario desde otro dispositivo. Comprobar también tras un reinicio y un cambio de IP o una reserva DHCP. |
 | Plataformas y entrega | macOS no está disponible en este Windows. Tampoco se verificó un Windows 10 limpio ni se firmó el paquete. | Pruebas de instalación y operación en los sistemas objetivo y firma del ejecutable antes de distribuirlo. |
 
-## Prueba controlada en este Windows
+## Evidencia de recuperación en este Windows
 
-Luis autorizó usar **este mismo Windows**. No hace falta otro equipo ni una VM: aquí están el servidor sano, la instalación `pass13` y una base de prueba con el dato de control ID 9. Antes de provocar un fallo se debe conservar fuera de la instalación una copia íntegra y comprobada de los datos y del paquete sano, y disponer de una ventana para recuperar el servicio si algo sale mal. El obstáculo actual es que el ejecutor de Codex rechazó preparar el Setup de fallo controlado; el cambio de equipo no resolvería ese rechazo.
+Luis confirmó que **los productos son reales**; cantidades, recetas y pedidos de esta instalación son de prueba. Antes de ejecutar los Setups, se copiaron fuera de `ProgramData` los 83 archivos de un respaldo previo y todos coincidieron por SHA-256. Una instantánea consistente de SQLite pasó `PRAGMA integrity_check`, conservó el dato de control ID 9 y tuvo SHA-256 `6A1698C1DAD298437F83E33545E6D244468090E4F88843C8B24B45BCE689BEA7`. Todo quedó en `%USERPROFILE%\Documents\Restaurante-rollback-preflight-20260926` de este equipo.
 
-1. Preparar un paquete de prueba identificado por versión y SHA-256 que falle después de copiar archivos y durante la validación de Inno. Registrar la versión sana instalada y comprobar un respaldo externo antes de ejecutarlo. No usar una base operativa de un restaurante para esta prueba.
-2. Conserve el `.exe` y todos sus `.bin` juntos. Antes del intento, anote la versión instalada, compruebe `/api/salud`, cree un dato de control, confirme un respaldo externo y guarde el registro de Setup. El paquete de prueba debe fallar **después del respaldo** y de sustituir archivos, de modo que se ejercite la restauración del instalador; un error previo no valida ese caso.
-3. Después del fallo esperado, compruebe que la versión anterior abre, que el dato sigue allí y que la tarea `Restaurante POS` funciona. Reinicie Windows y repita salud y lectura del dato. Conserve los registros de Setup y `C:\ProgramData\Restaurante\logs`; no comparta contraseñas, PIN ni la base completa por chat.
-4. Si la versión anterior, los datos o el arranque no se recuperan, detenga la prueba y conserve respaldo y registros para diagnosticar. No repita actualizaciones sobre ese estado.
+| Ensayo | Salida de Setup | Resultado comprobado |
+| --- | --- | --- |
+| Fallo forzado después de copiar, aplicar la migración `030_rollback_probe.sql` y validar Go | 0: se descubrió que Inno no señalaba la excepción posterior a la instalación | Restauró ejecutable, HTML y SQLite; quitó la migración; salud Go correcta. La instantánea SQLite posterior tuvo el mismo SHA-256 inicial. |
+| Mismo fallo con `GetCustomSetupExitCode` | **20** | Restauración y hashes iguales; el fallo ahora llega al llamador. |
+| Fallo forzado después de arrancar el nuevo servidor, en la confirmación `install-success.marker` | **20** | La tarea se detuvo y recuperó, desapareció la migración de prueba, salud correcta e instantánea SQLite con el mismo SHA-256. Se simuló la condición tras una escritura exitosa del marcador; no se provocó un fallo real del sistema de archivos. |
+| Actualización normal `pass15` desde el código corregido | **0** | Validación 0, tarea y servidor disponibles 1, marcador `ok`, sin migración de prueba y SQLite con el mismo SHA-256. |
 
-La preparación y ejecución de esa prueba **todavía no están hechas**. No se necesita ninguna acción manual de Luis por ahora: si el paquete puede prepararse y se requiere su intervención para ejecutarlo, Alex dará el archivo y las instrucciones concretas antes de pedirla. Hasta entonces, el instalador compilado sigue siendo un artefacto de prueba, no una entrega para uso operativo.
+Los registros `probe-setup.log`, `probe-r2-setup.log`, `probe-marker-r3-setup.log` y `pass15-setup.log` están en la carpeta externa citada. Los paquetes de fallo controlado, sus `.bin`, scripts de prueba y sumas SHA-256 también se conservaron allí. El código **21** previsto para una restauración que también falle no se provocó sobre esta instalación para evitar dejar los productos reales sin servicio. Rechazos anteriores del ejecutor quedaron registrados en la revisión histórica; en esta sesión la preparación y los ensayos sí se ejecutaron, sin que el rechazo anterior tenga una causa identificada.
+
+El paquete normal `pass15` sigue siendo de prueba. No distribuirlo para uso operativo hasta cerrar el reinicio local y los requisitos de despliegue aplicables al lugar de instalación.
