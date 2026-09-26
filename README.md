@@ -4,7 +4,7 @@ Sistema de gestión para restaurantes diseñado para operar en la red local del 
 
 ## Arranque normal (sin contenedores)
 
-La aplicación usa un servidor compilado en Go, una interfaz React y una base SQLite local; no necesita Docker ni otros servicios. Node.js/npm se utiliza para compilar la interfaz, no para ejecutar el backend de producción.
+La aplicación usa un servidor compilado en Go, una interfaz React y una base SQLite local; no necesita Docker ni otros servicios. Node.js/npm se utiliza durante la construcción de la interfaz, no para ejecutar el backend de producción. TypeScript 7 usa un compilador nativo escrito en Go para revisar el código React/TypeScript; Vite genera el paquete web que sirve el servidor Go.
 
 Desde la carpeta del proyecto:
 
@@ -141,7 +141,7 @@ npm run build:go
 npm run licenses
 ```
 
-`npm test` limita Vitest a dos workers en Windows para evitar saturar el equipo. `npm run build` verifica TypeScript y compila la interfaz; `npm run build:go` compila el servidor en `dist/`.
+`npm test` limita Vitest a dos workers en Windows para evitar saturar el equipo. `npm run typecheck` ejecuta el compilador nativo de TypeScript 7 sin emitir archivos. `npm run build` y `npm run build:ui` siguen la misma ruta: primero revisan TypeScript y luego Vite genera `ui/dist`; `npm start` también usa esta ruta antes de compilar y arrancar el servidor. `npm run build:go` compila el servidor en `dist/`. El instalador Windows conserva la misma comprobación mediante `npm run build`.
 
 Para compartir la aplicación con tablets, habilita el acceso de red deliberadamente y revisa el firewall del equipo anfitrión.
 
