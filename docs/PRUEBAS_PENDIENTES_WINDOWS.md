@@ -29,4 +29,3 @@ En la revisión de esta nota se repitieron `npm test` (**520/520 en 86 archivos*
 4. Si la versión anterior, los datos o el arranque no se recuperan, detenga la prueba y conserve respaldo y registros para diagnosticar. No repita actualizaciones sobre ese estado.
 
 La preparación y ejecución de esa prueba manual **todavía no están hechas**. Cuando se disponga del equipo de prueba, Alex entregará los comandos y el paquete específicos de esa sesión. Hasta entonces, el instalador compilado sigue siendo un artefacto de prueba, no una entrega para uso operativo.
-

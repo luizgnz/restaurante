@@ -45,4 +45,3 @@ La guía [Soporte Windows](../../docs/SOPORTE_WINDOWS.md) indica cómo ubicar y 
 - Firmar el ejecutable antes de entregarlo a un restaurante.
 
 La instalación inicial, las actualizaciones con datos, la reanudación tras una cancelación causada por McAfee y el reinicio solicitado desde Opciones se comprobaron en Windows 11. La espera del proceso antes del respaldo pasó en una actualización repetida con `pass13`; la restauración se probó de forma aislada. Aún falta forzar un fallo real del instalador y verificar el paquete desde otro dispositivo. La prueba del otro Windows quedó fuera del alcance acordado para esta revisión local. El estado y las acciones manuales están en [Pruebas pendientes de Windows](../../docs/PRUEBAS_PENDIENTES_WINDOWS.md); el historial detallado está en `docs/REVISION_INSTALACION_STACK_2026-09-25.md`.
-
