@@ -22,13 +22,17 @@ El instalador se distribuye como un ZIP que contiene `Restaurante-Setup-<versió
 2. Conserva únicamente los tres puntos automáticos de actualización más recientes. No elimina respaldos manuales ni de jornada.
 3. Instala la aplicación en `C:\Program Files\Restaurante` y mantiene datos y configuración en `C:\ProgramData\Restaurante`.
 4. Ejecuta `restaurante.exe -verify-install`, que abre SQLite, aplica migraciones, asegura el catálogo inicial y comprueba la base y la interfaz antes de activar la versión. En la primera instalación crea `salon.sqlite`; no intenta restaurar una base inexistente.
-5. Registra `Restaurante POS` como tarea de inicio bajo la cuenta del sistema y espera hasta que `/api/salud` responda. Solo entonces ofrece «Abrir Restaurante».
+5. Registra **`Restaurante POS`** como tarea de inicio y **`Restaurante POS - Reiniciar`** como tarea bajo demanda, ambas con descripción y bajo la cuenta del sistema; espera hasta que `/api/salud` responda. Se encuentran en **Programador de tareas → Biblioteca del Programador de tareas**, no en `services.msc`. Solo entonces ofrece «Abrir Restaurante».
 6. Si falla la validación o el arranque durante una actualización, restaura la aplicación y la base anteriores. La restauración quita archivos exclusivos de la actualización fallida y archivos WAL/SHM obsoletos. Si Setup se cancela después de detener la tarea, intenta reanudar la versión anterior. En una primera instalación informa el error y deja los registros para diagnóstico.
 7. El desinstalador elimina la aplicación y la tarea, pero conserva base, configuración y respaldos.
 
+El instalador detiene por sí mismo la tarea antes de actualizar. No solicita cerrar aplicaciones ajenas que estén examinando los archivos, como `McAfee Framework Host`; se comprobó que esta configuración permite actualizar en el Windows de prueba sin afectar la base.
+
 Los scripts de respaldo, restauración y registro de la tarea se ejecutan desde `C:\Program Files\Restaurante\installer`, no desde `%TEMP%`.
 
-Para diagnosticar un fallo, revise `C:\ProgramData\Restaurante\logs\install.log`, `server.log` e `install-task.log`. El flujo `instalador-windows` ejecuta el binario compilado en un Windows limpio con datos temporales y comprueba SQLite, la API de salud y la página inicial.
+Para diagnosticar un fallo, revise `C:\ProgramData\Restaurante\logs\install.log`, `server.log`, `install-task.log` y `restart.log`. La configuración persistente está en `C:\ProgramData\Restaurante\config.json`; el puerto del instalador es 8080. El flujo `instalador-windows` ejecuta el binario compilado en un Windows limpio con datos temporales y comprueba SQLite, la API de salud y la página inicial.
+
+La guía [Soporte Windows](../../docs/SOPORTE_WINDOWS.md) indica cómo ubicar y reiniciar la tarea, comprobar la aplicación, guardar registros y gestionar usuarios.
 
 ## Verificación real obligatoria antes de publicar
 
@@ -37,4 +41,4 @@ Para diagnosticar un fallo, revise `C:\ProgramData\Restaurante\logs\install.log`
 - Confirmar restauración de aplicación y SQLite, arranque tras reiniciar Windows y acceso desde otro dispositivo de la red local.
 - Firmar el ejecutable antes de entregarlo a un restaurante.
 
-La instalación inicial y una actualización con datos se comprobaron en Windows 11 el 2026-09-25. Una cancelación causada por McAfee dejó el servidor detenido antes de la corrección de reanudación. La restauración se probó de forma aislada, pero aún falta forzar un fallo real del instalador y repetir la cancelación con la corrección. Ver `docs/REVISION_INSTALACION_STACK_2026-09-25.md`.
+La instalación inicial, las actualizaciones con datos, la reanudación tras una cancelación causada por McAfee y el reinicio solicitado desde Opciones se comprobaron en Windows 11 el 2026-09-25. La restauración se probó de forma aislada; aún falta forzar un fallo real del instalador y verificar el paquete en el otro equipo Windows y desde otro dispositivo de su red. Ver `docs/REVISION_INSTALACION_STACK_2026-09-25.md`.
