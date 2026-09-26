@@ -72,4 +72,3 @@ Cerrados el 2026-09-07 en la misma rama `feat/limpieza-interfaz` (commits `440ff
 - `main` es la rama por defecto; el trabajo se integra por PR a `main`.
 - Una rama por tarea creada desde `main`; al cerrar, `npm test` y `npm run build` en verde.
 - Cambios de interfaz: verificación responsive en monitor, tablet y smartphone (390/768/1280) con capturas en `capturas/<fecha>_<tema>/` y su `manifest.json`.
-

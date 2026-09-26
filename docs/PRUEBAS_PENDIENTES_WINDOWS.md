@@ -36,4 +36,3 @@ Luis confirmó que **los productos son reales**; cantidades, recetas y pedidos d
 Los registros `probe-setup.log`, `probe-r2-setup.log`, `probe-marker-r3-setup.log` y `pass15-setup.log` están en la carpeta externa citada. Los paquetes de fallo controlado, sus `.bin`, scripts de prueba y sumas SHA-256 también se conservaron allí. El código **21** previsto para una restauración que también falle no se provocó sobre esta instalación para evitar dejar los productos reales sin servicio. Rechazos anteriores del ejecutor quedaron registrados en la revisión histórica; en esta sesión la preparación y los ensayos sí se ejecutaron, sin que el rechazo anterior tenga una causa identificada.
 
 El paquete normal `pass15` sigue siendo de prueba. No distribuirlo para uso operativo hasta cerrar el reinicio local y los requisitos de despliegue aplicables al lugar de instalación.
-
