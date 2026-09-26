@@ -582,9 +582,12 @@ export function ConstructorOrden({
               ) : null}
             </label>
           )}
+          {lineasPersistibles(lineasUi).length > 0 || borrador.indicaciones.trim() ? (
+            <p className="m-0 text-xs text-muted-foreground">Al volver, el borrador seguirá guardado en este navegador.</p>
+          ) : null}
           <div className="constructor-orden__acciones">
             <Button type="button" variant="outline" onClick={onCancelar}>
-              Cancelar
+              Volver
             </Button>
             <Button
               type="button"
