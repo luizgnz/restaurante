@@ -2,6 +2,8 @@
 
 El instalador de Restaurante está dirigido a Windows 10/11 x64. Instala el binario Go y la interfaz compilada; el equipo del restaurante no necesita Node.js, npm ni Go.
 
+Setup solicita permisos de administrador (`PrivilegesRequired=admin`). Los necesita para escribir en `C:\Program Files\Restaurante`, registrar las tareas de Windows bajo la cuenta del sistema y, si se elige acceso LAN, crear la regla de firewall. El navegador de los usuarios funciona con permisos normales; la regla LAN sigue siendo opcional y viene desmarcada.
+
 ## Generación
 
 ```powershell
