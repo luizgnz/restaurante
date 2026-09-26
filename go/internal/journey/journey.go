@@ -280,7 +280,7 @@ func Close(ctx context.Context, db *sql.DB, employeeID *int64, dataDir string) (
 	}
 	summary := *state.Resumen
 	if summary.CuentasActivas > 0 {
-		return CloseResult{}, &DomainError{"jornada_con_cuentas", fmt.Sprintf("Quedan %d cuentas activas", summary.CuentasActivas)}
+		return CloseResult{}, &DomainError{"jornada_con_cuentas", "Hay mesas abiertas. Cierra todas las cuentas antes de cerrar el turno"}
 	}
 	if summary.TareasCocinaPendientes > 0 {
 		return CloseResult{}, &DomainError{"jornada_con_cocina", fmt.Sprintf("Quedan %d tareas de cocina pendientes", summary.TareasCocinaPendientes)}

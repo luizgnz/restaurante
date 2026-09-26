@@ -101,7 +101,8 @@ export function Backend({
     try {
       await api("/api/jornadas/abrir", { method: "POST" });
       await cargarJornada();
-      setMensaje("Jornada operativa abierta.");
+      await onMovimientoActualizado?.();
+      setMensaje("Turno abierto.");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -109,28 +110,15 @@ export function Backend({
     }
   }
 
-  async function cerrarJornada(input: { usuario: string; password: string; cierreEn?: string }) {
+  async function cerrarJornada() {
     setProcesando(true);
     setCierreError("");
     try {
-      await api("/api/jornadas/cerrar-masivo", { method: "POST", body: JSON.stringify(input) });
+      await api("/api/jornadas/cerrar", { method: "POST" });
       await cargarJornada();
       await onMovimientoActualizado?.();
       setCerrando(false);
-      setMensaje("Jornada cerrada y respaldo creado.");
-    } catch (e) {
-      setCierreError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setProcesando(false);
-    }
-  }
-
-  async function marcarListasEntregadas() {
-    setProcesando(true);
-    setCierreError("");
-    try {
-      await api("/api/jornadas/listos/entregar", { method: "POST" });
-      await Promise.all([cargarJornada(), onMovimientoActualizado?.()]);
+      setMensaje("Turno cerrado y respaldo creado.");
     } catch (e) {
       setCierreError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -149,7 +137,7 @@ export function Backend({
         <div>
           <span className="page-eyebrow">{esAdministrador ? "Administración" : "Operación"}</span>
           <h1>{esAdministrador ? "Administración del restaurante" : "Día operativo"}</h1>
-          <p>{esAdministrador ? "Gestiona la operación, la carta y la distribución del salón." : "Inicia y cierra la jornada cuando lo necesites."}</p>
+          <p>{esAdministrador ? "Gestiona la operación, la carta y la distribución del salón." : "Abre y cierra el turno cuando lo necesites."}</p>
         </div>
         <Button type="button" variant="outline" onClick={onMesas}>
           <LayoutDashboard size={18} aria-hidden="true" /> Volver al salón
@@ -163,32 +151,32 @@ export function Backend({
             <span className="backend-jornada__icono"><CalendarDays size={24} aria-hidden="true" /></span>
             <div>
               <div className="backend-jornada__titulo">
-                <h2>Día operativo</h2>
+                <h2>Turno</h2>
                 <Badge variant={cargandoJornada ? "secondary" : jornada ? "success" : "warning"}>
-                  {cargandoJornada ? "Consultando" : jornada ? "Jornada abierta" : "Jornada cerrada"}
+                  {cargandoJornada ? "Consultando" : jornada ? "Turno abierto" : "Turno cerrado"}
                 </Badge>
               </div>
               <p>
                 {cargandoJornada
-                  ? "Consultando el estado de la jornada…"
+                  ? "Consultando el turno…"
                   : jornada
-                  ? `${fechaLegible(jornada.fechaOperativa)} · iniciada${jornada.abiertaPor ? ` por ${jornada.abiertaPor}` : ""}`
-                  : "Inicia una jornada para comenzar a registrar órdenes."}
+                  ? `${fechaLegible(jornada.fechaOperativa)} · iniciado${jornada.abiertaPor ? ` por ${jornada.abiertaPor}` : ""}`
+                  : "Abre un turno para comenzar a vender."}
               </p>
             </div>
           </div>
-          {jornadaAnterior ? <Alerta tono="aviso">La jornada del {fechaLegible(jornada.fechaOperativa)} sigue abierta. Ciérrala antes de registrar ventas de hoy.</Alerta> : null}
+          {jornadaAnterior ? <Alerta tono="aviso">El turno del {fechaLegible(jornada.fechaOperativa)} sigue abierto. Ciérralo antes de registrar ventas de hoy.</Alerta> : null}
         </div>
         <div className="backend-jornada__acciones">
           {cargandoJornada ? (
-            <Button type="button" variant="outline" disabled>Consultando jornada…</Button>
+            <Button type="button" variant="outline" disabled>Consultando turno…</Button>
           ) : jornada ? (
             <Button type="button" variant="outline" onClick={() => { setCierreError(""); setCerrando(true); }} disabled={procesando}>
-              <Archive size={18} aria-hidden="true" /> Cerrar jornada
+              <Archive size={18} aria-hidden="true" /> Cerrar turno
             </Button>
           ) : (
             <Button type="button" onClick={abrirJornada} disabled={procesando}>
-              <CalendarDays size={18} aria-hidden="true" /> Iniciar jornada
+              <CalendarDays size={18} aria-hidden="true" /> Abrir turno
             </Button>
           )}
         </div>
@@ -197,7 +185,7 @@ export function Backend({
         <Card className="backend-atajo">
           <Plus size={24} aria-hidden="true" />
           <div><h2>Nuevo producto</h2><p>Añade platos, bebidas o materiales.</p></div>
-          <Button type="button" onClick={onCrearProducto}>Crear producto</Button>
+          <Button type="button" variant="outline" onClick={onCrearProducto}>Crear producto</Button>
         </Card>
         <Card className="backend-atajo">
           <Shapes size={24} aria-hidden="true" />
@@ -230,7 +218,7 @@ export function Backend({
           <RotateCcw size={18} aria-hidden="true" /> Reiniciar día de demostración
         </Button>
       </div> : null}
-      {cerrando && resumen ? <CerrarJornadaDialog resumen={resumen} procesando={procesando} error={cierreError} onActualizarEntregas={marcarListasEntregadas} onCancelar={() => setCerrando(false)} onConfirmar={cerrarJornada} /> : null}
+      {cerrando && resumen ? <CerrarJornadaDialog resumen={resumen} procesando={procesando} error={cierreError} onCancelar={() => setCerrando(false)} onConfirmar={cerrarJornada} /> : null}
       {confirmar === "reiniciar" ? (
         <ConfirmarDialog
           titulo="¿Reiniciar el día de demostración?"

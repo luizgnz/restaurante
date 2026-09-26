@@ -222,8 +222,8 @@ func newHandler(db *sql.DB, uiDir string, appConfig config.App, restart func() e
 		if !ok {
 			return
 		}
-		if !userHasAnyRole(session.Usuario, "administrador", "encargado_turno") {
-			writeError(w, http.StatusForbidden, "sin_derecho", "Solo Administración o el encargado de turno pueden abrir la jornada")
+		if !userHasAnyRole(session.Usuario, "administrador", "encargado_turno", "mesero") {
+			writeError(w, http.StatusForbidden, "sin_derecho", "Solo el personal del salón puede abrir el turno")
 			return
 		}
 		if r.ContentLength != 0 {
@@ -556,7 +556,21 @@ func newHandler(db *sql.DB, uiDir string, appConfig config.App, restart func() e
 			writeError(w, http.StatusInternalServerError, "salon_no_disponible", "No se pudo consultar el salón")
 			return
 		}
-		writeJSON(w, http.StatusOK, view)
+		var fechaTurno string
+		err = db.QueryRowContext(r.Context(), `SELECT fecha_operativa FROM jornadas_operativas WHERE estado='abierta' LIMIT 1`).Scan(&fechaTurno)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusInternalServerError, "turno_no_disponible", "No se pudo consultar el turno")
+			return
+		}
+		estadoTurno := "cerrado"
+		if err == nil {
+			estadoTurno = "anterior"
+			if fechaTurno == time.Now().Format("2006-01-02") {
+				estadoTurno = "abierto"
+			}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"mesas": view.Mesas, "pisos": view.Pisos,
+			"turno": map[string]any{"estado": estadoTurno, "fechaOperativa": fechaTurno}})
 	})
 	mux.HandleFunc("PUT /api/plano", func(w http.ResponseWriter, r *http.Request) {
 		if !requireRole(w, r, db, "administrador") {

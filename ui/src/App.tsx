@@ -8,6 +8,7 @@ import { Button } from "./components/ui/button.tsx";
 import { esperaMinutos, nivelEspera } from "../../src/modules/tiempo.ts";
 import { Barra, type Destino } from "./pantallas/Barra.tsx";
 import { Alerta } from "./components/ui/alerta.tsx";
+import { ConfirmarDialog } from "./components/ui/confirmar.tsx";
 import { Backend } from "./pantallas/Backend.tsx";
 import { Categorias } from "./pantallas/Categorias.tsx";
 import { ComandaEnPantalla, type ComandaUi } from "./pantallas/ComandaEnPantalla.tsx";
@@ -66,6 +67,13 @@ type Vista = Destino;
 type RolClave = "administrador" | "encargado_turno" | "mesero" | "cocina" | "caja" | "inventario";
 type UsuarioSesion = { id: number; nombre: string; derecho: string; roles: RolClave[] };
 type Sesion = { abierta: boolean; usuario: UsuarioSesion | null; administrador?: UsuarioSesion | null };
+type EstadoTurno = { estado: "abierto" | "cerrado" | "anterior"; fechaOperativa: string };
+type SolicitudTurno = { estado: "cerrado" | "anterior"; contexto: ContextoOrden };
+
+function fechaLocalActual(): string {
+  const hoy = new Date();
+  return [hoy.getFullYear(), String(hoy.getMonth() + 1).padStart(2, "0"), String(hoy.getDate()).padStart(2, "0")].join("-");
+}
 
 function vistaInicial(roles: RolClave[]): { vista: Vista; ordenTab: "mesero" | "cocina" } {
   if (roles.includes("administrador") || roles.includes("mesero") || roles.includes("encargado_turno")) {
@@ -83,6 +91,8 @@ export function App() {
   const [vista, setVista] = useState<Vista>("plano");
   const [ordenTab, setOrdenTab] = useState<"mesero" | "cocina">("mesero");
   const [mesas, setMesas] = useState<Mesa[]>([]);
+  const [estadoTurno, setEstadoTurno] = useState<EstadoTurno | null>(null);
+  const [solicitudTurno, setSolicitudTurno] = useState<SolicitudTurno | null>(null);
   const [piso, setPiso] = useState("Salón");
   const [pisoId, setPisoId] = useState<number | null>(null);
   const [pisos, setPisos] = useState<Piso[]>([]);
@@ -150,6 +160,8 @@ export function App() {
   const { modalActivo, abrirModal, cerrarModal } = useModalCoordinator();
 
   function establecerSesion(actual: Sesion) {
+    setEstadoTurno(null);
+    setSolicitudTurno(null);
     const usuarioActual = actual.usuario ?? actual.administrador;
     if (actual.abierta && usuarioActual) {
       const inicial = vistaInicial(usuarioActual.roles ?? (["administrador"] as RolClave[]));
@@ -175,8 +187,12 @@ export function App() {
       const data = await api<{
         mesas: Mesa[];
         pisos: { id: number; nombre: string; tiene_fondo: number }[];
+        turno?: EstadoTurno;
       }>("/api/mesas");
+      // Compatibilidad con el runtime anterior mientras se reinicia el servidor local.
+      const turno = data.turno ?? { estado: "abierto" as const, fechaOperativa: fechaLocalActual() };
       setMesas(data.mesas);
+      setEstadoTurno(turno);
       setPisos(data.pisos);
       const nextId =
         pisoId != null && data.pisos.some((p) => p.id === pisoId) ? pisoId : (data.pisos[0]?.id ?? null);
@@ -186,6 +202,7 @@ export function App() {
         setPiso(actual.nombre);
         setTieneFondo(Boolean(actual.tiene_fondo));
       }
+      return turno;
     } finally {
       setCarga((c) => ({ ...c, plano: false }));
     }
@@ -429,6 +446,25 @@ export function App() {
     setContextoOrden(contexto);
     setBorradorOrden(guardado ?? borradorNuevo(contexto));
     setVista("pedido");
+  }
+
+  async function asegurarTurno(contexto: ContextoOrden, permitirCuentaAnterior = false): Promise<boolean> {
+    const turno = await cargarPlano();
+    if (turno.estado === "abierto") return true;
+    if (turno.estado === "anterior" && permitirCuentaAnterior) return true;
+    setSolicitudTurno({ estado: turno.estado, contexto });
+    return false;
+  }
+
+  async function abrirTurnoDesdeSalon() {
+    const pendiente = solicitudTurno;
+    if (!pendiente || pendiente.estado !== "cerrado") return;
+    setSolicitudTurno(null);
+    await conError(async () => {
+      await api("/api/jornadas/abrir", { method: "POST" });
+      await cargarPlano();
+      abrirConstructor(pendiente.contexto);
+    });
   }
 
   function cambiarBorrador(borrador: BorradorOrden) {
@@ -690,6 +726,7 @@ export function App() {
   const puedeMesas = puedeAdministrar || roles.includes("mesero") || roles.includes("encargado_turno");
   const puedeCocina = puedeAdministrar || roles.includes("cocina");
   const puedeOrdenes = puedeMesas || roles.includes("caja");
+  const turnoDisponible = estadoTurno?.estado === "abierto" && estadoTurno.fechaOperativa === fechaLocalActual();
   const esperaPorMesa: Record<number, { espera: number; nivel: ReturnType<typeof nivelEspera> }> = {};
   for (const cuenta of cuentasEnCurso) {
     const espera = cuenta.espera_min ?? esperaMinutos(cuenta.abiertaEn ?? new Date().toISOString());
@@ -724,6 +761,22 @@ export function App() {
         onIr={ir}
       />
       {error ? <Alerta onCerrar={() => setError("")}>{error}</Alerta> : null}
+      {solicitudTurno ? <ConfirmarDialog
+        titulo={solicitudTurno.estado === "cerrado" ? "No hay turno abierto" : "Hay un turno anterior abierto"}
+        descripcion={solicitudTurno.estado === "cerrado"
+          ? "¿Quieres abrir un turno para comenzar a vender?"
+          : "Cierra el turno anterior antes de vender hoy. Si hay mesas abiertas, cierra sus cuentas primero."}
+        confirmarTexto={solicitudTurno.estado === "cerrado" ? "Abrir turno" : puedeGestionarJornada ? "Ir a Turno" : "Entendido"}
+        cancelarTexto="Volver"
+        onCancelar={() => setSolicitudTurno(null)}
+        onConfirmar={() => {
+          if (solicitudTurno.estado === "cerrado") void abrirTurnoDesdeSalon();
+          else {
+            setSolicitudTurno(null);
+            if (puedeGestionarJornada) void ir("backend");
+          }
+        }}
+      /> : null}
       <main>
         {modalActivo === "pin" && pinPendiente ? (
           <PinPad
@@ -856,6 +909,7 @@ export function App() {
             nuevaOrdenV2={propuestaMesas === "areas-v2"}
             soloSalon={propuestaMesas === "areas-v3"}
             cargando={carga.plano}
+            turnoDisponible={turnoDisponible}
             esperaPorMesa={esperaPorMesa}
             piso={piso}
             pisoId={pisoId}
@@ -872,22 +926,29 @@ export function App() {
               setVista("pedidos");
               cargarCuentasEnCurso().catch((e) => setError(mensajeError(e)));
             }}
-            onNuevoPedido={() => abrirConstructor({ tipo: "general" })}
+            onNuevoPedido={() => void conError(async () => {
+              const contexto: ContextoOrden = { tipo: "general" };
+              if (await asegurarTurno(contexto)) abrirConstructor(contexto);
+            })}
             onMesa={(m) => {
-              if (m.cuentaId) {
-                conError(async () => {
-                  await cargarCuenta(m.cuentaId as number);
+              void conError(async () => {
+                const contexto: ContextoOrden = m.cuentaId
+                  ? { tipo: "cuenta", cuentaId: m.cuentaId, mesaId: m.id, mesaNumero: m.numero }
+                  : { tipo: "mesa", mesaId: m.id, mesaNumero: m.numero };
+                if (!(await asegurarTurno(contexto, Boolean(m.cuentaId)))) return;
+                if (m.cuentaId) {
+                  await cargarCuenta(m.cuentaId);
                   setContextoOrden(null);
                   setBorradorOrden(null);
                   setVista("pedido");
-                });
-                return;
-              }
-              if (m.estado !== "libre") {
-                setError(`La Mesa #${m.numero} no está disponible.`);
-                return;
-              }
-              abrirConstructor({ tipo: "mesa", mesaId: m.id, mesaNumero: m.numero });
+                  return;
+                }
+                if (m.estado !== "libre") {
+                  setError(`La Mesa #${m.numero} no está disponible.`);
+                  return;
+                }
+                abrirConstructor(contexto);
+              });
             }}
           />
         ) : null}
@@ -922,7 +983,10 @@ export function App() {
           <CuentaMesa
             cuenta={cuentaActual}
             puedeCerrar={!precuentaObligatoria || cuentaActual.estado === "precuenta_emitida"}
-            onNuevaOrden={() => abrirConstructor(contextoNuevaOrdenDeCuenta(cuentaActual))}
+            onNuevaOrden={() => void conError(async () => {
+              const contexto = contextoNuevaOrdenDeCuenta(cuentaActual);
+              if (await asegurarTurno(contexto)) abrirConstructor(contexto);
+            })}
             onEditarOrden={(orden) => { setEdicionOrden({ orden, modo: "editar" }); abrirModal("editar-orden"); }}
             onAnularOrden={(orden) => { setEdicionOrden({ orden, modo: "anular" }); abrirModal("editar-orden"); }}
             onPrecuenta={() => empezarAccionCuenta("precuenta")}

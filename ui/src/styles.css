@@ -479,7 +479,7 @@ button.icono {
   padding: 20px;
   border-radius: 12px;
 }
-.form-odoo__tarjeta input,
+.form-odoo__tarjeta input:not([type="checkbox"]),
 .form-odoo__tarjeta select {
   min-height: 48px;
   width: 100%;
@@ -487,9 +487,18 @@ button.icono {
   font-size: 1rem;
 }
 .form-odoo__tarjeta input[type="color"] {
+  width: 52px;
+  min-width: 52px;
+  height: 48px;
   min-height: 48px;
-  min-width: 72px;
   padding: 4px;
+}
+.form-odoo__tarjeta input[type="checkbox"] {
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  min-height: 20px;
+  margin: 0;
 }
 .form-odoo__foto-vista,
 .pedido-nota {
@@ -3747,6 +3756,21 @@ button.icono:focus-visible {
   z-index: 2;
   transform: translateY(-1px);
   border-color: color-mix(in oklab, var(--foreground) 30%, var(--border));
+}
+.mesa-odoo--sin-turno,
+.salon-odoo--sin-turno .salon-odoo__nueva {
+  opacity: 0.85;
+  filter: grayscale(1);
+}
+.salon-odoo--sin-turno .salon-odoo__nueva {
+  background: var(--muted);
+  color: var(--muted-foreground);
+  border-color: var(--border);
+  opacity: 1;
+}
+.mesa-odoo--sin-turno:hover,
+.mesa-odoo--sin-turno:focus-visible {
+  opacity: 1;
 }
 .mesa-odoo--round {
   border-radius: 999px;

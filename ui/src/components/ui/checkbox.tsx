@@ -6,11 +6,9 @@ function Checkbox({ className, ...props }: Omit<React.ComponentProps<"input">, "
     <input
       type="checkbox"
       className={cn(
-        "size-[18px] min-h-[18px] min-w-[18px] shrink-0 cursor-pointer appearance-none rounded-[5px] border border-input bg-card outline-none transition-colors",
-        "checked:border-primary checked:bg-primary",
-        "focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "size-5 min-h-5 min-w-5 shrink-0 cursor-pointer rounded accent-primary",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         "disabled:cursor-not-allowed disabled:opacity-45",
-        "after:hidden checked:after:block checked:after:h-2 checked:after:w-[5px] checked:after:translate-x-[5.5px] checked:after:translate-y-[2px] checked:after:rotate-45 checked:after:border-r-2 checked:after:border-b-2 checked:after:border-primary-foreground",
         className,
       )}
       {...props}

@@ -99,6 +99,21 @@ describe("plano restaurante", () => {
     expect(html).toContain("top:40%");
   });
 
+  it("muestra las mesas inactivas pero tocables para ofrecer abrir turno", () => {
+    const html = renderToStaticMarkup(createElement(Plano, {
+      piso: "Salón",
+      turnoDisponible: false,
+      mesas: [{ id: 1, numero: 1, estado: "libre", cuentaId: null, asientos: 2,
+        pos_x: 10, pos_y: 10, forma: "square", ancho: 96, alto: 96 }],
+      onMesa: () => undefined,
+      onNuevoPedido: () => undefined,
+    }));
+    expect(html).toContain("mesa-odoo--sin-turno");
+    expect(html).not.toContain('aria-disabled="true"');
+    expect(html).not.toContain('disabled=""');
+    expect(html).toContain("abre un turno para vender");
+  });
+
   it("tiene Nueva orden; no QR ni Registrar", () => {
     const html = renderToStaticMarkup(
       createElement(Plano, {
