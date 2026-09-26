@@ -55,6 +55,7 @@ Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /F /TN ""Restaurante POS"""
 [Code]
 var
   HadPreviousInstall: Boolean;
+  RestoreTaskOnExit: Boolean;
 
 function PreviousInstallExists: Boolean;
 var
@@ -85,6 +86,7 @@ begin
   HadPreviousInstall := PreviousInstallExists;
   if HadPreviousInstall then begin
     Exec(ExpandConstant('{sys}\schtasks.exe'), '/End /TN "Restaurante POS"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    RestoreTaskOnExit := True;
     PrepareScript := ExpandConstant('{app}\installer\prepare-update.ps1');
     if not FileExists(PrepareScript) then begin
       Result := 'La instalación anterior no contiene el componente de respaldo. Ejecute primero el instalador de transición o contacte a soporte.';
@@ -132,6 +134,8 @@ begin
       if HadPreviousInstall then
         RollbackOK := RunPowerShell('rollback-update.ps1', '-InstallDir "' + ExpandConstant('{app}') +
           '" -DataDir "' + ExpandConstant('{commonappdata}\Restaurante') + '"');
+      if HadPreviousInstall and not RollbackOK then
+        RestoreTaskOnExit := False;
       if not HadPreviousInstall then begin
         Exec(ExpandConstant('{sys}\schtasks.exe'), '/End /TN "Restaurante POS"',
           '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
@@ -149,5 +153,17 @@ begin
     end;
     if not SaveStringToFile(ExpandConstant('{app}\install-success.marker'), 'ok', False) then
       RaiseException('No se pudo guardar la confirmación de instalación.');
+    RestoreTaskOnExit := False;
+  end;
+end;
+
+procedure DeinitializeSetup;
+var
+  ResultCode: Integer;
+begin
+  if RestoreTaskOnExit then begin
+    Exec(ExpandConstant('{sys}\schtasks.exe'), '/Run /TN "Restaurante POS"',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Log('Restaurante: reanudación tras cancelar actualización = ' + IntToStr(ResultCode));
   end;
 end;

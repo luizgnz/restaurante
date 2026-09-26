@@ -2,9 +2,9 @@
 
 ## Resultado
 
-La revisión se ejecutó en Windows 11 sobre la rama de la PR #18 (`codex/seguridad-local`). Pasaron la instalación de dependencias, las suites de frontend y Go, los builds de UI y servidor, el arranque desde el código y la segunda revalidación del instalador Windows después del fallo inicial. El instalador abrió el servidor, sus recursos estáticos y las operaciones de sesión respondieron; luego se desinstaló preservando la base de prueba.
+La revisión se ejecutó en Windows 11 sobre la rama de la PR #18 (`codex/seguridad-local`). Pasaron la instalación de dependencias, las suites de frontend y Go, los builds de UI y servidor, el arranque desde el código y la segunda revalidación del instalador Windows después del fallo inicial. Después del merge a `main`, se borraron por completo la instalación y la base de prueba, y una tercera instalación desde cero pasó las comprobaciones previas al reinicio.
 
-La documentación de desarrollo cubre Windows y macOS. macOS no se probó en esta máquina; tampoco se publica aquí un instalador nativo de macOS. La comprobación de reinicio de Windows sigue pendiente y permanece anotada en `TAREAS_V2.md`.
+La documentación de desarrollo cubre Windows y macOS. macOS no se probó en esta máquina; tampoco se publica aquí un instalador nativo de macOS. El arranque tras reiniciar y la actualización con datos pasaron en Windows. La recuperación real después de una actualización fallida y el acceso desde otro dispositivo siguen pendientes en `TAREAS_V2.md`.
 
 ## Equipo y stack observados
 
@@ -57,6 +57,26 @@ Con el servicio instalado se comprobaron salud (`runtime=go`), HTML y bundle, lo
 
 Esta segunda comprobación no incluye reinicio de Windows, actualización sobre datos existentes, rollback por actualización fallida ni acceso desde otro equipo de la red. El reinicio es el pendiente registrado en `TAREAS_V2.md`.
 
+## Tercera comprobación: instalación desde cero en Windows
+
+El 25 de septiembre, después de integrar la PR #18 en `main`, se retiraron los residuos de la prueba anterior de `C:\Program Files\Restaurante`, `C:\ProgramData\Restaurante` y `%LOCALAPPDATA%\Restaurante`. La limpieza fue ejecutada por Luis con el desinstalador de prueba generado en `installer/windows/output/Desinstalar-Restaurante.cmd`; su registro quedó en `%TEMP%\Restaurante-limpieza.log`. Antes de instalar se comprobó que las tres rutas, la tarea y el listener de 8080 no existían. Se conservó `RestauranteDev`, que contiene Node y Go para compilar.
+
+El paquete `Restaurante-Setup-0.1.0-clean-pass3-x64.exe`, acompañado por sus archivos `-0.bin` y `-1.bin`, se construyó desde el código integrado con `npm run build:windows`, Go 1.26.8 e Inno Setup 6.7.3. SHA-256 del `.exe`: `E5E552920668A229BE7C7C3E9D90D68ED73B7BA58C062033A492A1E599887640`.
+
+La instalación elevada terminó con código 0. Su registro (`%TEMP%\restaurante-clean-pass3-install.log`) dice `Detected previous ... install? No`, `Installation process succeeded.`, `resultado de validación = 0` y `tarea y servidor disponibles = 1`. Se creó una base nueva en `C:\ProgramData\Restaurante\data\salon.sqlite`; el servidor instalado escucha en 8080. Respondieron HTTP 200 `/api/salud`, `/`, JavaScript, CSS, fuente y favicon. La sesión pasó de cerrada a abierta con las credenciales iniciales, permitió consultar `/api/config` y cerró correctamente.
+
+La tarea `Restaurante POS` no se puede consultar directamente desde la consola sin elevación (`schtasks /Query` devuelve `Access is denied`); el instalador sí informó que la registró y arrancó. El equipo está en una red Windows clasificada como pública; su política activa es `BlockInbound,AllowOutbound` y las reglas de firewall encontradas apuntan al antiguo ejecutable de desarrollo, no al binario instalado. El proceso escucha en `0.0.0.0:8080` y la cuenta inicial `admin/admin` funciona: **no usar esta instalación para operación ni habilitar acceso desde otros equipos hasta cambiar las credenciales y verificar el firewall**.
+
+## Reinicio, actualización y cancelación observada
+
+Windows reinició a las 21:30:43 y el servidor instalado arrancó automáticamente a las 21:30:58. Salud e interfaz respondieron y la base siguió disponible. Se creó por API la categoría `VALIDACION-WINDOWS-LIMPIA-20260925` (ID 9) como marcador persistente. El instalador `0.1.0-update-pass4` terminó con código 0, creó un punto de respaldo en `backups\updates`, reinició el servidor y conservó el marcador con el mismo ID. Un segundo reinicio, a las 22:11:02, confirmó de nuevo el arranque automático y la conservación del dato.
+
+En el intento `0.1.0-update-pass5`, Inno Setup detectó `McAfee Framework Host` usando uno de los archivos. Como esa aplicación no pudo cerrarse, la instalación silenciosa se canceló con código 5 antes de copiar archivos. El binario y la base quedaron intactos, pero la tarea ya había sido detenida por `PrepareToInstall` y el puerto 8080 quedó sin servidor. La revisión automática bloqueó el comando elevado para iniciar la tarea (`blocked by policy`); el segundo reinicio la restableció. Se añadió `DeinitializeSetup` para reanudar la tarea cuando se cancela una actualización después de detenerla. Esta ruta específica de cancelación **aún no se ha repetido** con la corrección, porque `0.1.0-update-pass6` sí se instaló correctamente; su log informó validación 0 y servidor disponible 1. Los hashes de los scripts instalados coinciden con el código corregido.
+
+El paquete `0.1.0-update-pass6` es multifichero (`.exe`, `-0.bin`, `-1.bin`). SHA-256 del ejecutable del Setup: `BCAD77E069CA73BFAD7DB0974B20E5A3588F22C2B0638D6D6BF76AAE689C130A`. Los tres archivos están en `installer/windows/output/`; son artefactos locales de prueba, no un lanzamiento operativo.
+
+Una prueba aislada del antiguo `rollback-update.ps1` mostró que copiaba el ejecutable y SQLite, pero dejaba archivos exclusivos de la actualización fallida y archivos WAL/SHM antiguos. Se corrigió para reflejar exactamente el respaldo del programa, limpiar WAL/SHM obsoletos y rechazar rutas de respaldo fuera del directorio previsto. Se agregó una prueba automatizada Windows que comprueba esos casos; pasaron 519/519 pruebas Vitest en 86 archivos, todos los paquetes Go y el build TypeScript/Vite. La revisión automática bloqueó crear un instalador deliberadamente inválido para forzar el rollback real (`blocked by policy`), por lo que **la recuperación completa dentro de Inno Setup no está validada en este equipo**. El instalador no queda aprobado para operación hasta comprobar ese caso y el acceso LAN controlado.
+
 ## Instalación y diferencias por sistema
 
 El cliente es una aplicación web responsive y funciona en navegadores de ambos sistemas. El stack completo también depende del sistema operativo para el ejecutable Go, las rutas de datos, permisos, inicio del proceso, firewall y acceso a impresoras. El README ahora describe requisitos e instalación de desarrollo en Windows y macOS, compilación, arranque local, pruebas y ubicación de datos.
@@ -73,6 +93,6 @@ La configuración de red puede permitir escucha en otras interfaces. Para desarr
 
 - macOS, Safari, Apple Silicon e Intel, Gatekeeper, el iniciador `.command` y las impresoras de macOS no se probaron aquí.
 - No se hizo una revisión manual completa de todas las funciones ni pruebas de resolución responsive en varios tamaños. El login se comprobó por API y tests, además de revisar las rutas web.
-- El instalador no se validó después de reiniciar Windows, ni con actualización/rollback. La tarea asociada continúa abierta.
+- El instalador se validó después de reiniciar Windows y al actualizar con un dato persistente. Falta probar el rollback completo en una actualización deliberadamente fallida, la reanudación automática después de una cancelación y el acceso LAN desde otro equipo. La tarea asociada continúa abierta.
 - npm reportó tres vulnerabilidades moderadas en el árbol instalado. No se actualizaron dependencias en esta revisión.
-- La base de prueba quedó preservada en `C:\ProgramData\Restaurante\data\salon.sqlite` al desinstalar.
+- La base de la segunda prueba se conservó al desinstalar y luego Luis la borró expresamente para la tercera instalación; la base actual es nueva y contiene solo datos de demostración.

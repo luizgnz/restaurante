@@ -1,4 +1,7 @@
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const inno = readFileSync("installer/windows/Restaurante.iss", "utf8");
@@ -50,4 +53,40 @@ describe("instalador Windows", () => {
     expect(build).toContain('LEEME-INSTALACION.txt');
     expect(build).toContain('"-buildvcs=false"');
   });
+
+  it.skipIf(process.platform !== "win32")("restaura el programa y SQLite sin dejar archivos de la actualización fallida", () => {
+    const root = mkdtempSync(join(tmpdir(), "restaurante-rollback-"));
+    try {
+      const install = join(root, "install");
+      const data = join(root, "data-root");
+      const point = join(data, "backups", "updates", "snapshot");
+      mkdirSync(install, { recursive: true });
+      mkdirSync(join(data, "data"), { recursive: true });
+      mkdirSync(join(point, "app"), { recursive: true });
+      mkdirSync(join(point, "data"), { recursive: true });
+
+      writeFileSync(join(install, "restaurante.exe"), "NEW");
+      writeFileSync(join(install, "new-only.txt"), "EXTRA");
+      writeFileSync(join(data, "data", "salon.sqlite"), "NEWDB");
+      writeFileSync(join(data, "data", "salon.sqlite-wal"), "STALE");
+      writeFileSync(join(data, "data", "salon.sqlite-shm"), "STALE");
+      writeFileSync(join(point, "app", "restaurante.exe"), "OLD");
+      writeFileSync(join(point, "data", "salon.sqlite"), "OLDDB");
+      writeFileSync(join(data, "backups", "updates", "active-backup.txt"), point);
+
+      execFileSync("powershell.exe", [
+        "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
+        join(process.cwd(), "installer", "windows", "rollback-update.ps1"),
+        "-InstallDir", install, "-DataDir", data,
+      ], { timeout: 30_000 });
+
+      expect(readFileSync(join(install, "restaurante.exe"), "utf8")).toBe("OLD");
+      expect(readFileSync(join(data, "data", "salon.sqlite"), "utf8")).toBe("OLDDB");
+      expect(existsSync(join(install, "new-only.txt"))).toBe(false);
+      expect(existsSync(join(data, "data", "salon.sqlite-wal"))).toBe(false);
+      expect(existsSync(join(data, "data", "salon.sqlite-shm"))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 15_000);
 });

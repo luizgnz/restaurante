@@ -23,7 +23,7 @@ El instalador se distribuye como un ZIP que contiene `Restaurante-Setup-<versió
 3. Instala la aplicación en `C:\Program Files\Restaurante` y mantiene datos y configuración en `C:\ProgramData\Restaurante`.
 4. Ejecuta `restaurante.exe -verify-install`, que abre SQLite, aplica migraciones, asegura el catálogo inicial y comprueba la base y la interfaz antes de activar la versión. En la primera instalación crea `salon.sqlite`; no intenta restaurar una base inexistente.
 5. Registra `Restaurante POS` como tarea de inicio bajo la cuenta del sistema y espera hasta que `/api/salud` responda. Solo entonces ofrece «Abrir Restaurante».
-6. Si falla la validación o el arranque durante una actualización, restaura la aplicación y la base anteriores. En una primera instalación informa el error y deja los registros para diagnóstico.
+6. Si falla la validación o el arranque durante una actualización, restaura la aplicación y la base anteriores. La restauración quita archivos exclusivos de la actualización fallida y archivos WAL/SHM obsoletos. Si Setup se cancela después de detener la tarea, intenta reanudar la versión anterior. En una primera instalación informa el error y deja los registros para diagnóstico.
 7. El desinstalador elimina la aplicación y la tarea, pero conserva base, configuración y respaldos.
 
 Los scripts de respaldo, restauración y registro de la tarea se ejecutan desde `C:\Program Files\Restaurante\installer`, no desde `%TEMP%`.
@@ -36,3 +36,5 @@ Para diagnosticar un fallo, revise `C:\ProgramData\Restaurante\logs\install.log`
 - Probar instalación inicial, actualización exitosa y actualización forzada a fallar.
 - Confirmar restauración de aplicación y SQLite, arranque tras reiniciar Windows y acceso desde otro dispositivo de la red local.
 - Firmar el ejecutable antes de entregarlo a un restaurante.
+
+La instalación inicial y una actualización con datos se comprobaron en Windows 11 el 2026-09-25. Una cancelación causada por McAfee dejó el servidor detenido antes de la corrección de reanudación. La restauración se probó de forma aislada, pero aún falta forzar un fallo real del instalador y repetir la cancelación con la corrección. Ver `docs/REVISION_INSTALACION_STACK_2026-09-25.md`.

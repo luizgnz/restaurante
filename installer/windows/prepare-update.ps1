@@ -11,7 +11,7 @@ New-Item -ItemType Directory -Force -Path $point | Out-Null
 
 if (Test-Path -LiteralPath $InstallDir) {
   New-Item -ItemType Directory -Force -Path (Join-Path $point 'app') | Out-Null
-  Copy-Item -Path (Join-Path $InstallDir '*') -Destination (Join-Path $point 'app') -Recurse -Force -ErrorAction SilentlyContinue
+  Copy-Item -Path (Join-Path $InstallDir '*') -Destination (Join-Path $point 'app') -Recurse -Force -ErrorAction Stop
 }
 
 $database = Join-Path $DataDir 'data\salon.sqlite'
