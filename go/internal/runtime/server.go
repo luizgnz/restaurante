@@ -222,18 +222,18 @@ func newHandler(db *sql.DB, uiDir string, appConfig config.App, restart func() e
 		if !ok {
 			return
 		}
-		if !userHasAnyRole(session.Usuario, "administrador", "encargado_turno") {
-			writeError(w, http.StatusForbidden, "sin_derecho", "Solo Administración o el encargado de turno pueden abrir la jornada")
+		if !userHasAnyRole(session.Usuario, "administrador", "encargado_turno", "mesero") {
+			writeError(w, http.StatusForbidden, "sin_derecho", "Solo el personal del salón puede abrir el turno")
 			return
 		}
-		var input struct {
-			TurnoPlantillaID int64 `json:"turnoPlantillaId"`
-		}
-		if r.ContentLength != 0 && !decodeJSON(w, r, &input, 16<<10) {
-			return
+		if r.ContentLength != 0 {
+			var legacyInput map[string]any
+			if !decodeJSON(w, r, &legacyInput, 16<<10) {
+				return
+			}
 		}
 		employeeID := session.Usuario.ID
-		item, err := journey.OpenWithTemplate(r.Context(), db, &employeeID, input.TurnoPlantillaID)
+		item, err := journey.Open(r.Context(), db, &employeeID)
 		if writeJourneyError(w, err, "jornada_no_disponible") {
 			return
 		}
@@ -556,7 +556,21 @@ func newHandler(db *sql.DB, uiDir string, appConfig config.App, restart func() e
 			writeError(w, http.StatusInternalServerError, "salon_no_disponible", "No se pudo consultar el salón")
 			return
 		}
-		writeJSON(w, http.StatusOK, view)
+		var fechaTurno string
+		err = db.QueryRowContext(r.Context(), `SELECT fecha_operativa FROM jornadas_operativas WHERE estado='abierta' LIMIT 1`).Scan(&fechaTurno)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusInternalServerError, "turno_no_disponible", "No se pudo consultar el turno")
+			return
+		}
+		estadoTurno := "cerrado"
+		if err == nil {
+			estadoTurno = "anterior"
+			if fechaTurno == time.Now().Format("2006-01-02") {
+				estadoTurno = "abierto"
+			}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"mesas": view.Mesas, "pisos": view.Pisos,
+			"turno": map[string]any{"estado": estadoTurno, "fechaOperativa": fechaTurno}})
 	})
 	mux.HandleFunc("PUT /api/plano", func(w http.ResponseWriter, r *http.Request) {
 		if !requireRole(w, r, db, "administrador") {
@@ -1851,7 +1865,7 @@ func writeOrderError(w http.ResponseWriter, err error) bool {
 		switch domain.Code {
 		case "cuenta_inexistente", "orden_inexistente", "mesa_inexistente", "producto_inexistente", "empleado_inexistente", "variante_inexistente":
 			status = http.StatusNotFound
-		case "cuenta_cerrada", "cuenta_desactualizada", "stock_insuficiente", "jornada_cerrada", "orden_anulada", "orden_en_preparacion", "linea_preparada":
+		case "cuenta_cerrada", "cuenta_desactualizada", "stock_insuficiente", "jornada_cerrada", "jornada_anterior_abierta", "orden_anulada", "orden_en_preparacion", "linea_preparada":
 			status = http.StatusConflict
 		case "sin_derecho":
 			status = http.StatusForbidden

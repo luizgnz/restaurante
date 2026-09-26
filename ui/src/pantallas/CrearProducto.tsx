@@ -128,11 +128,11 @@ export function CrearProducto({ categorias, ingredientesDisponibles = [], error,
       </label>
       <label>
         Color del ítem
-        <Input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
+        <Input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ display: "block", width: 52, minWidth: 52, padding: 4 }} />
       </label>
       <label>
         Categoría del menú
-          <Select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
+          <Select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} style={{ height: 48, minHeight: 48, paddingTop: 0, paddingBottom: 0 }}>
             {categorias.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nombre}
@@ -142,7 +142,7 @@ export function CrearProducto({ categorias, ingredientesDisponibles = [], error,
       </label>
       <label>
         Tipo
-        <Select value={tipo} onChange={(e) => {
+        <Select value={tipo} style={{ height: 48, minHeight: 48, paddingTop: 0, paddingBottom: 0 }} onChange={(e) => {
           const siguiente = e.target.value;
           setTipo(siguiente);
           setRastrear(siguiente === "almacenable_unitario");

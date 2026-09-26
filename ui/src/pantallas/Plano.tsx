@@ -99,6 +99,7 @@ type Props = {
   asignando?: boolean;
   bloqueado?: boolean;
   cargando?: boolean;
+  turnoDisponible?: boolean;
   esperaPorMesa?: Record<number, { espera: number; nivel: NivelEspera }>;
   onMesa: (mesa: Mesa) => void;
   onPiso?: (piso: Piso) => void;
@@ -120,6 +121,7 @@ export function Plano({
   asignando,
   bloqueado,
   cargando,
+  turnoDisponible = true,
   esperaPorMesa = {},
   onMesa,
   onPiso,
@@ -214,16 +216,16 @@ export function Plano({
   const alturaMapa = alturaAutomaticaPlano(mesasVisibles, escalaMesas, Boolean(areaDemo));
 
   return (
-    <section className={`salon-odoo${areaUnica ? " salon-odoo--solo" : ""}`}>
+    <section className={`salon-odoo${areaUnica ? " salon-odoo--solo" : ""}${turnoDisponible ? "" : " salon-odoo--sin-turno"}`}>
       <header className="salon-odoo__cabecera">
         <h1 className={areaUnica ? "salon-odoo__titulo-area" : "sr-only"}>{areaUnica ? areaActual.nombre : "Mesas"}</h1>
         {onNuevoPedido && !areaDemo ? (
           <Button
             type="button"
-            variant={nuevaOrdenV2 ? "outline" : "default"}
+            variant={!turnoDisponible || nuevaOrdenV2 ? "outline" : "default"}
             className={`tactil salon-odoo__nueva${nuevaOrdenV2 ? " salon-odoo__nueva--v2" : ""}${areaUnica ? " salon-odoo__nueva--v3" : ""}`}
-            aria-label="Nueva orden"
-            title="Nueva orden (N)"
+            aria-label={turnoDisponible ? "Nueva orden" : "Nueva orden: abre un turno para vender"}
+            title={turnoDisponible ? "Nueva orden (N)" : "Abre un turno para vender"}
             onClick={onNuevoPedido}
           >
             <Plus size={18} aria-hidden="true" /><span>Nueva orden</span>
@@ -330,7 +332,7 @@ export function Plano({
             key={m.id}
             type="button"
             variant="ghost"
-            className={`mesa-odoo mesa-odoo--operativa mesa-odoo--${m.estado} mesa-odoo--${m.forma}${atrasada(m) ? " mesa-odoo--atrasada" : ""} tactil`}
+            className={`mesa-odoo mesa-odoo--operativa mesa-odoo--${m.estado} mesa-odoo--${m.forma}${atrasada(m) ? " mesa-odoo--atrasada" : ""}${!turnoDisponible && !m.cuentaId ? " mesa-odoo--sin-turno" : ""} tactil`}
             style={{
               left: `${posicionVisibleMesa(m.pos_x, Math.max(m.ancho * escalaMesas, 64), anchoMapa)}%`,
               top: `${posicionVisibleMesa(m.pos_y, Math.max(m.alto * escalaMesas, 64), alturaMapa)}%`,
@@ -340,7 +342,7 @@ export function Plano({
               backgroundImage: m.fondo_data ? `url("${m.fondo_data}")` : undefined,
               backgroundSize: "cover",
             }}
-            title={`Mesa ${m.numero}`}
+            title={!turnoDisponible && !m.cuentaId ? `Mesa ${m.numero}: abre un turno para vender` : `Mesa ${m.numero}`}
             disabled={Boolean(areaDemo)}
             onClick={() => onMesa(m)}
           >

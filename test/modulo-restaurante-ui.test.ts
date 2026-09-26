@@ -97,8 +97,10 @@ describe("pantallas módulo restaurante", () => {
     expect(html).toContain("Editar mapa");
     expect(html).toContain("Administración");
     expect(html).toContain("Editar recetas");
-    expect(html).toContain("Día operativo");
-    expect(html).toContain("Consultando jornada");
+    expect(html).toContain("Turno");
+    expect(html).toContain("Consultando turno");
+    expect(html).not.toContain("Cuentas activas");
+    expect(html).not.toContain("Configurar turnos");
     expect(html).toContain("Reiniciar día de demostración");
   });
 
@@ -113,13 +115,14 @@ describe("pantallas módulo restaurante", () => {
         onMesas: () => undefined,
       }),
     );
-    expect(html).toContain("Día operativo");
+    expect(html).toContain("Turno");
     expect(html).not.toContain("Crear producto");
     expect(html).not.toContain("Reiniciar día de demostración");
     expect(html).not.toContain("Configurar turnos");
+    expect(html).not.toContain("Órdenes</dt>");
   });
 
-  it("el cierre masivo explica los bloqueos y exige credenciales", () => {
+  it("el cierre de turno exige cerrar las cuentas abiertas sin señalarlas", () => {
     const html = renderToStaticMarkup(
       createElement(CerrarJornadaDialog, {
         resumen: {
@@ -133,16 +136,14 @@ describe("pantallas módulo restaurante", () => {
           pedidosParaLlevarPendientes: 0,
         },
         procesando: false,
-        onActualizarEntregas: async () => undefined,
         onCancelar: () => undefined,
         onConfirmar: async () => undefined,
       }),
     );
-    expect(html).toContain("sin imprimir precuentas una por una");
-    expect(html).toContain("Marcar todas entregadas");
-    expect(html).toContain("Usuario autorizado");
-    expect(html).toContain("Contraseña");
-    expect(html).toContain("disabled");
+    expect(html).toContain("Hay mesas abiertas. Cierra todas las cuentas antes de cerrar el turno.");
+    expect(html).not.toContain("Mesa #");
+    expect(html).not.toContain("Cerrar todas y finalizar");
+    expect(html).not.toContain("Usuario autorizado");
   });
 
   it("reportes ofrece períodos rápidos y limita ventas por permiso", () => {

@@ -30,6 +30,11 @@ describe("modal crear producto", () => {
     expect(html).toContain("Foto");
     expect(html).toContain("Guardar");
     expect(html).toContain("Descartar");
+    expect(html.match(/type="checkbox"/g)).toHaveLength(2);
+    expect(html).toContain("accent-primary");
+    expect(html.match(/height:48px;min-height:48px;padding-top:0;padding-bottom:0/g)).toHaveLength(2);
+    expect(html).toContain('type="color"');
+    expect(html).toContain('display:block;width:52px;min-width:52px;padding:4px');
   });
 
   it("cerrado no renderiza nada: la vista de fondo no cambia", () => {

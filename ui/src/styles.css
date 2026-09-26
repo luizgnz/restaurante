@@ -479,7 +479,7 @@ button.icono {
   padding: 20px;
   border-radius: 12px;
 }
-.form-odoo__tarjeta input,
+.form-odoo__tarjeta input:not([type="checkbox"]),
 .form-odoo__tarjeta select {
   min-height: 48px;
   width: 100%;
@@ -487,9 +487,18 @@ button.icono {
   font-size: 1rem;
 }
 .form-odoo__tarjeta input[type="color"] {
+  width: 52px;
+  min-width: 52px;
+  height: 48px;
   min-height: 48px;
-  min-width: 72px;
   padding: 4px;
+}
+.form-odoo__tarjeta input[type="checkbox"] {
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  min-height: 20px;
+  margin: 0;
 }
 .form-odoo__foto-vista,
 .pedido-nota {
@@ -2521,9 +2530,15 @@ button.icono {
 /* Administración */
 .backend-jornada {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(360px, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 1rem 1.5rem;
   padding: 1.2rem;
+}
+.backend-jornada__estado {
+  display: grid;
+  min-width: 0;
+  gap: 0.75rem;
 }
 .backend-jornada__encabezado {
   display: flex;
@@ -2550,36 +2565,16 @@ button.icono {
   color: var(--muted-foreground);
   font-size: 0.88rem;
 }
-.backend-jornada__metricas {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-column: 1 / -1;
-  gap: 0.65rem;
-  margin: 0;
-}
-.backend-jornada__metricas div {
-  padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.8rem;
-  background: var(--background);
-}
-.backend-jornada__metricas dt {
-  color: var(--muted-foreground);
-  font-size: 0.74rem;
-}
-.backend-jornada__metricas dd {
-  margin: 0.15rem 0 0;
-  font-size: 1.15rem;
-  font-weight: 750;
-}
 .backend-jornada__acciones {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  grid-column: 1 / -1;
-  grid-row: auto;
   gap: 0.65rem;
+}
+.backend-demo-action {
+  display: flex;
+  justify-content: flex-end;
 }
 .backend-odoo__atajos {
   display: grid;
@@ -3181,9 +3176,6 @@ button.icono {
   .backend-odoo__atajos .backend-atajo {
     grid-template-columns: auto minmax(0, 1fr);
   }
-  .backend-jornada__metricas {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .backend-jornada__acciones {
     align-items: stretch;
     flex-direction: column;
@@ -3764,6 +3756,21 @@ button.icono:focus-visible {
   z-index: 2;
   transform: translateY(-1px);
   border-color: color-mix(in oklab, var(--foreground) 30%, var(--border));
+}
+.mesa-odoo--sin-turno,
+.salon-odoo--sin-turno .salon-odoo__nueva {
+  opacity: 0.85;
+  filter: grayscale(1);
+}
+.salon-odoo--sin-turno .salon-odoo__nueva {
+  background: var(--muted);
+  color: var(--muted-foreground);
+  border-color: var(--border);
+  opacity: 1;
+}
+.mesa-odoo--sin-turno:hover,
+.mesa-odoo--sin-turno:focus-visible {
+  opacity: 1;
 }
 .mesa-odoo--round {
   border-radius: 999px;

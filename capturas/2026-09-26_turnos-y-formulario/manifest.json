@@ -1,0 +1,21 @@
+{
+  "fecha": "2026-09-26",
+  "rama": "codex/jornadas-simples",
+  "commit_base": "de1a9d2",
+  "servidor": "http://127.0.0.1:8081/",
+  "objetivo": "Validar jerarquía de botones, salón sin turno, confirmación de apertura y legibilidad del formulario de producto",
+  "capturas": [
+    { "archivo": "administracion-390.png", "viewport": "390x844" },
+    { "archivo": "administracion-768.png", "viewport": "768x900" },
+    { "archivo": "administracion-1280.png", "viewport": "1280x900" },
+    { "archivo": "crear-producto-390.png", "viewport": "390x844" },
+    { "archivo": "crear-producto-768.png", "viewport": "768x900" },
+    { "archivo": "crear-producto-1280.png", "viewport": "1280x900" },
+    { "archivo": "salon-sin-turno-390.png", "viewport": "390x844" },
+    { "archivo": "salon-sin-turno-768.png", "viewport": "768x900" },
+    { "archivo": "salon-sin-turno-1280.png", "viewport": "1280x900" },
+    { "archivo": "abrir-turno-desde-mesa-390.png", "viewport": "390x844" },
+    { "archivo": "cerrar-turno-390.png", "viewport": "390x844" }
+  ],
+  "veredicto": "PASA: textos completos y sin solapes; botones secundarios claros y apertura de turno destacada"
+}

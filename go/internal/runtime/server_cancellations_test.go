@@ -25,6 +25,40 @@ type cancellationFixture struct {
 	tokens  map[string]string
 }
 
+func TestTurnStatusAndWaiterCanOpenFromClosedSalon(t *testing.T) {
+	fixture := newCancellationFixture(t)
+	if _, err := fixture.db.Exec(`UPDATE jornadas_operativas SET estado='cerrada', cerrada_en=? WHERE estado='abierta'`, time.Now().UTC().Format(time.RFC3339Nano)); err != nil {
+		t.Fatal(err)
+	}
+	assertTurnStatus := func(expected string) {
+		t.Helper()
+		response := fixture.request(t, "mesero", http.MethodGet, "/api/mesas", nil)
+		if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"estado":"`+expected+`"`) {
+			t.Fatalf("turno=%s: status=%d cuerpo=%s", expected, response.Code, response.Body.String())
+		}
+	}
+	assertTurnStatus("cerrado")
+	response := fixture.request(t, "mesero", http.MethodPost, "/api/jornadas/abrir", nil)
+	if response.Code != http.StatusCreated {
+		t.Fatalf("el mesero no pudo abrir turno: status=%d cuerpo=%s", response.Code, response.Body.String())
+	}
+	assertTurnStatus("abierto")
+	if _, err := fixture.db.Exec(`UPDATE jornadas_operativas SET fecha_operativa=? WHERE estado='abierta'`, time.Now().AddDate(0, 0, -1).Format("2006-01-02")); err != nil {
+		t.Fatal(err)
+	}
+	assertTurnStatus("anterior")
+}
+
+func TestCloseTurnWithOpenTableDoesNotCloseAccount(t *testing.T) {
+	fixture := newCancellationFixture(t)
+	account := fixture.order(t, "cierre-con-mesa")
+	response := fixture.request(t, "admin", http.MethodPost, "/api/jornadas/cerrar", nil)
+	if response.Code != http.StatusConflict || !strings.Contains(response.Body.String(), "Hay mesas abiertas. Cierra todas las cuentas antes de cerrar el turno") {
+		t.Fatalf("cierre debía bloquearse sin señalar mesas: status=%d cuerpo=%s", response.Code, response.Body.String())
+	}
+	fixture.assertAccount(t, account.AccountID, "abierta", 0)
+}
+
 func TestCancelAccountHTTPRequiresAuthorizedPINAndReason(t *testing.T) {
 	fixture := newCancellationFixture(t)
 
