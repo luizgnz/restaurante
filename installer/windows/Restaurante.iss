@@ -26,7 +26,9 @@ UseSetupLdr=no
 WizardStyle=modern
 SetupLogging=yes
 UninstallDisplayName=Restaurante
-CloseApplications=yes
+; PrepareToInstall detiene nuestra tarea. No pedir a Restart Manager que cierre
+; McAfee u otros procesos ajenos que inspeccionan los archivos instalados.
+CloseApplications=no
 RestartApplications=no
 
 [Files]
@@ -36,6 +38,7 @@ Source: "{#StageDir}\ui\*"; DestDir: "{app}\ui"; Flags: ignoreversion recursesub
 Source: "{#StageDir}\migrations\*"; DestDir: "{app}\migrations"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "rollback-update.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
 Source: "register-task.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
+Source: "restart-task.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
 
 [Dirs]
 Name: "{commonappdata}\Restaurante\data"; Permissions: users-modify
@@ -49,6 +52,8 @@ Name: "{autodesktop}\Restaurante"; Filename: "http://127.0.0.1:8080/"
 Filename: "http://127.0.0.1:8080/"; Description: "Abrir Restaurante"; Flags: shellexec nowait postinstall skipifsilent
 
 [UninstallRun]
+Filename: "{sys}\schtasks.exe"; Parameters: "/End /TN ""Restaurante POS - Reiniciar"""; Flags: runhidden waituntilterminated; RunOnceId: "StopRestartTask"
+Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /F /TN ""Restaurante POS - Reiniciar"""; Flags: runhidden waituntilterminated; RunOnceId: "DeleteRestartTask"
 Filename: "{sys}\schtasks.exe"; Parameters: "/End /TN ""Restaurante POS"""; Flags: runhidden waituntilterminated; RunOnceId: "StopTask"
 Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /F /TN ""Restaurante POS"""; Flags: runhidden waituntilterminated; RunOnceId: "DeleteTask"
 
@@ -102,6 +107,10 @@ begin
           '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
         Result := 'No se pudo crear el respaldo previo. La instalación no continuará.';
       end;
+#ifdef RESTAURANTE_TEST_ABORT_AFTER_BACKUP
+    if Result = '' then
+      Result := 'Prueba controlada: cancelar después del respaldo.';
+#endif
   end;
 end;
 
