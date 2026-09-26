@@ -2,6 +2,8 @@
 
 Estado al 26 de septiembre de 2026. Esta lista distingue las comprobaciones observadas en el Windows de desarrollo de las que aún necesitan evidencia. El historial y los resultados están en [la revisión de instalación](REVISION_INSTALACION_STACK_2026-09-25.md).
 
+La compilación de la PR #24 corrige dimensiones, destello del login y la confirmación del reinicio; sus 528 pruebas Vitest, Go y build pasaron y la interfaz se midió en 45 combinaciones de pantalla/ancho/tamaño. **Todavía no se ha instalado** esta compilación en el equipo objetivo, ni se ha probado su botón de reinicio a través de la tarea programada. El paquete y el procedimiento de vuelta atrás para un Windows descartable están en [la guía de prueba](PAQUETE_PRUEBA_2026-09-26.md). Las pruebas de instalación y reinicio de la tabla anterior corresponden a compilaciones previas.
+
 ## Comprobado en este equipo
 
 - Instalación desde cero, actualización repetida con datos y desinstalación seguida de reinstalación. La categoría de control conservó el ID 9.

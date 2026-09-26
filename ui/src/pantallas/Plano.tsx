@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { etiquetaMesa, tonoMesa } from "../lib/estados.ts";
+import { posicionVisibleMesa } from "../lib/mapa-dimensiones.ts";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 
 export type Mesa = {
@@ -64,12 +65,16 @@ export function escalaAutomaticaPlano(mesas: Mesa[], anchoMapa: number): number 
   // cuando el espacio entre ellas alcanza también para la nueva escala.
   for (let escala = objetivo; escala >= 1; escala = Math.round((escala - 0.05) * 100) / 100) {
     const altura = alturaAutomaticaPlano(mesas, escala);
-    const rects = mesas.map((mesa) => ({
-      x: (mesa.pos_x / 100) * anchoMapa,
-      y: (mesa.pos_y / 100) * altura,
-      width: Math.max(mesa.ancho * escala, 64),
-      height: Math.max(mesa.alto * escala, 64),
-    }));
+    const rects = mesas.map((mesa) => {
+      const width = Math.max(mesa.ancho * escala, 64);
+      const height = Math.max(mesa.alto * escala, 64);
+      return {
+        x: (posicionVisibleMesa(mesa.pos_x, width, anchoMapa) / 100) * anchoMapa,
+        y: (posicionVisibleMesa(mesa.pos_y, height, altura) / 100) * altura,
+        width,
+        height,
+      };
+    });
     const caben = rects.every((rect, i) =>
       rect.x + rect.width <= anchoMapa - 8 &&
       rect.y + rect.height <= altura - 8 &&
@@ -327,8 +332,8 @@ export function Plano({
             variant="ghost"
             className={`mesa-odoo mesa-odoo--operativa mesa-odoo--${m.estado} mesa-odoo--${m.forma}${atrasada(m) ? " mesa-odoo--atrasada" : ""} tactil`}
             style={{
-              left: `${m.pos_x}%`,
-              top: `${m.pos_y}%`,
+              left: `${posicionVisibleMesa(m.pos_x, Math.max(m.ancho * escalaMesas, 64), anchoMapa)}%`,
+              top: `${posicionVisibleMesa(m.pos_y, Math.max(m.alto * escalaMesas, 64), alturaMapa)}%`,
               width: Math.max(m.ancho * escalaMesas, 64),
               height: Math.max(m.alto * escalaMesas, 64),
               backgroundColor: m.fondo_color || undefined,

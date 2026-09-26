@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { Plano, alturaAutomaticaPlano, escalaAutomaticaPlano } from "../ui/src/pantallas/Plano.tsx";
+import { posicionVisibleMesa } from "../ui/src/lib/mapa-dimensiones.ts";
 
 describe("plano restaurante", () => {
   it("amplía mesas separadas en escritorio y respeta las muy próximas", () => {
@@ -14,6 +15,22 @@ describe("plano restaurante", () => {
     expect(escalaAutomaticaPlano(separadas, 1232)).toBeGreaterThan(1.4);
     expect(escalaAutomaticaPlano(proximas, 1232)).toBe(1);
     expect(alturaAutomaticaPlano(separadas, 1.45)).toBeGreaterThan(alturaAutomaticaPlano(separadas));
+  });
+
+  it("mantiene visible una mesa antigua guardada fuera del borde sin cambiar su dato", () => {
+    const mesa = {
+      id: 99, numero: 99, estado: "libre", cuentaId: null, asientos: 4,
+      pos_x: 99, pos_y: 99, forma: "square", ancho: 96, alto: 96,
+    };
+    const html = renderToStaticMarkup(createElement(Plano, {
+      piso: "Salón", mesas: [mesa], onMesa: () => undefined,
+    }));
+    expect(posicionVisibleMesa(99, 96, 768)).toBeLessThan(88);
+    expect(html).toContain("Mesa 99");
+    expect(html).not.toContain("left:99%");
+    expect(html).not.toContain("top:99%");
+    expect(mesa.pos_x).toBe(99);
+    expect(mesa.pos_y).toBe(99);
   });
 
   it("reduce la altura automática cuando un área usa menos filas", () => {

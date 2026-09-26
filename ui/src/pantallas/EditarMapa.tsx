@@ -21,7 +21,8 @@ import { Button } from "@/components/ui/button.tsx";
 import { Alerta } from "@/components/ui/alerta.tsx";
 import { ConfirmarDialog } from "@/components/ui/confirmar.tsx";
 import { Input } from "@/components/ui/input.tsx";
-import { MESA_LADO, ordenarMesas } from "../../../src/modules/salon/orden.ts";
+import { MESA_LADO, columnasPara, ordenarMesas } from "../../../src/modules/salon/orden.ts";
+import { maxPosicionMesa, posicionVisibleMesa } from "../lib/mapa-dimensiones.ts";
 import type { Mesa, Piso } from "./Plano.tsx";
 
 type MesaDraft = Mesa & { _nuevo?: boolean };
@@ -38,10 +39,7 @@ type Props = {
   onDescartar: () => void;
 };
 
-export function maxPosicionMesa(tamanoMesa: number, tamanoMapa: number): number {
-  if (tamanoMapa <= 0) return 0;
-  return Math.max(0, Math.min(90, 100 - ((tamanoMesa + 8) / tamanoMapa) * 100));
-}
+export { maxPosicionMesa } from "../lib/mapa-dimensiones.ts";
 
 function Boton({
   icono,
@@ -116,6 +114,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
   const [aviso, setAviso] = useState("");
   const [confirmarQuitar, setConfirmarQuitar] = useState<{ tipo: "mesa"; mesa: MesaDraft } | { tipo: "piso" } | null>(null);
   const [pisosAuto, setPisosAuto] = useState<Set<number>>(() => new Set());
+  const [mapaDimensiones, setMapaDimensiones] = useState({ ancho: 0, alto: 0 });
   const mapaRef = useRef<HTMLDivElement>(null);
 
   const piso = pisos.find((p) => p.id === pisoId);
@@ -129,10 +128,28 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
     [visibles],
   );
   const seleccion = mesas.find((m) => m.id === sel && !quitar.includes(m.id));
+  const columnasAuto = columnasPara(visibles.length, mapaDimensiones.ancho);
+  const filasAuto = Math.ceil(visibles.length / columnasAuto);
+  const alturaAuto = Math.max(560, 40 + filasAuto * 120);
+  const mesasFuera = mapaDimensiones.ancho > 0 && mapaDimensiones.alto > 0
+    ? visibles.filter((m) =>
+      m.pos_x > maxPosicionMesa(m.ancho, mapaDimensiones.ancho) + 0.01 ||
+      m.pos_y > maxPosicionMesa(m.alto, mapaDimensiones.alto) + 0.01 ||
+      m.pos_x < 0 || m.pos_y < 0)
+    : [];
+
+  useEffect(() => {
+    if (!mapaRef.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setMapaDimensiones({ ancho: entry.contentRect.width, alto: entry.contentRect.height });
+    });
+    observer.observe(mapaRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!autoActivo) return;
-    const ordenadas = new Map(ordenarMesas(visibles).map((m) => [m.id, m]));
+    const ordenadas = new Map(ordenarMesas(visibles, mapaDimensiones.ancho || undefined).map((m) => [m.id, m]));
     setMesas((prev) => {
       let cambio = false;
       const siguiente = prev.map((m) => {
@@ -152,7 +169,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
       });
       return cambio ? siguiente : prev;
     });
-  }, [autoActivo, firmaVisibles, pisoId]);
+  }, [autoActivo, firmaVisibles, pisoId, mapaDimensiones.ancho]);
 
   function patchPiso(patch: Partial<PisoDraft>) {
     setPisos((prev) => prev.map((p) => (p.id === pisoId ? { ...p, ...patch } : p)));
@@ -547,10 +564,31 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
         </fieldset>
       </div>
 
+      {mesasFuera.length > 0 ? (
+        <section className="editor-mesas-fuera" aria-label="Mesas fuera del plano">
+          <p>{mesasFuera.length} {mesasFuera.length === 1 ? "mesa quedó" : "mesas quedaron"} fuera del plano. Puedes traerlas al borde visible antes de guardar.</p>
+          <div className="flex flex-wrap gap-2">
+            {mesasFuera.map((m) => (
+              <Button key={m.id} type="button" variant="outline" onClick={() => {
+                desactivarAuto();
+                patchMesa(m.id, {
+                  pos_x: posicionVisibleMesa(m.pos_x, m.ancho, mapaDimensiones.ancho),
+                  pos_y: posicionVisibleMesa(m.pos_y, m.alto, mapaDimensiones.alto),
+                });
+                setSel(m.id);
+              }}>Traer mesa {m.numero} al plano</Button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <p className="editor-mapa-ayuda">En pantallas estrechas, desliza el plano hacia los lados para llegar a todas las mesas.</p>
+      <div className="editor-mapa-viewport" role="region" aria-label="Plano del salón desplazable" tabIndex={0}>
       <div
         ref={mapaRef}
         className="plano-mapa"
         style={{
+          minHeight: autoActivo ? alturaAuto : undefined,
           backgroundColor: piso?.fondo_color || undefined,
           backgroundImage: fondoPiso ? `url("${fondoPiso}")` : undefined,
           backgroundSize: "cover",
@@ -582,6 +620,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
             <span className="mesa-odoo__meta">{m.asientos} asientos</span>
           </Button>
         ))}
+      </div>
       </div>
 
       {confirmarQuitar ? (
