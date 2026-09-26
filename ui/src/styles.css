@@ -1258,7 +1258,7 @@ main > [role="alert"] {
   box-shadow: 0 28px 80px rgb(18 36 30 / 0.25);
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
   .pos-nav__item,
   .pos-nav .icono {
     min-height: 54px;
@@ -1279,7 +1279,7 @@ main > [role="alert"] {
     padding: 0.65rem;
   }
 
-  .mesa-odoo {
+  .plano-mapa--operativo .mesa-odoo--operativa {
     /* Solo la altura: el radio lo decide la forma de la mesa
        (.mesa-odoo--round / --square). Antes un `border-radius !important`
        aquí volvía cuadradas las mesas redondas en pantalla chica. */
@@ -1733,7 +1733,7 @@ button.icono {
   display: none;
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
   .pos-odoo > main {
     padding: 0.85rem 0.75rem calc(6rem + env(safe-area-inset-bottom));
   }
@@ -2048,7 +2048,7 @@ button.icono {
   gap: 0.45rem;
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
   .pos-nav__badge {
     position: absolute;
     top: 0.15rem;
@@ -2510,7 +2510,7 @@ button.icono {
   line-height: 1.35;
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
   .ui-v2 .pedidos-grid {
     grid-template-columns: 1fr;
   }
@@ -3108,7 +3108,7 @@ button.icono {
   }
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
   .page-header {
     align-items: stretch;
     flex-direction: column;
@@ -3622,7 +3622,7 @@ button.icono:focus-visible {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
   .pos-odoo > main {
     padding: 0.75rem 0.7rem calc(5.75rem + env(safe-area-inset-bottom));
   }
@@ -3682,7 +3682,7 @@ button.icono:focus-visible {
     border-radius: 1.05rem;
   }
 
-  .mesa-odoo {
+  .plano-mapa--operativo .mesa-odoo--operativa {
     /* Solo la altura: el radio lo decide la forma de la mesa
        (.mesa-odoo--round / --square). Antes un `border-radius !important`
        aquí volvía cuadradas las mesas redondas en pantalla chica. */
@@ -4039,7 +4039,7 @@ button.icono:focus-visible {
 .ui-v2 .plano-mapa {
   min-height: clamp(30rem, calc(100svh - 205px), 58rem);
 }
-.ui-v2 .mesa-odoo {
+.ui-v2 .plano-mapa--operativo .mesa-odoo--operativa {
   max-width: 160px;
   max-height: 160px;
   transition:
@@ -4282,7 +4282,7 @@ button.icono:focus-visible {
   gap: 0.35rem;
   font-size: 0.76rem;
 }
-@media (max-width: 767px) {
+@media (width < 768px) {
   .ui-v2 .constructor-orden__catalogo {
     display: block;
   }
@@ -4650,7 +4650,7 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
    para que ninguna regla base posterior (`.mesa-odoo { position: absolute }`)
    pueda devolver las mesas operativas al posicionamiento absoluto.
    -------------------------------------------------------------------------- */
-@media (max-width: 767px) {
+@media (width < 768px) {
   .plano-mapa--operativo {
     position: static;
     display: grid;
@@ -4661,7 +4661,7 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
     padding: 0.75rem;
     overflow: visible;
   }
-  .plano-mapa--operativo .mesa-odoo--operativa {
+  .ui-v2 .plano-mapa--operativo .mesa-odoo--operativa {
     position: static;
     inset: auto;
     /* Anulan el width/height inline que trae el plano espacial. */
@@ -4751,7 +4751,7 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
     row-gap: 0.6rem;
   }
 }
-@media (max-width: 767px) {
+@media (width < 768px) {
   .ui-v2 .pos-odoo__panel-duplicado-movil {
     display: none;
   }
@@ -4961,7 +4961,7 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
 .ui-v2 .salon-odoo--solo .salon-odoo__nueva--v3 span {
   display: inline;
 }
-@media (max-width: 767px) {
+@media (width < 768px) {
   .ui-v2 .salon-odoo__cabecera,
   .ui-v2 .salon-odoo--solo .salon-odoo__cabecera {
     grid-template-columns: 46px minmax(0, 1fr) 46px;
@@ -5003,6 +5003,9 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
   }
 }
 @media (min-width: 768px) {
+  .ui-v2 .plano-mapa--operativo {
+    min-height: var(--plano-altura-auto);
+  }
   .ui-v2 .plano-mapa--auto {
     flex: none;
     height: var(--plano-altura-auto);
@@ -5194,7 +5197,7 @@ button.constructor-orden__abrir-resumen {
   background: var(--card);
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
   .ordenes-vistas__toggle button {
     width: 44px;
     padding-inline: 0;
@@ -5358,9 +5361,13 @@ button.constructor-orden__abrir-resumen {
   font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 767px) {
+@media (width < 768px) {
+  .ui-v2 .pos-nav__identity {
+    display: none;
+  }
+
   .pos-odoo.ui-v2 > main {
-    padding-top: 4.65rem;
+    padding-top: calc(4.65rem + env(safe-area-inset-top));
   }
 
   .ui-v2 .pos-mobile-brand {
@@ -5397,7 +5404,7 @@ button.constructor-orden__abrir-resumen {
   }
 
   .opciones-page .settings-nav {
-    top: 56px;
+    top: calc(56px + env(safe-area-inset-top));
     display: flex;
     flex-wrap: nowrap;
     justify-content: flex-start;
@@ -5416,6 +5423,27 @@ button.constructor-orden__abrir-resumen {
 
   .opciones-page .settings-nav a span {
     display: inline;
+  }
+
+  .opciones-page input.visually-hidden[type="file"] {
+    width: 1px;
+    height: 1px;
+    min-height: 1px;
+    margin: -1px;
+    padding: 0;
+  }
+
+  .ui-v2 .pos-nav .icono {
+    min-width: 48px;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea,
+  .opciones-page .form-odoo__tarjeta input:not([type="checkbox"]),
+  .opciones-page .form-odoo__tarjeta select,
+  .opciones-page .form-odoo__tarjeta textarea {
+    font-size: max(16px, 1rem);
   }
 
   .constructor-empaque {

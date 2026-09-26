@@ -7,7 +7,7 @@ function Select({ className, children, ...props }: React.ComponentProps<"select"
     <span className="relative block w-full">
       <select
         className={cn(
-          "h-[var(--control-h)] min-h-[var(--control-h)] w-full appearance-none rounded-lg border border-input bg-card px-3 pr-9 text-sm text-foreground outline-none transition-colors",
+          "h-[var(--control-h)] min-h-[var(--control-h)] w-full appearance-none rounded-lg border border-input bg-card px-3 pr-9 text-base text-foreground outline-none transition-colors md:text-sm",
           "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20",
           "disabled:pointer-events-none disabled:opacity-45",
           className,

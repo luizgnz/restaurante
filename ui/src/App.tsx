@@ -142,6 +142,9 @@ export function App() {
   const [errorModal, setErrorModal] = useState("");
   const [carga, setCarga] = useState({ plano: true, kds: true, cuentas: true, inventario: true });
   const envioEnCurso = useRef(false);
+  const configSaveQueue = useRef<Promise<void>>(Promise.resolve());
+  const configSaveVersion = useRef(0);
+  const configSaveError = useRef<unknown>(null);
   const { modalActivo, abrirModal, cerrarModal } = useModalCoordinator();
 
   async function cargarSesion() {
@@ -255,7 +258,25 @@ export function App() {
   }
 
   async function guardarOpciones(patch: Partial<OpcionesValores>) {
-    aplicarConfig(await api<OpcionesValores>("/api/config", { method: "POST", body: JSON.stringify(patch) }));
+    aplicarConfig(patch);
+    const version = ++configSaveVersion.current;
+    const save = configSaveQueue.current.then(() =>
+      api<OpcionesValores>("/api/config", { method: "POST", body: JSON.stringify(patch) }),
+    );
+    configSaveQueue.current = save.then(() => undefined, () => undefined);
+    try {
+      const persisted = await save;
+      if (version === configSaveVersion.current) {
+        configSaveError.current = null;
+        aplicarConfig(persisted);
+      }
+    } catch (error) {
+      if (version === configSaveVersion.current) {
+        configSaveError.current = error;
+        await cargarConfig();
+      }
+      throw error;
+    }
   }
 
   useEffect(() => {
@@ -1180,6 +1201,10 @@ export function App() {
               duracion_sesion_horas: duracionSesionHoras,
             }}
             onCambiar={(patch) => conError(() => guardarOpciones(patch))}
+            onAntesReiniciar={async () => {
+              await configSaveQueue.current;
+              if (configSaveError.current) throw configSaveError.current;
+            }}
           />
         ) : null}
       </main>

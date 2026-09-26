@@ -1,11 +1,35 @@
 package runtime
 
 import (
+	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/luizgnz/restaurante/go/internal/config"
 )
+
+func TestHealthChangesBootIDWithNewServer(t *testing.T) {
+	fixture := newCancellationFixture(t)
+	readID := func() string {
+		handler := NewHandler(fixture.db, t.TempDir(), config.Defaults())
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/salud", nil))
+		if response.Code != http.StatusOK {
+			t.Fatalf("salud: status=%d", response.Code)
+		}
+		var body struct {
+			ID string `json:"idArranque"`
+		}
+		if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil || body.ID == "" {
+			t.Fatalf("identificador de arranque inválido: %q, %v", body.ID, err)
+		}
+		return body.ID
+	}
+	if first, second := readID(), readID(); first == second {
+		t.Fatal("dos instancias compartieron identificador de arranque")
+	}
+}
 
 func TestRestartRequiresAdministrator(t *testing.T) {
 	fixture := newCancellationFixture(t)

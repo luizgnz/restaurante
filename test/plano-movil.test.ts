@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { EditarMapa } from "../ui/src/pantallas/EditarMapa.tsx";
+import { EditarMapa, maxPosicionMesa } from "../ui/src/pantallas/EditarMapa.tsx";
 import { Plano, type Mesa, type Piso } from "../ui/src/pantallas/Plano.tsx";
 
 const mesa: Mesa = {
@@ -19,6 +19,11 @@ const mesa: Mesa = {
 const piso: Piso = { id: 1, nombre: "Salón" };
 
 describe("contrato responsive del plano", () => {
+  it("mantiene la mesa completa dentro del lienzo al arrastrar o agrandar", () => {
+    expect(maxPosicionMesa(220, 360)).toBeCloseTo(36.67, 1);
+    expect(maxPosicionMesa(96, 360)).toBeCloseTo(71.11, 1);
+  });
+
   it("el salón operativo lleva el modificador móvil en contenedor y mesas", () => {
     const html = renderToStaticMarkup(
       createElement(Plano, { piso: "Salón", mesas: [mesa], onMesa: () => undefined }),

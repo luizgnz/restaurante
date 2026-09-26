@@ -1,9 +1,21 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { Plano, alturaAutomaticaPlano } from "../ui/src/pantallas/Plano.tsx";
+import { Plano, alturaAutomaticaPlano, escalaAutomaticaPlano } from "../ui/src/pantallas/Plano.tsx";
 
 describe("plano restaurante", () => {
+  it("amplía mesas separadas en escritorio y respeta las muy próximas", () => {
+    const mesa = (numero: number, x: number, y: number) => ({
+      id: numero, numero, estado: "libre", cuentaId: null, asientos: 4,
+      pos_x: x, pos_y: y, forma: "square", ancho: 96, alto: 96,
+    });
+    const separadas = [mesa(1, 4, 4), mesa(2, 26.5, 4), mesa(3, 4, 30), mesa(4, 4, 56)];
+    const proximas = [mesa(1, 4, 4), mesa(2, 13, 4)];
+    expect(escalaAutomaticaPlano(separadas, 1232)).toBeGreaterThan(1.4);
+    expect(escalaAutomaticaPlano(proximas, 1232)).toBe(1);
+    expect(alturaAutomaticaPlano(separadas, 1.45)).toBeGreaterThan(alturaAutomaticaPlano(separadas));
+  });
+
   it("reduce la altura automática cuando un área usa menos filas", () => {
     const mesa = (numero: number, posY: number) => ({
       id: numero,

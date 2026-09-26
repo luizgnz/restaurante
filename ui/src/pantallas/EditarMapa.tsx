@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import {
   Circle,
   Copy,
@@ -37,6 +37,11 @@ type Props = {
   }) => void;
   onDescartar: () => void;
 };
+
+export function maxPosicionMesa(tamanoMesa: number, tamanoMapa: number): number {
+  if (tamanoMapa <= 0) return 0;
+  return Math.max(0, Math.min(90, 100 - ((tamanoMesa + 8) / tamanoMapa) * 100));
+}
 
 function Boton({
   icono,
@@ -111,6 +116,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
   const [aviso, setAviso] = useState("");
   const [confirmarQuitar, setConfirmarQuitar] = useState<{ tipo: "mesa"; mesa: MesaDraft } | { tipo: "piso" } | null>(null);
   const [pisosAuto, setPisosAuto] = useState<Set<number>>(() => new Set());
+  const mapaRef = useRef<HTMLDivElement>(null);
 
   const piso = pisos.find((p) => p.id === pisoId);
   const visibles = useMemo(
@@ -303,9 +309,16 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
 
   function redimensionar(m: MesaDraft, paso: number) {
     desactivarAuto();
+    const ancho = Math.min(220, Math.max(64, m.ancho + paso));
+    const alto = Math.min(220, Math.max(64, m.alto + paso));
+    const mapa = mapaRef.current?.getBoundingClientRect();
     patchMesa(m.id, {
-      ancho: Math.min(220, Math.max(64, m.ancho + paso)),
-      alto: Math.min(220, Math.max(64, m.alto + paso)),
+      ancho,
+      alto,
+      ...(mapa ? {
+        pos_x: Math.min(m.pos_x, maxPosicionMesa(ancho, mapa.width)),
+        pos_y: Math.min(m.pos_y, maxPosicionMesa(alto, mapa.height)),
+      } : {}),
     });
   }
 
@@ -324,8 +337,10 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
     if (!arrastre) return;
     desactivarAuto();
     const mapa = e.currentTarget.getBoundingClientRect();
-    const x = Math.min(90, Math.max(0, ((e.clientX - mapa.left) / mapa.width) * 100 - arrastre.dx));
-    const y = Math.min(90, Math.max(0, ((e.clientY - mapa.top) / mapa.height) * 100 - arrastre.dy));
+    const mesa = mesas.find((m) => m.id === arrastre.id);
+    if (!mesa) return;
+    const x = Math.min(maxPosicionMesa(mesa.ancho, mapa.width), Math.max(0, ((e.clientX - mapa.left) / mapa.width) * 100 - arrastre.dx));
+    const y = Math.min(maxPosicionMesa(mesa.alto, mapa.height), Math.max(0, ((e.clientY - mapa.top) / mapa.height) * 100 - arrastre.dy));
     setMesas((prev) => prev.map((m) => (m.id === arrastre.id ? { ...m, pos_x: x, pos_y: y } : m)));
   }
 
@@ -533,6 +548,7 @@ export function EditarMapa({ pisos: pisosIni, mesas: mesasIni, onGuardar, onDesc
       </div>
 
       <div
+        ref={mapaRef}
         className="plano-mapa"
         style={{
           backgroundColor: piso?.fondo_color || undefined,

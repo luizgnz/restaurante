@@ -58,9 +58,9 @@ export type OpcionesValores = {
 type RolClave = "administrador" | "encargado_turno" | "mesero" | "cocina" | "caja" | "inventario";
 type RolUi = { clave: RolClave; nombre: string; descripcion: string };
 type UsuarioUi = { id: number; nombre: string; usuario: string | null; activo: boolean; roles: RolClave[] };
-type EstadoRed = { habilitado: boolean; nombre: string; puerto: number; urls: string[]; salud: string; reinicioDisponible?: boolean };
+type EstadoRed = { habilitado: boolean; nombre: string; puerto: number; urls: string[]; salud: string; reinicioDisponible?: boolean; idArranque?: string };
 type TrabajoImpresion = { id: number; tipo: string; estado: string; intentos: number; ultimoError: string | null; creadoEn: string };
-type Props = { valores: OpcionesValores; onCambiar: (patch: Partial<OpcionesValores>) => void };
+type Props = { valores: OpcionesValores; onCambiar: (patch: Partial<OpcionesValores>) => void; onAntesReiniciar?: () => Promise<void> };
 
 function NavOpciones() {
   return <nav className="settings-nav" aria-label="Secciones de opciones">
@@ -183,7 +183,7 @@ function GestionUsuarios() {
   </fieldset>;
 }
 
-function EstadoServidor({ valores, onCambiar }: Props) {
+function EstadoServidor({ valores, onCambiar, onAntesReiniciar }: Props) {
   const [estado, setEstado] = useState<EstadoRed | null>(null);
   const [error, setError] = useState("");
   const [confirmando, setConfirmando] = useState(false);
@@ -195,20 +195,23 @@ function EstadoServidor({ valores, onCambiar }: Props) {
     setReiniciando(true);
     setError("");
     try {
+      await onAntesReiniciar?.();
+      const anterior = (await api<{ ok: boolean; idArranque?: string }>("/api/salud")).idArranque;
+      if (!anterior) throw new Error("No se pudo identificar el servidor antes del reinicio.");
       await api("/api/red/reiniciar", { method: "POST" });
       // La tarea de Windows detiene el servidor dos segundos después de responder.
       await new Promise((resolve) => window.setTimeout(resolve, 3_000));
       for (let intento = 0; intento < 30; intento++) {
         try {
-          const salud = await api<{ ok: boolean }>("/api/salud");
-          if (salud.ok) {
+          const salud = await api<{ ok: boolean; idArranque?: string }>("/api/salud");
+          if (salud.ok && salud.idArranque && salud.idArranque !== anterior) {
             window.location.reload();
             return;
           }
         } catch { /* El servidor todavía está reiniciando. */ }
         await new Promise((resolve) => window.setTimeout(resolve, 1_000));
       }
-      setError("El servidor no volvió a responder. Revise la tarea Restaurante POS y el registro restart.log.");
+      setError("No se pudo confirmar el reinicio del servidor. Revise la tarea Restaurante POS y el registro restart.log.");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -280,7 +283,7 @@ function BadgeEstadoImpresion({ estado, conError }: { estado: string; conError: 
   return <span className={`settings-status ${estado === "sent" ? "is-ok" : "is-error"}`}>{texto}</span>;
 }
 
-export function Opciones({ valores, onCambiar }: Props) {
+export function Opciones({ valores, onCambiar, onAntesReiniciar }: Props) {
   return <section className="page-shell form-odoo opciones-page">
     <header className="page-header"><div><span className="page-eyebrow">Administración del sistema</span><h1>Opciones</h1><p>Configura el restaurante, impresión, permisos y dispositivos conectados.</p></div></header>
     <NavOpciones />
@@ -362,6 +365,6 @@ export function Opciones({ valores, onCambiar }: Props) {
       <ColaImpresion />
       <p className="settings-callout is-warning"><ShieldCheck size={18} />El comprobante impreso por el sistema no es automáticamente una boleta tributaria. Para validez fiscal se debe integrar el proveedor de facturación o servicio tributario correspondiente.</p>
     </fieldset>
-    <EstadoServidor valores={valores} onCambiar={onCambiar} />
+    <EstadoServidor valores={valores} onCambiar={onCambiar} onAntesReiniciar={onAntesReiniciar} />
   </section>;
 }

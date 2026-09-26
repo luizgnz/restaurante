@@ -48,14 +48,38 @@ export function alturaAutomaticaPlano(mesas: Mesa[], escala = 1, esMuestra = fal
   }
 
   const reservaInferior = esMuestra ? 64 : 40;
-  const alturaPorFilas = 90 + filas * 140;
+  const alturaPorFilas = 90 + filas * 140 * escala;
   const alturaPorExtremo = Math.max(...mesas.map((mesa) => {
     const altoMesa = Math.max(mesa.alto * escala, 64);
-    const espacioRestante = Math.max(0.18, 1 - mesa.pos_y / 100);
+    const espacioRestante = Math.max(0.04, 1 - mesa.pos_y / 100);
     return Math.ceil((altoMesa + reservaInferior) / espacioRestante);
   }));
 
-  return Math.min(672, Math.max(230, alturaPorFilas, alturaPorExtremo));
+  return Math.min(1200, Math.max(230, alturaPorFilas, alturaPorExtremo));
+}
+
+export function escalaAutomaticaPlano(mesas: Mesa[], anchoMapa: number): number {
+  const objetivo = Math.min(1.5, Math.max(1, anchoMapa / 850));
+  // Las posiciones pertenecen al plano guardado. Se amplían las mesas solo
+  // cuando el espacio entre ellas alcanza también para la nueva escala.
+  for (let escala = objetivo; escala >= 1; escala = Math.round((escala - 0.05) * 100) / 100) {
+    const altura = alturaAutomaticaPlano(mesas, escala);
+    const rects = mesas.map((mesa) => ({
+      x: (mesa.pos_x / 100) * anchoMapa,
+      y: (mesa.pos_y / 100) * altura,
+      width: Math.max(mesa.ancho * escala, 64),
+      height: Math.max(mesa.alto * escala, 64),
+    }));
+    const caben = rects.every((rect, i) =>
+      rect.x + rect.width <= anchoMapa - 8 &&
+      rect.y + rect.height <= altura - 8 &&
+      rects.every((otro, j) => i === j ||
+        rect.x + rect.width + 12 <= otro.x || otro.x + otro.width + 12 <= rect.x ||
+        rect.y + rect.height + 12 <= otro.y || otro.y + otro.height + 12 <= rect.y),
+    );
+    if (caben) return escala;
+  }
+  return 1;
 }
 
 type Props = {
@@ -105,9 +129,6 @@ export function Plano({
   const inputRef = useRef<HTMLInputElement>(null);
   const mapaRef = useRef<HTMLDivElement>(null);
   const [anchoMapa, setAnchoMapa] = useState(1200);
-  /* La escala responde al ancho, pero queda acotada para respetar la distancia
-     vertical entre las posiciones guardadas de cada fila. */
-  const escalaMesas = Math.min(1.05, Math.max(1, anchoMapa / 1050));
 
   function abrirNumero(numero: number) {
     const mesa = mesas.find((m) => m.numero === numero);
@@ -184,6 +205,7 @@ export function Plano({
     return nivel === "alto" || nivel === "critico";
   };
   const mesasVisibles = mesasDelPiso;
+  const escalaMesas = escalaAutomaticaPlano(mesasVisibles, anchoMapa);
   const alturaMapa = alturaAutomaticaPlano(mesasVisibles, escalaMesas, Boolean(areaDemo));
 
   return (
