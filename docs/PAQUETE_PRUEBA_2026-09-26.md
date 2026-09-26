@@ -1,5 +1,7 @@
 # Paquete de prueba y vuelta atrás · 2026-09-26
 
+**Actualización:** por petición de Luis se instaló y probó `0.1.0-pr24-e8e7c9e` en este Windows. Pasaron la actualización con datos, el reinicio desde Opciones y la restauración aislada del respaldo real. Ver [la evidencia de instalación](PRUEBA_INSTALADA_PR24_2026-09-26.md). Queda comprobar el arranque de esta compilación después de reiniciar Windows.
+
 Esta versión se construye desde `codex/auditoria-responsive`. La rama nació de `main` `47a61f0` e incorporó `main` `98295b4`, que contiene la recuperación del instalador de la PR #23. El archivo `Restaurante-base-98295b4-fuentes.zip` conserva el **código fuente anterior a esta PR** como referencia reproducible. El ZIP `Restaurante-prueba-<versión>-x64.zip` contiene Setup y sus archivos `.bin`; se deben extraer juntos. Los SHA-256 y el commit exacto se registran en `MANIFIESTO-PRUEBA.txt` dentro del paquete.
 
 ## Qué probar

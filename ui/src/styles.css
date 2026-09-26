@@ -3073,6 +3073,7 @@ button.icono {
   flex-direction: column;
   gap: 0.45rem;
 }
+.network-settings code { overflow-wrap: anywhere; }
 .network-addresses code {
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--border);

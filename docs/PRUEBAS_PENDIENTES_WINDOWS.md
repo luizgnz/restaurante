@@ -2,7 +2,7 @@
 
 Estado al 26 de septiembre de 2026. Esta lista distingue la evidencia obtenida en este Windows de los límites que todavía quedan. El historial está en [la revisión de instalación](REVISION_INSTALACION_STACK_2026-09-25.md).
 
-La compilación de la PR #24 incorpora la PR #23 y corrige dimensiones, destello del login y confirmación del reinicio; sus 528 pruebas Vitest, Go y build pasaron y la interfaz se midió en 45 combinaciones de pantalla/ancho/tamaño. **Todavía no se ha instalado** esta compilación en el equipo objetivo, ni se ha probado su botón de reinicio a través de la tarea programada. El paquete y el procedimiento de vuelta atrás para un Windows descartable están en [la guía de prueba](PAQUETE_PRUEBA_2026-09-26.md). Las pruebas de instalación y reinicio detalladas abajo corresponden a `pass15` de la PR #23, aunque comparten el código de recuperación.
+La compilación de la PR #24 incorpora la PR #23 y corrige dimensiones, destello del login y confirmación del reinicio. **`0.1.0-pr24-e8e7c9e` ya está instalada en este Windows por petición de Luis:** actualización y botón de reinicio aprobados, 139 productos conservados, configuración original recuperada y copia del respaldo real restaurada y validada de forma aislada. También se corrigió el desbordamiento de la ruta de Windows en Opciones a 320 px. Ver [la prueba instalada](PRUEBA_INSTALADA_PR24_2026-09-26.md). Queda reiniciar Windows para comprobar el arranque automático de esta compilación exacta. Las pruebas históricas detalladas abajo corresponden a `pass15` de la PR #23; el paquete y vuelta atrás están en [la guía](PAQUETE_PRUEBA_2026-09-26.md).
 
 ## Comprobado en este equipo
 
