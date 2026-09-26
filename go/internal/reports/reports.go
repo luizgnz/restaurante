@@ -89,7 +89,7 @@ func ParsePeriod(from, to string) (Period, error) {
 }
 
 func Sales(ctx context.Context, db *sql.DB, period Period) (SalesData, error) {
-	rows, err := db.QueryContext(ctx, `SELECT c.id,j.id,j.fecha_operativa,COALESCE(j.turno_nombre,'Jornada general')
+	rows, err := db.QueryContext(ctx, `SELECT c.id,j.id,j.fecha_operativa
 		FROM cuentas c JOIN jornadas_operativas j ON j.id=c.jornada_id
 		WHERE j.fecha_operativa BETWEEN ? AND ? AND c.estado='en_caja' ORDER BY j.fecha_operativa,j.id,c.id`, period.From, period.To)
 	if err != nil {
@@ -97,12 +97,12 @@ func Sales(ctx context.Context, db *sql.DB, period Period) (SalesData, error) {
 	}
 	type accountRef struct {
 		accountID, journeyID int64
-		date, shift          string
+		date                 string
 	}
 	refs := []accountRef{}
 	for rows.Next() {
 		var ref accountRef
-		if err := rows.Scan(&ref.accountID, &ref.journeyID, &ref.date, &ref.shift); err != nil {
+		if err := rows.Scan(&ref.accountID, &ref.journeyID, &ref.date); err != nil {
 			rows.Close()
 			return SalesData{}, err
 		}
@@ -122,7 +122,7 @@ func Sales(ctx context.Context, db *sql.DB, period Period) (SalesData, error) {
 		}
 		currentShift := shifts[ref.journeyID]
 		if currentShift == nil {
-			currentShift = &ShiftSales{Date: ref.date, Name: ref.shift}
+			currentShift = &ShiftSales{Date: ref.date, Name: fmt.Sprintf("Jornada #%d", ref.journeyID)}
 			shifts[ref.journeyID] = currentShift
 		}
 		currentShift.Accounts++
@@ -357,11 +357,11 @@ func SalesPDF(restaurant string, period Period, data SalesData) ([]byte, error) 
 		pdf.SetFont("Helvetica", "", 9)
 		pdf.MultiCell(0, 6, tr(fmt.Sprintf("Advertencia: %d cuentas siguen abiertas por %s provisionales. No forman parte del total.", data.OpenAccounts, money(data.OpenProvisionalCents))), "1", "L", true)
 	}
-	section(pdf, tr("Desglose por turno"))
-	tableHeader(pdf, []float64{34, 64, 28, 44}, []string{tr("Fecha"), tr("Turno"), tr("Cuentas"), tr("Total")})
+	section(pdf, tr("Desglose por jornada"))
+	tableHeader(pdf, []float64{34, 64, 28, 44}, []string{tr("Fecha"), tr("Jornada"), tr("Cuentas"), tr("Total")})
 	for _, row := range data.Shifts {
 		if ensurePage(pdf, restaurant, "Reporte de ventas", period, 12) {
-			tableHeader(pdf, []float64{34, 64, 28, 44}, []string{tr("Fecha"), tr("Turno"), tr("Cuentas"), tr("Total")})
+			tableHeader(pdf, []float64{34, 64, 28, 44}, []string{tr("Fecha"), tr("Jornada"), tr("Cuentas"), tr("Total")})
 		}
 		tableRow(pdf, []float64{34, 64, 28, 44}, []string{row.Date, tr(row.Name), fmt.Sprint(row.Accounts), money(row.TotalCents)}, []string{"L", "L", "R", "R"})
 	}
@@ -530,6 +530,7 @@ func output(pdf *fpdf.Fpdf) ([]byte, error) {
 	}
 	return buffer.Bytes(), nil
 }
+
 // Los campos históricos "centavos" guardan pesos enteros (CLP), igual que
 // productos.precio_centavos y el formateador compartido de la interfaz.
 func money(pesos int64) string { return fmt.Sprintf("$%s", groupThousands(pesos)) }

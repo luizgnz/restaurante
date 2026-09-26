@@ -99,6 +99,8 @@ describe("pantallas módulo restaurante", () => {
     expect(html).toContain("Editar recetas");
     expect(html).toContain("Día operativo");
     expect(html).toContain("Consultando jornada");
+    expect(html).not.toContain("Cuentas activas");
+    expect(html).not.toContain("Configurar turnos");
     expect(html).toContain("Reiniciar día de demostración");
   });
 
@@ -117,6 +119,7 @@ describe("pantallas módulo restaurante", () => {
     expect(html).not.toContain("Crear producto");
     expect(html).not.toContain("Reiniciar día de demostración");
     expect(html).not.toContain("Configurar turnos");
+    expect(html).not.toContain("Órdenes</dt>");
   });
 
   it("el cierre masivo explica los bloqueos y exige credenciales", () => {

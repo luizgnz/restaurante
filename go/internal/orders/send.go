@@ -63,10 +63,14 @@ func Send(ctx context.Context, db *sql.DB, input NewInput, employeeID int64, opt
 	}
 	defer tx.Rollback()
 	var journeyID int64
-	if err := tx.QueryRowContext(ctx, "SELECT id FROM jornadas_operativas WHERE estado = 'abierta' ORDER BY id DESC LIMIT 1").Scan(&journeyID); errors.Is(err, sql.ErrNoRows) {
+	var journeyDate string
+	if err := tx.QueryRowContext(ctx, "SELECT id, fecha_operativa FROM jornadas_operativas WHERE estado = 'abierta' ORDER BY id DESC LIMIT 1").Scan(&journeyID, &journeyDate); errors.Is(err, sql.ErrNoRows) {
 		return Result{}, &Error{"jornada_cerrada", "No hay una jornada operativa abierta"}
 	} else if err != nil {
 		return Result{}, err
+	}
+	if journeyDate != time.Now().Format("2006-01-02") {
+		return Result{}, &Error{"jornada_anterior_abierta", "Cierra la jornada del " + journeyDate + " antes de registrar ventas de hoy"}
 	}
 	var waiter string
 	if err := tx.QueryRowContext(ctx, "SELECT nombre FROM empleados WHERE id = ? AND activo = 1", employeeID).Scan(&waiter); errors.Is(err, sql.ErrNoRows) {

@@ -42,10 +42,10 @@ export function CerrarJornadaDialog({ resumen, procesando, error, onActualizarEn
     || resumen.ordenesListas > 0 || resumen.pedidosParaLlevarPendientes > 0;
 
   return (
-    <Dialog aria-label="Cerrar turno operativo" onOverlayClick={() => !procesando && onCancelar()}>
+    <Dialog aria-label="Cerrar jornada" onOverlayClick={() => !procesando && onCancelar()}>
       <DialogContent className="w-[min(560px,94vw)]">
         <DialogHeader>
-          <DialogTitle>Cerrar turno operativo</DialogTitle>
+          <DialogTitle>Cerrar jornada</DialogTitle>
           <DialogDescription>
             Revisa el servicio completo. Las cuentas abiertas se cerrarán juntas, sin imprimir precuentas una por una.
           </DialogDescription>
@@ -82,7 +82,7 @@ export function CerrarJornadaDialog({ resumen, procesando, error, onActualizarEn
 
         <label className="flex items-start gap-3 rounded-lg border p-3 text-sm">
           <Checkbox checked={corregirHora} onChange={(event) => setCorregirHora(event.target.checked)} />
-          <span><strong className="flex items-center gap-1.5"><Clock3 size={16} aria-hidden="true" /> Corregir hora efectiva</strong><span className="mt-1 block text-muted-foreground">Úsalo si el turno terminó antes y se está registrando el cierre tarde.</span></span>
+          <span><strong className="flex items-center gap-1.5"><Clock3 size={16} aria-hidden="true" /> Corregir hora efectiva</strong><span className="mt-1 block text-muted-foreground">Úsalo si la jornada terminó antes y se está registrando el cierre tarde.</span></span>
         </label>
         {corregirHora ? (
           <Label>Fecha y hora efectiva<Input type="datetime-local" value={cierreLocal} max={fechaLocalParaInput()} onChange={(event) => setCierreLocal(event.target.value)} /></Label>
@@ -92,7 +92,7 @@ export function CerrarJornadaDialog({ resumen, procesando, error, onActualizarEn
           <Label>Usuario autorizado<Input autoComplete="username" value={usuario} onChange={(event) => setUsuario(event.target.value)} /></Label>
           <Label>Contraseña<Input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} /></Label>
         </div>
-        <p className="flex items-center gap-2 text-xs text-muted-foreground"><LockKeyhole size={15} aria-hidden="true" /> Debe autorizar Administración o el encargado de turno.</p>
+        <p className="flex items-center gap-2 text-xs text-muted-foreground"><LockKeyhole size={15} aria-hidden="true" /> Debe autorizar Administración o un encargado.</p>
         {error ? <Alerta>{error}</Alerta> : null}
 
         <DialogFooter>
@@ -107,7 +107,7 @@ export function CerrarJornadaDialog({ resumen, procesando, error, onActualizarEn
               cierreEn: corregirHora && cierreLocal ? new Date(cierreLocal).toISOString() : undefined,
             })}
           >
-            <AlertTriangle size={17} aria-hidden="true" /> {procesando ? "Cerrando…" : "Cerrar todas y finalizar turno"}
+            <AlertTriangle size={17} aria-hidden="true" /> {procesando ? "Cerrando…" : "Cerrar todas y finalizar jornada"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   Archive,
   BookOpen,
-  CalendarClock,
   CalendarDays,
   FileBarChart,
   Layers3,
@@ -18,9 +17,7 @@ import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Card } from "@/components/ui/card.tsx";
 import { ConfirmarDialog } from "@/components/ui/confirmar.tsx";
-import { Select } from "@/components/ui/select.tsx";
 import { CerrarJornadaDialog, type ResumenCierreJornada } from "@/pantallas/CerrarJornadaDialog.tsx";
-import { TurnosDialog, type TurnoPlantilla } from "@/pantallas/TurnosDialog.tsx";
 
 type Props = {
   onCrearProducto: () => void;
@@ -39,8 +36,6 @@ type Jornada = {
   fechaOperativa: string;
   abiertaEn: string;
   abiertaPor: string | null;
-  turnoNombre: string;
-  turnoPlantillaId: number | null;
 };
 
 type Resumen = ResumenCierreJornada;
@@ -49,6 +44,11 @@ type EstadoJornada = { jornada: Jornada | null; resumen: Resumen | null };
 
 function fechaLegible(fecha: string): string {
   return new Intl.DateTimeFormat("es-CL", { dateStyle: "long" }).format(new Date(`${fecha}T12:00:00`));
+}
+
+function fechaLocalActual(): string {
+  const hoy = new Date();
+  return [hoy.getFullYear(), String(hoy.getMonth() + 1).padStart(2, "0"), String(hoy.getDate()).padStart(2, "0")].join("-");
 }
 
 export function Backend({
@@ -66,9 +66,6 @@ export function Backend({
   const [confirmar, setConfirmar] = useState<"reiniciar" | null>(null);
   const [cerrando, setCerrando] = useState(false);
   const [cierreError, setCierreError] = useState("");
-  const [turnosAbiertos, setTurnosAbiertos] = useState(false);
-  const [turnos, setTurnos] = useState<TurnoPlantilla[]>([]);
-  const [turnoSeleccionado, setTurnoSeleccionado] = useState(0);
   const [procesando, setProcesando] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
@@ -77,15 +74,8 @@ export function Backend({
     setEstado(await api<EstadoJornada>("/api/jornadas/actual"));
   }
 
-  async function cargarTurnos() {
-    const respuesta = await api<{ turnos: TurnoPlantilla[] }>("/api/jornadas/turnos");
-    setTurnos(respuesta.turnos);
-    const predeterminado = respuesta.turnos.find((turno) => turno.esPredeterminada && turno.activa) ?? respuesta.turnos.find((turno) => turno.activa);
-    setTurnoSeleccionado(predeterminado?.id || 0);
-  }
-
   useEffect(() => {
-    Promise.all([cargarJornada(), cargarTurnos()]).catch((e) => setError(e instanceof Error ? e.message : String(e)));
+    cargarJornada().catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
   async function ejecutar(ruta: string, exito: string) {
@@ -109,7 +99,7 @@ export function Backend({
     setProcesando(true);
     setError("");
     try {
-      await api("/api/jornadas/abrir", { method: "POST", body: JSON.stringify({ turnoPlantillaId: turnoSeleccionado }) });
+      await api("/api/jornadas/abrir", { method: "POST" });
       await cargarJornada();
       setMensaje("Jornada operativa abierta.");
     } catch (e) {
@@ -127,7 +117,7 @@ export function Backend({
       await cargarJornada();
       await onMovimientoActualizado?.();
       setCerrando(false);
-      setMensaje("Turno cerrado y respaldo creado.");
+      setMensaje("Jornada cerrada y respaldo creado.");
     } catch (e) {
       setCierreError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -148,33 +138,18 @@ export function Backend({
     }
   }
 
-  async function guardarTurno(turno: TurnoPlantilla) {
-    setProcesando(true);
-    setError("");
-    try {
-      await api(turno.id ? `/api/jornadas/turnos/${turno.id}` : "/api/jornadas/turnos", {
-        method: turno.id ? "PUT" : "POST",
-        body: JSON.stringify(turno),
-      });
-      await cargarTurnos();
-      setMensaje("Configuración de turnos guardada.");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setProcesando(false);
-    }
-  }
-
   const jornada = estado?.jornada;
   const resumen = estado?.resumen;
   const cargandoJornada = estado === null && !error;
+  const fechaActual = fechaLocalActual();
+  const jornadaAnterior = jornada && jornada.fechaOperativa !== fechaActual;
   return (
     <section className="page-shell backend-odoo">
       <header className="page-header">
         <div>
           <span className="page-eyebrow">{esAdministrador ? "Administración" : "Operación"}</span>
           <h1>{esAdministrador ? "Administración del restaurante" : "Día operativo"}</h1>
-          <p>{esAdministrador ? "Gestiona la operación, la carta y la distribución del salón." : "Abre, supervisa y cierra el turno actual."}</p>
+          <p>{esAdministrador ? "Gestiona la operación, la carta y la distribución del salón." : "Inicia y cierra la jornada cuando lo necesites."}</p>
         </div>
         <Button type="button" variant="outline" onClick={onMesas}>
           <LayoutDashboard size={18} aria-hidden="true" /> Volver al salón
@@ -183,34 +158,27 @@ export function Backend({
       {error ? <Alerta onCerrar={() => setError("")}>{error}</Alerta> : null}
       {mensaje ? <Alerta tono="info" onCerrar={() => setMensaje("")}>{mensaje}</Alerta> : null}
       <Card className="backend-jornada">
-        <div className="backend-jornada__encabezado">
-          <span className="backend-jornada__icono"><CalendarDays size={24} aria-hidden="true" /></span>
-          <div>
-            <div className="backend-jornada__titulo">
-              <h2>Día operativo</h2>
-              <Badge variant={cargandoJornada ? "secondary" : jornada ? "success" : "warning"}>
-                {cargandoJornada ? "Consultando" : jornada ? "Jornada abierta" : "Jornada cerrada"}
-              </Badge>
+        <div className="backend-jornada__estado">
+          <div className="backend-jornada__encabezado">
+            <span className="backend-jornada__icono"><CalendarDays size={24} aria-hidden="true" /></span>
+            <div>
+              <div className="backend-jornada__titulo">
+                <h2>Día operativo</h2>
+                <Badge variant={cargandoJornada ? "secondary" : jornada ? "success" : "warning"}>
+                  {cargandoJornada ? "Consultando" : jornada ? "Jornada abierta" : "Jornada cerrada"}
+                </Badge>
+              </div>
+              <p>
+                {cargandoJornada
+                  ? "Consultando el estado de la jornada…"
+                  : jornada
+                  ? `${fechaLegible(jornada.fechaOperativa)} · iniciada${jornada.abiertaPor ? ` por ${jornada.abiertaPor}` : ""}`
+                  : "Inicia una jornada para comenzar a registrar órdenes."}
+              </p>
             </div>
-            <p>
-              {cargandoJornada
-                ? "Consultando el estado de la jornada…"
-                : jornada
-                ? `${jornada.turnoNombre || "Jornada general"} · ${fechaLegible(jornada.fechaOperativa)} · abierta${jornada.abiertaPor ? ` por ${jornada.abiertaPor}` : ""}`
-                : "Abre una jornada para comenzar a registrar órdenes."}
-            </p>
           </div>
+          {jornadaAnterior ? <Alerta tono="aviso">La jornada del {fechaLegible(jornada.fechaOperativa)} sigue abierta. Ciérrala antes de registrar ventas de hoy.</Alerta> : null}
         </div>
-        {jornada && resumen ? (
-          <dl className="backend-jornada__metricas">
-            <div><dt>Cuentas activas</dt><dd>{resumen.cuentasActivas}</dd></div>
-            <div><dt>Órdenes</dt><dd>{resumen.ordenes}</dd></div>
-            <div><dt>Cocina pendiente</dt><dd>{resumen.tareasCocinaPendientes}</dd></div>
-            <div><dt>Solicitudes</dt><dd>{resumen.incidenciasPendientes}</dd></div>
-            <div><dt>Listas sin confirmar</dt><dd>{resumen.ordenesListas}</dd></div>
-            <div><dt>Para llevar pendientes</dt><dd>{resumen.pedidosParaLlevarPendientes}</dd></div>
-          </dl>
-        ) : null}
         <div className="backend-jornada__acciones">
           {cargandoJornada ? (
             <Button type="button" variant="outline" disabled>Consultando jornada…</Button>
@@ -219,19 +187,10 @@ export function Backend({
               <Archive size={18} aria-hidden="true" /> Cerrar jornada
             </Button>
           ) : (
-            <div className="flex min-w-0 flex-1 flex-wrap gap-2">
-              <Select aria-label="Turno a abrir" className="min-w-48" value={turnoSeleccionado} onChange={(event) => setTurnoSeleccionado(Number(event.target.value))}>
-                {turnos.filter((turno) => turno.activa).map((turno) => <option key={turno.id} value={turno.id}>{turno.nombre}{turno.esPredeterminada ? " (predeterminado)" : ""}</option>)}
-              </Select>
-              <Button type="button" onClick={abrirJornada} disabled={procesando || !turnoSeleccionado}>
-                <CalendarDays size={18} aria-hidden="true" /> Abrir jornada
-              </Button>
-            </div>
+            <Button type="button" onClick={abrirJornada} disabled={procesando}>
+              <CalendarDays size={18} aria-hidden="true" /> Iniciar jornada
+            </Button>
           )}
-          {esAdministrador ? <Button type="button" variant="outline" onClick={() => setTurnosAbiertos(true)} disabled={procesando}><CalendarClock size={18} aria-hidden="true" /> Configurar turnos</Button> : null}
-          {esAdministrador ? <Button type="button" variant="destructive" onClick={() => setConfirmar("reiniciar")} disabled={procesando || cargandoJornada}>
-            <RotateCcw size={18} aria-hidden="true" /> Reiniciar día de demostración
-          </Button> : null}
         </div>
       </Card>
       {esAdministrador ? <div className="backend-odoo__atajos">
@@ -266,8 +225,12 @@ export function Backend({
           <Button type="button" variant="outline" onClick={onReportes} disabled={!onReportes}>Abrir reportes</Button>
         </Card>
       </div> : null}
+      {esAdministrador ? <div className="backend-demo-action">
+        <Button type="button" variant="outline" onClick={() => setConfirmar("reiniciar")} disabled={procesando || cargandoJornada}>
+          <RotateCcw size={18} aria-hidden="true" /> Reiniciar día de demostración
+        </Button>
+      </div> : null}
       {cerrando && resumen ? <CerrarJornadaDialog resumen={resumen} procesando={procesando} error={cierreError} onActualizarEntregas={marcarListasEntregadas} onCancelar={() => setCerrando(false)} onConfirmar={cerrarJornada} /> : null}
-      {turnosAbiertos ? <TurnosDialog turnos={turnos} procesando={procesando} onCancelar={() => setTurnosAbiertos(false)} onGuardar={guardarTurno} /> : null}
       {confirmar === "reiniciar" ? (
         <ConfirmarDialog
           titulo="¿Reiniciar el día de demostración?"

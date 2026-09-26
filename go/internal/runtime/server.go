@@ -226,14 +226,14 @@ func newHandler(db *sql.DB, uiDir string, appConfig config.App, restart func() e
 			writeError(w, http.StatusForbidden, "sin_derecho", "Solo Administración o el encargado de turno pueden abrir la jornada")
 			return
 		}
-		var input struct {
-			TurnoPlantillaID int64 `json:"turnoPlantillaId"`
-		}
-		if r.ContentLength != 0 && !decodeJSON(w, r, &input, 16<<10) {
-			return
+		if r.ContentLength != 0 {
+			var legacyInput map[string]any
+			if !decodeJSON(w, r, &legacyInput, 16<<10) {
+				return
+			}
 		}
 		employeeID := session.Usuario.ID
-		item, err := journey.OpenWithTemplate(r.Context(), db, &employeeID, input.TurnoPlantillaID)
+		item, err := journey.Open(r.Context(), db, &employeeID)
 		if writeJourneyError(w, err, "jornada_no_disponible") {
 			return
 		}
@@ -1851,7 +1851,7 @@ func writeOrderError(w http.ResponseWriter, err error) bool {
 		switch domain.Code {
 		case "cuenta_inexistente", "orden_inexistente", "mesa_inexistente", "producto_inexistente", "empleado_inexistente", "variante_inexistente":
 			status = http.StatusNotFound
-		case "cuenta_cerrada", "cuenta_desactualizada", "stock_insuficiente", "jornada_cerrada", "orden_anulada", "orden_en_preparacion", "linea_preparada":
+		case "cuenta_cerrada", "cuenta_desactualizada", "stock_insuficiente", "jornada_cerrada", "jornada_anterior_abierta", "orden_anulada", "orden_en_preparacion", "linea_preparada":
 			status = http.StatusConflict
 		case "sin_derecho":
 			status = http.StatusForbidden

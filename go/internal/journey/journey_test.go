@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/luizgnz/restaurante/go/internal/bootstrap"
 	"github.com/luizgnz/restaurante/go/internal/journey"
@@ -79,5 +80,19 @@ func TestCloseCreatesBackupAndOpenStartsNextJourney(t *testing.T) {
 	}
 	if opened.ID == closed.Jornada.ID || opened.Estado != "abierta" {
 		t.Fatalf("nueva jornada=%#v", opened)
+	}
+	if opened.TurnoPlantillaID != nil || opened.FechaOperativa != time.Now().Format("2006-01-02") {
+		t.Fatalf("la jornada debe abrir hoy sin plantilla: %#v", opened)
+	}
+	secondClose, err := journey.Close(ctx, db, nil, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reopened, err := journey.Open(ctx, db, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reopened.ID == secondClose.Jornada.ID || reopened.FechaOperativa != opened.FechaOperativa {
+		t.Fatalf("no permitió otra jornada en el mismo día: %#v", reopened)
 	}
 }

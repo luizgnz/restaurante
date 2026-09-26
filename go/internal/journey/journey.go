@@ -98,7 +98,38 @@ func Current(ctx context.Context, db *sql.DB) (State, error) {
 }
 
 func Open(ctx context.Context, db *sql.DB, employeeID *int64) (Journey, error) {
-	return OpenWithTemplate(ctx, db, employeeID, 0)
+	var count int
+	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM jornadas_operativas WHERE estado = 'abierta'").Scan(&count); err != nil {
+		return Journey{}, err
+	}
+	if count > 0 {
+		return Journey{}, &DomainError{"jornada_ya_abierta", "Ya existe una jornada operativa abierta"}
+	}
+	now := time.Now()
+	timestamp := now.UTC().Format(time.RFC3339Nano)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return Journey{}, err
+	}
+	defer tx.Rollback()
+	result, err := tx.ExecContext(ctx, `INSERT INTO jornadas_operativas
+		(fecha_operativa, estado, abierta_en, abierta_por_empleado_id)
+		VALUES (?, 'abierta', ?, ?)`, now.Format("2006-01-02"), timestamp, employeeID)
+	if err != nil {
+		return Journey{}, err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return Journey{}, err
+	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO jornada_eventos (jornada_id, tipo, empleado_id, detalle_json, creado_en)
+		VALUES (?, 'apertura', ?, ?, ?)`, id, employeeID, `{"origen":"administracion"}`, timestamp); err != nil {
+		return Journey{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return Journey{}, err
+	}
+	return get(ctx, db, selectJourney+" WHERE j.id = ?", id)
 }
 
 func OpenWithTemplate(ctx context.Context, db *sql.DB, employeeID *int64, templateID int64) (Journey, error) {

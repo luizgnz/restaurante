@@ -1,0 +1,20 @@
+{
+  "fecha": "2026-09-26",
+  "tema": "jornadas-simples",
+  "entorno": "Go y SQLite de prueba aislados en 127.0.0.1:8081; no se modificó la base operativa",
+  "commitBase": "feaf7fc",
+  "capturas": [
+    { "archivo": "dia-operativo-390.png", "ancho": 390, "estado": "abierta" },
+    { "archivo": "dia-operativo-768.png", "ancho": 768, "estado": "abierta" },
+    { "archivo": "dia-operativo-1280.png", "ancho": 1280, "estado": "abierta" },
+    { "archivo": "cerrar-jornada-1280.png", "ancho": 1280, "estado": "confirmacion" },
+    { "archivo": "cerrar-jornada-390.png", "ancho": 390, "estado": "confirmacion" },
+    { "archivo": "iniciar-jornada-1280.png", "ancho": 1280, "estado": "cerrada" },
+    { "archivo": "jornada-anterior-390.png", "ancho": 390, "estado": "fecha_anterior" }
+  ],
+  "revisionUI": {
+    "veredicto": "PASA",
+    "hallazgos": [],
+    "observaciones": "Sin indicadores en Día operativo, sin turnos configurables, acción principal visible y advertencia legible en móvil. El diálogo de cierre conserva el resumen necesario para confirmar con seguridad."
+  }
+}

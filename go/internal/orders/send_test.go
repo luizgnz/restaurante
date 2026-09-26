@@ -6,6 +6,7 @@ import (
 	"errors"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/luizgnz/restaurante/go/internal/orders"
 	appRuntime "github.com/luizgnz/restaurante/go/internal/runtime"
@@ -74,6 +75,25 @@ func TestSendRollsBackWhenStockIsInsufficient(t *testing.T) {
 	assertCount(t, db, "cuentas", 0)
 	assertCount(t, db, "ordenes", 0)
 	assertCount(t, db, "print_jobs", 0)
+}
+
+func TestSendRejectsPreviousDayJourneyWithoutCreatingSale(t *testing.T) {
+	db := migratedDatabase(t)
+	seedOrderScenario(t, db)
+	yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+	if _, err := db.Exec("UPDATE jornadas_operativas SET fecha_operativa=? WHERE estado='abierta'", yesterday); err != nil {
+		t.Fatal(err)
+	}
+	_, err := orders.Send(context.Background(), db, orders.NewInput{
+		TableID: 907, ServiceType: "mesa", Key: "jornada-vencida",
+		Lines: []orders.Line{{ProductID: 920, Quantity: 1}},
+	}, 903, orders.SendOptions{})
+	var domainError *orders.Error
+	if !errors.As(err, &domainError) || domainError.Code != "jornada_anterior_abierta" {
+		t.Fatalf("se esperaba jornada_anterior_abierta, llegó %v", err)
+	}
+	assertCount(t, db, "cuentas", 0)
+	assertCount(t, db, "ordenes", 0)
 }
 
 func TestSendTakeawayUsesTechnicalTableAndSequentialNumber(t *testing.T) {
