@@ -4466,7 +4466,8 @@ button.icono:focus-visible {
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-button.tabla-ordenes__fila {
+button.tabla-ordenes__fila,
+.pedidos-page .tabla-ordenes__fila:not(.tabla-ordenes__fila--cabecera) {
   width: 100%;
   padding: 0.7rem 0.9rem;
   border: 1px solid var(--border);
@@ -4476,8 +4477,9 @@ button.tabla-ordenes__fila {
   text-align: left;
   font: inherit;
 }
-button.tabla-ordenes__fila:hover { background: var(--muted); }
-button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(--warning) 55%, var(--border)); }
+button.tabla-ordenes__fila:hover,
+.pedidos-page .tabla-ordenes__fila:not(.tabla-ordenes__fila--cabecera):hover { background: var(--muted); }
+.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(--warning) 55%, var(--border)); }
 .tabla-ordenes__orden {
   display: flex;
   flex-direction: column;
@@ -4628,17 +4630,36 @@ button.tabla-ordenes__fila.is-bloqueada { border-color: color-mix(in oklab, var(
   .tabla-ordenes__fila > :nth-child(2) { display: none; }
 }
 
-/* La pantalla Órdenes (mesero) usa la misma tabla con una columna más:
-   el estado de la cuenta (En pedido / Precuenta emitida). */
+/* La entrega tiene espacio propio, fuera del resumen truncado. */
 .pedidos-page .tabla-ordenes__fila {
-  grid-template-columns: max-content auto auto minmax(0, 1fr);
+  grid-template-columns: max-content auto auto minmax(0, 1fr) 44px;
+}
+.tabla-ordenes__abrir {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-block-size: 44px;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  white-space: normal;
+}
+.tabla-ordenes__abrir:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+.tabla-ordenes__confirmar {
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  padding: 0;
 }
 @media (max-width: 719px) {
   .pedidos-page .tabla-ordenes__fila {
-    grid-template-columns: minmax(6.6rem, 0.9fr) auto minmax(0, 1.5fr);
+    grid-template-columns: minmax(5rem, 0.9fr) auto minmax(0, 1.5fr) 44px;
     gap: 0 0.65rem;
   }
-  .pedidos-page button.tabla-ordenes__fila { padding-inline: 0.75rem; }
+  .pedidos-page .tabla-ordenes__fila:not(.tabla-ordenes__fila--cabecera) { padding-inline: 0.75rem; }
 }
 
 /* -- Marca del local en la pantalla de acceso (ui/public/marcas/olla-horizontal.svg) -- */

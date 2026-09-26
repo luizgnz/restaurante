@@ -1,0 +1,7 @@
+{
+  "fecha": "2026-09-26",
+  "commit_base": "718e1d9",
+  "cambios": "sin commit: check de entrega y formato de pesos PDF",
+  "entorno": "Vite local, componente Pedidos real con CSS real y datos sintéticos; callback simulado, sin modificar cuentas del negocio",
+  "capturas": ["ordenes-390.png", "ordenes-768.png", "ordenes-1280.png", "ordenes-390-entregada.png"]
+}

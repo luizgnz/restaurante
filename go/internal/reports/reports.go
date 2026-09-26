@@ -351,7 +351,7 @@ func SalesPDF(restaurant string, period Period, data SalesData) ([]byte, error) 
 	}
 	summaryBox(pdf, tr("Promedio por cuenta"), money(average), 130)
 	if data.OpenAccounts > 0 {
-		pdf.SetY(48)
+		// summaryBox deja el cursor debajo de las tarjetas, con margen.
 		pdf.SetFillColor(252, 245, 229)
 		pdf.SetTextColor(112, 72, 20)
 		pdf.SetFont("Helvetica", "", 9)
@@ -530,7 +530,9 @@ func output(pdf *fpdf.Fpdf) ([]byte, error) {
 	}
 	return buffer.Bytes(), nil
 }
-func money(cents int64) string { return fmt.Sprintf("$%s", groupThousands(cents/100)) }
+// Los campos históricos "centavos" guardan pesos enteros (CLP), igual que
+// productos.precio_centavos y el formateador compartido de la interfaz.
+func money(pesos int64) string { return fmt.Sprintf("$%s", groupThousands(pesos)) }
 func groupThousands(value int64) string {
 	raw := fmt.Sprint(value)
 	for i := len(raw) - 3; i > 0; i -= 3 {
