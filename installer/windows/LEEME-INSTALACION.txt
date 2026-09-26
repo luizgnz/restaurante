@@ -31,4 +31,3 @@ las políticas de Seguridad de Windows.
 
 Si Windows vuelve a mostrar “Acción bloqueada”, no desactive la protección:
 envíe la captura y la hora del aviso al soporte técnico.
-

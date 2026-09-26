@@ -90,4 +90,3 @@ Cambie ambas contraseñas y PIN antes de permitir acceso a la red del restaurant
 3. Si la página carga pero una acción no responde, registre la dirección usada (`localhost` o IP), la hora, el botón y el error de la consola del navegador. Compruebe que el JavaScript instalado pertenece al mismo paquete que el servidor.
 4. Si el fallo apareció después de actualizar, conserve la base y los registros; revise el respaldo previo en `backups\updates` antes de intentar otra instalación.
 5. Para soporte externo, comparta la versión instalada, el estado de la tarea y los errores pertinentes de los registros. Quite datos personales y cookies de sesión antes de enviarlos.
-
