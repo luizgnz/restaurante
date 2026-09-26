@@ -198,3 +198,10 @@ La corrección usa `GetCustomSetupExitCode` para devolver **20** cuando falla la
 Se compiló el paquete normal `0.1.0-exitcode-pass15` desde el código y se instaló como actualización: **código 0**, `resultado de validación = 0`, `tarea y servidor disponibles = 1`, `install-success.marker = ok`, `/api/salud` correcto y ninguna migración de prueba presente. La instantánea SQLite tras esa actualización conservó exactamente el SHA-256 inicial. Queda comprobar el arranque de `pass15` tras reiniciar Windows; el acceso entrante desde otro dispositivo, Windows 10/macOS y la firma del ejecutable son límites de esta revisión en un solo equipo. El estado resumido está en [Pruebas pendientes de Windows](PRUEBAS_PENDIENTES_WINDOWS.md).
 
 Después de la corrección pasaron `npm test` (520/520 en 86 archivos), `npm run test:go` y `npm run build:windows` con TypeScript, Vite, Go e Inno Setup 6.7.3. El código 21, reservado para un fallo adicional de la restauración, no se provocó sobre la instalación con productos reales.
+
+### Comprobación web de `pass15` en este equipo
+
+En sesiones nuevas del navegador integrado se inició sesión con `http://localhost:8080` y `http://192.168.1.85:8080`. Desde ambas direcciones, el clic en Mesa 1 abrió «Nueva orden · Mesa #1» y cargó 81 productos; el botón «Nueva orden» abrió el selector de mesa o para llevar; «Inventario» cargó 82 materiales. No se envió ninguna orden ni se modificaron productos. El servidor instalado respondió `{"ok":true,"runtime":"go"}` en `/api/salud` y el marcador de instalación contiene `ok`.
+
+El proceso que escucha en el puerto 8080 es `restaurante.exe` en la sesión de servicios. La consulta de `Restaurante POS` mediante `Get-ScheduledTask` y `schtasks` recibió «Access is denied» desde el token no elevado de esta sesión, por lo que el estado de la tarea deberá comprobarse como administrador tras el reinicio. Este Windows aún no se ha reiniciado desde la instalación de `pass15`. El navegador Edge y el acceso entrante desde otro dispositivo tampoco se verificaron en esta comprobación.
+
