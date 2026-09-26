@@ -226,4 +226,3 @@ Capturas realizadas el **29 de agosto de 2026**, correspondientes al trabajo ini
 ![Panel de cuenta del usuario](screenshots/2026-08-29_feeb899/19-panel-cuenta.png)
 
 ![Menú principal de navegación](screenshots/2026-08-29_feeb899/20-menu-navegacion.png)
-
