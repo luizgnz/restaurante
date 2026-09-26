@@ -2,7 +2,7 @@
 
 Estado al 26 de septiembre de 2026. Esta lista distingue la evidencia obtenida en este Windows de los límites que todavía quedan. El historial está en [la revisión de instalación](REVISION_INSTALACION_STACK_2026-09-25.md).
 
-La compilación de la PR #24 corrige dimensiones, destello del login y la confirmación del reinicio; sus 528 pruebas Vitest, Go y build pasaron y la interfaz se midió en 45 combinaciones de pantalla/ancho/tamaño. **Todavía no se ha instalado** esta compilación en el equipo objetivo, ni se ha probado su botón de reinicio a través de la tarea programada. El paquete y el procedimiento de vuelta atrás para un Windows descartable están en [la guía de prueba](PAQUETE_PRUEBA_2026-09-26.md). Las pruebas de instalación y reinicio de la tabla anterior corresponden a compilaciones previas.
+La compilación de la PR #24 incorpora la PR #23 y corrige dimensiones, destello del login y confirmación del reinicio; sus 528 pruebas Vitest, Go y build pasaron y la interfaz se midió en 45 combinaciones de pantalla/ancho/tamaño. **Todavía no se ha instalado** esta compilación en el equipo objetivo, ni se ha probado su botón de reinicio a través de la tarea programada. El paquete y el procedimiento de vuelta atrás para un Windows descartable están en [la guía de prueba](PAQUETE_PRUEBA_2026-09-26.md). Las pruebas de instalación y reinicio detalladas abajo corresponden a `pass15` de la PR #23, aunque comparten el código de recuperación.
 
 ## Comprobado en este equipo
 

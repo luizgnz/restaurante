@@ -1,6 +1,6 @@
 # Auditoría de dimensiones y reinicio · 2026-09-26
 
-Base: `origin/main` en `47a61f0`. Trabajo en `codex/auditoria-responsive`, dentro de `.worktrees/auditoria-responsive`. El checkout principal y la instalación de Windows no se modificaron. La interfaz se probó contra un servidor Go temporal en `127.0.0.1:18080`, con una SQLite nueva y aislada.
+Base inicial: `origin/main` en `47a61f0`; después se incorporó `main` `98295b4` con la PR #23 del instalador. Trabajo en `codex/auditoria-responsive`, dentro de `.worktrees/auditoria-responsive`. El checkout principal y la instalación de Windows no se modificaron. La interfaz se probó contra un servidor Go temporal en `127.0.0.1:18080`, con una SQLite nueva y aislada.
 
 ## Plan y alcance
 
