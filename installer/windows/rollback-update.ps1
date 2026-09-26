@@ -47,8 +47,9 @@ if (-not (Test-Path -LiteralPath $databaseBackup)) {
 
 # La copia debe reflejar exactamente la versión anterior. Un archivo nuevo,
 # como una migración fallida, impediría que el servidor restaurado arrancara.
+# /IS fuerza la copia incluso si tamaño y fecha coinciden pero el contenido no.
 New-Item -ItemType Directory -Force -Path $installPath | Out-Null
-$null = & robocopy.exe $appBackup $installPath /MIR /XJ /R:1 /W:1 /NFL /NDL /NJH /NJS /NP
+$null = & robocopy.exe $appBackup $installPath /MIR /IS /XJ /R:1 /W:1 /NFL /NDL /NJH /NJS /NP
 if ($LASTEXITCODE -ge 8) {
   throw "No se pudo restaurar el programa (Robocopy: $LASTEXITCODE)."
 }
