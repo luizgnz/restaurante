@@ -32,6 +32,7 @@ func main() {
 	verifyInstall := flag.Bool("verify-install", false, "valida datos, migraciones y catálogo y termina")
 	logFile := flag.String("log-file", "", "archivo para registrar errores y arranques")
 	noBrowser := flag.Bool("no-browser", false, "no abre el navegador al iniciar el servidor")
+	restartTask := flag.String("restart-task", "", "tarea programada para reiniciar la instalación Windows")
 	flag.Parse()
 	if *logFile != "" {
 		if err := os.MkdirAll(filepath.Dir(*logFile), 0o750); err != nil {
@@ -47,6 +48,9 @@ func main() {
 	appConfig, err := config.Load(*data)
 	if err != nil {
 		log.Fatalf("cargar configuración: %v", err)
+	}
+	if err := config.EnsureFile(*data, appConfig); err != nil {
+		log.Fatalf("guardar configuración inicial: %v", err)
 	}
 	if *listen == "" {
 		host := "127.0.0.1"
@@ -75,9 +79,18 @@ func main() {
 		return
 	}
 
+	var restart func() error
+	if goRuntime.GOOS == "windows" && *restartTask != "" {
+		restart = func() error {
+			if err := exec.Command("schtasks.exe", "/Run", "/TN", *restartTask).Run(); err != nil {
+				return fmt.Errorf("solicitar tarea de reinicio: %w", err)
+			}
+			return nil
+		}
+	}
 	server := &http.Server{
 		Addr:              *listen,
-		Handler:           app.NewHandler(db, filepath.Clean(*uiDir), appConfig, *data),
+		Handler:           app.NewHandlerWithRestart(db, filepath.Clean(*uiDir), appConfig, *data, restart),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	log.Printf("Restaurante Go en http://%s", *listen)
