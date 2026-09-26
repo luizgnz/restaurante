@@ -26,7 +26,9 @@ UseSetupLdr=no
 WizardStyle=modern
 SetupLogging=yes
 UninstallDisplayName=Restaurante
-CloseApplications=yes
+; PrepareToInstall detiene nuestra tarea. No pedir a Restart Manager que cierre
+; McAfee u otros procesos ajenos que inspeccionan los archivos instalados.
+CloseApplications=no
 RestartApplications=no
 
 [Files]
@@ -36,6 +38,7 @@ Source: "{#StageDir}\ui\*"; DestDir: "{app}\ui"; Flags: ignoreversion recursesub
 Source: "{#StageDir}\migrations\*"; DestDir: "{app}\migrations"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "rollback-update.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
 Source: "register-task.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
+Source: "restart-task.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
 
 [Dirs]
 Name: "{commonappdata}\Restaurante\data"; Permissions: users-modify
@@ -49,12 +52,15 @@ Name: "{autodesktop}\Restaurante"; Filename: "http://127.0.0.1:8080/"
 Filename: "http://127.0.0.1:8080/"; Description: "Abrir Restaurante"; Flags: shellexec nowait postinstall skipifsilent
 
 [UninstallRun]
+Filename: "{sys}\schtasks.exe"; Parameters: "/End /TN ""Restaurante POS - Reiniciar"""; Flags: runhidden waituntilterminated; RunOnceId: "StopRestartTask"
+Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /F /TN ""Restaurante POS - Reiniciar"""; Flags: runhidden waituntilterminated; RunOnceId: "DeleteRestartTask"
 Filename: "{sys}\schtasks.exe"; Parameters: "/End /TN ""Restaurante POS"""; Flags: runhidden waituntilterminated; RunOnceId: "StopTask"
 Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /F /TN ""Restaurante POS"""; Flags: runhidden waituntilterminated; RunOnceId: "DeleteTask"
 
 [Code]
 var
   HadPreviousInstall: Boolean;
+  RestoreTaskOnExit: Boolean;
 
 function PreviousInstallExists: Boolean;
 var
@@ -85,6 +91,7 @@ begin
   HadPreviousInstall := PreviousInstallExists;
   if HadPreviousInstall then begin
     Exec(ExpandConstant('{sys}\schtasks.exe'), '/End /TN "Restaurante POS"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    RestoreTaskOnExit := True;
     PrepareScript := ExpandConstant('{app}\installer\prepare-update.ps1');
     if not FileExists(PrepareScript) then begin
       Result := 'La instalación anterior no contiene el componente de respaldo. Ejecute primero el instalador de transición o contacte a soporte.';
@@ -100,6 +107,10 @@ begin
           '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
         Result := 'No se pudo crear el respaldo previo. La instalación no continuará.';
       end;
+#ifdef RESTAURANTE_TEST_ABORT_AFTER_BACKUP
+    if Result = '' then
+      Result := 'Prueba controlada: cancelar después del respaldo.';
+#endif
   end;
 end;
 
@@ -132,6 +143,8 @@ begin
       if HadPreviousInstall then
         RollbackOK := RunPowerShell('rollback-update.ps1', '-InstallDir "' + ExpandConstant('{app}') +
           '" -DataDir "' + ExpandConstant('{commonappdata}\Restaurante') + '"');
+      if HadPreviousInstall and not RollbackOK then
+        RestoreTaskOnExit := False;
       if not HadPreviousInstall then begin
         Exec(ExpandConstant('{sys}\schtasks.exe'), '/End /TN "Restaurante POS"',
           '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
@@ -149,5 +162,17 @@ begin
     end;
     if not SaveStringToFile(ExpandConstant('{app}\install-success.marker'), 'ok', False) then
       RaiseException('No se pudo guardar la confirmación de instalación.');
+    RestoreTaskOnExit := False;
+  end;
+end;
+
+procedure DeinitializeSetup;
+var
+  ResultCode: Integer;
+begin
+  if RestoreTaskOnExit then begin
+    Exec(ExpandConstant('{sys}\schtasks.exe'), '/Run /TN "Restaurante POS"',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Log('Restaurante: reanudación tras cancelar actualización = ' + IntToStr(ResultCode));
   end;
 end;

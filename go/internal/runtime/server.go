@@ -33,6 +33,15 @@ import (
 // NewHandler construye el servidor HTTP de producción y conserva el contrato
 // que consume la interfaz React.
 func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...string) http.Handler {
+	return newHandler(db, uiDir, appConfig, nil, dataDirs...)
+}
+
+// NewHandlerWithRestart habilita el reinicio administrado por el instalador.
+func NewHandlerWithRestart(db *sql.DB, uiDir string, appConfig config.App, dataDir string, restart func() error) http.Handler {
+	return newHandler(db, uiDir, appConfig, restart, dataDir)
+}
+
+func newHandler(db *sql.DB, uiDir string, appConfig config.App, restart func() error, dataDirs ...string) http.Handler {
 	var configState atomic.Pointer[config.App]
 	configState.Store(&appConfig)
 	dataDir := ""
@@ -780,8 +789,22 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		writeJSON(w, http.StatusOK, map[string]any{
 			"habilitado": current.ServidorRedHabilitado, "nombre": current.NombreServidor,
 			"puerto": port, "urls": printing.NetworkURLs(port, current.ServidorRedHabilitado, localIPv4()),
-			"salud": "operativo", "requiereReinicio": false,
+			"salud": "operativo", "requiereReinicio": false, "reinicioDisponible": restart != nil,
 		})
+	})
+	mux.HandleFunc("POST /api/red/reiniciar", func(w http.ResponseWriter, r *http.Request) {
+		if !requireRole(w, r, db, "administrador") {
+			return
+		}
+		if restart == nil {
+			writeError(w, http.StatusServiceUnavailable, "reinicio_no_disponible", "El reinicio desde Opciones no está configurado en este equipo")
+			return
+		}
+		if err := restart(); err != nil {
+			writeError(w, http.StatusInternalServerError, "reinicio_fallido", "No se pudo solicitar el reinicio; revise la tarea de Windows")
+			return
+		}
+		writeJSON(w, http.StatusAccepted, map[string]any{"ok": true})
 	})
 	mux.HandleFunc("POST /api/impresoras/diagnosticar", func(w http.ResponseWriter, r *http.Request) {
 		if !requireRole(w, r, db, "administrador") {
@@ -1301,6 +1324,14 @@ func NewHandler(db *sql.DB, uiDir string, appConfig config.App, dataDirs ...stri
 		static.ServeHTTP(w, r)
 	})
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !configState.Load().ServidorRedHabilitado {
+			host, _, err := net.SplitHostPort(r.RemoteAddr)
+			ip := net.ParseIP(host)
+			if err != nil || ip == nil || !ip.IsLoopback() {
+				writeError(w, http.StatusForbidden, "red_local_desactivada", "El acceso desde la red local está desactivado")
+				return
+			}
+		}
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			token := sessionToken(r)
 			if token != "" {

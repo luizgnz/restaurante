@@ -5,6 +5,7 @@ import {
   claveBorrador,
   eliminarBorrador,
   guardarBorrador,
+  nuevaClaveIdempotencia,
 } from "../ui/src/lib/borradores.ts";
 
 function memoriaStorage(): Storage {
@@ -43,6 +44,17 @@ function borradorEjemplo(parcial: Partial<BorradorOrden> = {}): BorradorOrden {
 }
 
 describe("borradores localStorage", () => {
+  it("genera una clave UUID aun cuando randomUUID no existe, como en HTTP por IP", () => {
+    const bytes = new Uint8Array(16);
+    const entropia: Pick<Crypto, "getRandomValues"> = {
+      getRandomValues<T extends Exclude<BufferSource, ArrayBuffer>>(destino: T): T {
+        (destino as unknown as Uint8Array).set(bytes);
+        return destino;
+      },
+    };
+    expect(nuevaClaveIdempotencia(entropia)).toBe("00000000-0000-4000-8000-000000000000");
+  });
+
   it("genera claves separadas por contexto", () => {
     expect(claveBorrador({ tipo: "general" })).toBe("restaurante.borrador:general");
     expect(claveBorrador({ tipo: "mesa", mesaId: 7 })).toBe("restaurante.borrador:mesa:7");

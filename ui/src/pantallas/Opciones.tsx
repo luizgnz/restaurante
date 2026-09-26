@@ -58,7 +58,7 @@ export type OpcionesValores = {
 type RolClave = "administrador" | "encargado_turno" | "mesero" | "cocina" | "caja" | "inventario";
 type RolUi = { clave: RolClave; nombre: string; descripcion: string };
 type UsuarioUi = { id: number; nombre: string; usuario: string | null; activo: boolean; roles: RolClave[] };
-type EstadoRed = { habilitado: boolean; nombre: string; puerto: number; urls: string[]; salud: string };
+type EstadoRed = { habilitado: boolean; nombre: string; puerto: number; urls: string[]; salud: string; reinicioDisponible?: boolean };
 type TrabajoImpresion = { id: number; tipo: string; estado: string; intentos: number; ultimoError: string | null; creadoEn: string };
 type Props = { valores: OpcionesValores; onCambiar: (patch: Partial<OpcionesValores>) => void };
 
@@ -186,8 +186,35 @@ function GestionUsuarios() {
 function EstadoServidor({ valores, onCambiar }: Props) {
   const [estado, setEstado] = useState<EstadoRed | null>(null);
   const [error, setError] = useState("");
+  const [confirmando, setConfirmando] = useState(false);
+  const [reiniciando, setReiniciando] = useState(false);
   async function cargar() { setError(""); try { setEstado(await api<EstadoRed>("/api/red/estado")); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } }
   useEffect(() => { cargar(); }, [valores.servidor_red_habilitado]);
+  async function reiniciar() {
+    setConfirmando(false);
+    setReiniciando(true);
+    setError("");
+    try {
+      await api("/api/red/reiniciar", { method: "POST" });
+      // La tarea de Windows detiene el servidor dos segundos después de responder.
+      await new Promise((resolve) => window.setTimeout(resolve, 3_000));
+      for (let intento = 0; intento < 30; intento++) {
+        try {
+          const salud = await api<{ ok: boolean }>("/api/salud");
+          if (salud.ok) {
+            window.location.reload();
+            return;
+          }
+        } catch { /* El servidor todavía está reiniciando. */ }
+        await new Promise((resolve) => window.setTimeout(resolve, 1_000));
+      }
+      setError("El servidor no volvió a responder. Revise la tarea Restaurante POS y el registro restart.log.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setReiniciando(false);
+    }
+  }
   return <fieldset className="form-odoo__tarjeta settings-card settings-card--wide network-settings" id="red-local">
     <legend>Servidor y red local</legend>
     <div className="settings-section-heading"><div><h2>Acceso desde otros equipos</h2><p>Meseros, cocina y administración pueden abrir la misma web desde la red Wi-Fi o cableada del restaurante.</p></div><Button type="button" variant="outline" onClick={cargar}><RefreshCw size={18} />Diagnosticar</Button></div>
@@ -195,7 +222,15 @@ function EstadoServidor({ valores, onCambiar }: Props) {
     <label>Nombre del servidor<input maxLength={60} value={valores.nombre_servidor} onChange={(event) => onCambiar({ nombre_servidor: event.target.value })} /></label>
     <div className="network-status"><span className={`network-status__icon ${estado?.habilitado ? "is-online" : ""}`}><Wifi size={23} /></span><div><strong>{estado?.habilitado ? "Servidor disponible" : "Acceso local desactivado"}</strong><span>Puerto {estado?.puerto ?? "—"} · Estado {estado?.salud ?? "comprobando"}</span></div></div>
     <div className="network-addresses"><strong>Direcciones para conectar tablets y teléfonos</strong>{estado?.urls.length ? estado.urls.map((url) => <code key={url}>{url}</code>) : <span>No hay direcciones de red disponibles.</span>}</div>
-    <p className="settings-callout"><ShieldCheck size={18} />Los equipos deben estar en la misma red local. Si cambias esta opción, reinicia la aplicación para aplicar el modo de escucha.</p>
+    <p className="settings-callout"><ShieldCheck size={18} />Los equipos deben estar en la misma red local. El permiso se aplica al guardar y la IP se detecta automáticamente. Si lo desactivas desde otro equipo, solo podrás reactivarlo en el servidor mediante localhost.</p>
+    {estado?.reinicioDisponible ? <div className="network-restart">
+      <p>Configuración: <code>C:\ProgramData\Restaurante\config.json</code>. El reinicio vuelve a cargar el servidor y la interfaz; puede ser necesario iniciar sesión otra vez.</p>
+      {confirmando ? <div role="group" aria-label="Confirmar reinicio de Restaurante">
+        <p>Avise al equipo y termine las órdenes en curso antes de reiniciar.</p>
+        <Button type="button" onClick={reiniciar} disabled={reiniciando}>Confirmar reinicio</Button>
+        <Button type="button" variant="outline" onClick={() => setConfirmando(false)}>Cancelar</Button>
+      </div> : <Button type="button" variant="outline" disabled={reiniciando} onClick={() => setConfirmando(true)}><RefreshCw size={18} />{reiniciando ? "Reiniciando…" : "Reiniciar Restaurante"}</Button>}
+    </div> : null}
     {error ? <p role="alert">{error}</p> : null}
   </fieldset>;
 }

@@ -111,6 +111,8 @@ Contraseña: admin
 
 > Cambia estas credenciales antes de exponer el sistema en una red compartida o utilizarlo fuera de un entorno de prueba.
 
+Para instalación y diagnóstico en Windows, consulta [Soporte Windows](docs/SOPORTE_WINDOWS.md): tareas `Restaurante POS` y `Restaurante POS - Reiniciar`, archivo `C:\ProgramData\Restaurante\config.json`, botón de reinicio en Opciones, registros, red local y cuentas iniciales.
+
 ### Desarrollo
 
 `npm run dev` y `npm run dev:go` ejecutan el backend Go. Para trabajar con

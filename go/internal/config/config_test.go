@@ -32,3 +32,24 @@ func TestEmpaqueParaLlevarHabilitadoPorDefecto(t *testing.T) {
 		t.Fatal("la sugerencia de empaque debe quedar habilitada por defecto")
 	}
 }
+
+func TestEnsureFileCreatesDefaultsWithoutOverwritingExistingConfig(t *testing.T) {
+	dir := t.TempDir()
+	if err := EnsureFile(dir, Defaults()); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "config.json")
+	if _, err := os.Stat(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(`{"nombre_local":"Personalizado"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := EnsureFile(dir, Defaults()); err != nil {
+		t.Fatal(err)
+	}
+	bytes, err := os.ReadFile(path)
+	if err != nil || string(bytes) != `{"nombre_local":"Personalizado"}` {
+		t.Fatalf("configuración existente alterada: %q, %v", bytes, err)
+	}
+}
