@@ -43,6 +43,7 @@ import {
   claveBorrador,
   eliminarBorrador,
   guardarBorrador,
+  nuevaClaveIdempotencia,
 } from "./lib/borradores.ts";
 import {
   completarEnvioBorrador,
@@ -377,7 +378,7 @@ export function App() {
   function borradorNuevo(contexto: ContextoOrden): BorradorOrden {
     return {
       version: 1,
-      claveIdempotencia: globalThis.crypto.randomUUID(),
+      claveIdempotencia: nuevaClaveIdempotencia(),
       ...(contexto.tipo === "mesa"
         ? { mesaId: contexto.mesaId }
         : contexto.tipo === "cuenta"
